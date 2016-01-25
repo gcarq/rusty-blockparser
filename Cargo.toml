@@ -1,0 +1,61 @@
+[package]
+name = "rusty-blockparser"
+version = "0.3.2"
+authors = ["gcarq <michael.egger@tsn.at>"]
+
+[dependencies]
+time            = ">=0.1.34"
+log             = ">=0.3.5"
+argparse        = ">=0.2.1"
+rust-crypto     = ">=0.2.34"
+rustc-serialize = ">=0.3.16"
+#twox-hash       = ">=0.1.1" # requries rust-nightly
+byteorder       = ">=0.4.2"
+rust-base58     = ">=0.0.4"
+
+
+# The development profile, used for `cargo build`
+[profile.dev]
+opt-level = 0                # Controls the --opt-level the compiler builds with
+debug = true                 # Controls whether the compiler passes `-g`
+rpath = false                # Controls whether the compiler passes `-C rpath`
+lto = false                  # Controls `-C lto` for binaries and staticlibs
+debug-assertions = true      # Controls whether debug assertions are enabled
+codegen-units = 1            # Controls whether the compiler passes `-C codegen-units`
+                             # `codegen-units` is ignored when `lto = true`
+
+# The release profile, used for `cargo build --release`
+[profile.release]
+opt-level = 3
+debug = false
+rpath = false
+lto = true
+debug-assertions = false
+codegen-units = 1
+
+# The testing profile, used for `cargo test`
+[profile.test]
+opt-level = 0
+debug = true
+rpath = false
+lto = false
+debug-assertions = true
+codegen-units = 1
+
+# The benchmarking profile, used for `cargo bench`
+[profile.bench]
+opt-level = 3
+debug = false
+rpath = false
+lto = false
+debug-assertions = false
+codegen-units = 1
+
+# The documentation profile, used for `cargo doc`
+[profile.doc]
+opt-level = 0
+debug = true
+rpath = false
+lto = false
+debug-assertions = true
+codegen-units = 1
