@@ -86,7 +86,7 @@ It is important to build with `--release` and `opt-level = 3 (specified in Cargo
 
 ### More Tweaks
 
-**Only proceed if you now what you are doing, because this could go horribly wrong and lead to arbitrary runtime failures!**
+**Only proceed if you know what you are doing, because this could go horribly wrong and lead to arbitrary runtime failures!**
 
 If you want more performance you can tweak it further with [llvm passes](http://llvm.org/docs/Passes.html).
 In order to make this possible we need a rustc wapper. Create a file called `rustc-wrapper.sh`. Your wrapper could look like this:
