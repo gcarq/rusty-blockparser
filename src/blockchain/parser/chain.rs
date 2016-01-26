@@ -9,6 +9,7 @@ use rustc_serialize::json;
 use blockchain::proto::Hashed;
 use blockchain::proto::header::BlockHeader;
 use blockchain::utils;
+use blockchain::parser::types::CoinType;
 
 
 /// Represents the Blockchain without stales or orphan blocks.
@@ -27,39 +28,49 @@ pub struct ChainStorage {
 impl ChainStorage {
 
     /// Extends an existing ChainStorage with new hashes.
-    pub fn extend(&mut self, headers: Vec<Hashed<BlockHeader>>, latest_blk_idx: u32) {
+    pub fn extend(&mut self, headers: Vec<Hashed<BlockHeader>>, coin_type: &CoinType, latest_blk_idx: u32) {
 
         let len = headers.len();
         let mut hashes: Vec<[u8; 32]> = Vec::with_capacity(len);
         for i in 0..len {
             if i < len - 1 {
-                // TODO: implement better consistency check
                 if headers[i].hash != headers[i + 1].value.prev_hash {
-                    error!(target: "chain", "FIXME: headers[i].hash != headers[i+1].prev_hash");
+                    error!(target: "chain", "Longest chain consistency check failed!");
                     panic!();
                 }
             }
             hashes.push(headers[i].hash);
         }
 
-        if self.hashes.is_empty() {
-            self.hashes.append(&mut hashes);
+        if !hashes.is_empty() {
+            if self.hashes.is_empty() {
+                // Genesis block check
+                let first_hash = hashes.first().cloned().unwrap();
+                if &coin_type.genesis_hash != &first_hash {
+                    error!(target: "chain", "Genesis hash for `{}` does not match:\n  Got: {}\n  Exp: {}",
+                        coin_type.name,
+                        utils::arr_to_hex_swapped(&first_hash),
+                        utils::arr_to_hex_swapped(&coin_type.genesis_hash));
+                    panic!();
+                } else {
+                    debug!(target: "chain", "Genesis hash is valid.");
+                }
+                self.hashes.append(&mut hashes);
+            } else {
+                // Create a slice to insert only new blocks
+                let latest_hash = self.hashes.last().unwrap().clone();
+                let latest_known_idx = headers.iter().position(|h| h.hash == latest_hash).unwrap();
 
-        // Only insert new blocks
-        } else if !hashes.is_empty() {
+                let mut new_hashes = hashes.split_off(latest_known_idx + 1);
 
-            let latest_hash = self.hashes.last().unwrap().clone();
-            let latest_known_idx = headers.iter().position(|h| h.hash == latest_hash).unwrap();
+                if new_hashes.len() > 0 {
+                    debug!(target: "chain.extend", "\n  -> latest known:  {}\n  -> first new:     {}",
+                           utils::arr_to_hex_swapped(self.hashes.last().unwrap()),
+                           utils::arr_to_hex_swapped(new_hashes.first().unwrap()));
+                }
 
-            let mut new_hashes = hashes.split_off(latest_known_idx + 1);
-
-            if new_hashes.len() > 0 {
-                debug!(target: "chain.extend", "\n  -> latest known:  {}\n  -> first new:     {}",
-                       utils::arr_to_hex_swapped(self.hashes.last().unwrap()),
-                       utils::arr_to_hex_swapped(new_hashes.first().unwrap()));
+                self.hashes.append(&mut new_hashes);
             }
-
-            self.hashes.append(&mut new_hashes);
         }
 
         info!(target: "chain", "Inserted {} new blocks ...", self.hashes.len() - self.hashes_len);
@@ -257,6 +268,7 @@ mod tests {
     use blockchain::utils;
     use blockchain::proto::Hashed;
     use blockchain::proto::header::BlockHeader;
+    use blockchain::parser::types::{CoinType, Bitcoin};
 
     #[test]
     fn test_chain_storage() {
@@ -273,13 +285,14 @@ mod tests {
             0x1d00ffff,
             2083236893);
 
-        // Extend storage
         assert_eq!(0, chain_storage.latest_blk_idx);
         assert_eq!(0, chain_storage.get_cur_height());
-        chain_storage.extend(vec![Hashed::dsha(new_header)], 1);
-        assert_eq!(
-            &utils::hex_to_vec_swapped("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"),
-            &chain_storage.get_next().unwrap());
+
+        // Extend storage and match genesis block
+        let coin_type = CoinType::from(Bitcoin);
+        chain_storage.extend(vec![Hashed::dsha(new_header)], &coin_type, 1);
+        assert_eq!(coin_type.genesis_hash, chain_storage.get_next().unwrap());
+
         assert_eq!(1, chain_storage.latest_blk_idx);
 
         // Serialize storage

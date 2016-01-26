@@ -255,7 +255,7 @@ impl<'a> BlockchainParser<'a> {
             ParseMode::HeaderOnly => chain::ChainBuilder::extract_blockchain(&self.unsorted_headers),
             ParseMode::FullData => Vec::new()
         };
-        self.chain_storage.extend(headers, self.stats.latest_blk_idx);
+        self.chain_storage.extend(headers, &self.options.coin_type, self.stats.latest_blk_idx);
         self.chain_storage.serialize(self.options.chain_storage_path.as_path())
     }
 }

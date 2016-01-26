@@ -5,7 +5,7 @@ use std::fmt::{Formatter, Display, Result};
 use byteorder::{LittleEndian, ReadBytesExt};
 
 use blockchain::proto::ToRaw;
-use blockchain::utils::{self, le};
+use blockchain::utils::le;
 
 
 /// Variable length integer
@@ -18,12 +18,13 @@ pub struct VarUint {
 
 impl VarUint {
     fn new(value: u64, buf: Vec<u8>) -> VarUint {
-        let v = VarUint { value: value as u64, buf: buf };
+        VarUint { value: value as u64, buf: buf }
+        /*let v = VarUint { value: value as u64, buf: buf };
         if v.value > 999999 {
             warn!(target: "varuint", "Potential malformed value detected: {:10}, len: {:5}, buf: 0x{}",
                   v.value, &v.to_bytes().len(), utils::arr_to_hex(&v.to_bytes()));
         }
-        return v;
+        return v;*/
     }
 
     pub fn read_from<R: Read + ?Sized>(reader: &mut R) -> io::Result<VarUint> {

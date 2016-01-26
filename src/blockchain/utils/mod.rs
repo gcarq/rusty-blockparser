@@ -6,7 +6,7 @@ use crypto::digest::Digest;
 use crypto::ripemd160::Ripemd160;
 use rustc_serialize::hex::{ToHex, FromHex};
 
-use blockchain::parser::types::CoinType;
+use blockchain::parser::types::{Coin, CoinType};
 
 pub mod blkfile;
 pub mod reader;
@@ -116,12 +116,19 @@ pub fn hex_to_vec_swapped(hex_str: &str) -> Vec<u8> {
     vec
 }
 
+#[inline]
+pub fn hex_to_arr32_swapped(hex_str: &str) -> [u8; 32] {
+    assert_eq!(hex_str.len(), 64);
+    let mut arr = [0u8; 32];
+    for (place, element) in arr.iter_mut().zip(hex_to_vec(hex_str).iter().rev()) {
+        *place = *element;
+    }
+    return arr;
+}
+
 /// Returns default directory. TODO: test on windows
-pub fn get_default_blockchain_dir(coin_type: &CoinType) -> PathBuf {
-    let mut pathbuf = PathBuf::from(env::home_dir().unwrap());
-    pathbuf.push(coin_type.default_folder.clone());
-    pathbuf.push("blocks");
-    return pathbuf;
+pub fn get_absolute_blockchain_dir(coin_type: &CoinType) -> PathBuf {
+    PathBuf::from(env::home_dir().unwrap()).join(coin_type.default_folder.clone())
 }
 
 #[cfg(test)]
@@ -147,6 +154,16 @@ mod tests {
                     0x68, 0xd6, 0x19, 0x00, 0x00, 0x00, 0x00, 0x00];
         let expected = "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f";
         assert_eq!(arr_to_hex_swapped(&test), expected);
+    }
+
+    #[test]
+    fn test_hex_to_arr32_swapped() {
+        let test = "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f";
+        let expected = [0x6f, 0xe2, 0x8c, 0x0a, 0xb6, 0xf1, 0xb3, 0x72,
+                        0xc1, 0xa6, 0xa2, 0x46, 0xae, 0x63, 0xf7, 0x4f,
+                        0x93, 0x1e, 0x83, 0x65, 0xe1, 0x5a, 0x08, 0x9c,
+                        0x68, 0xd6, 0x19, 0x00, 0x00, 0x00, 0x00, 0x00];
+        assert_eq!(hex_to_arr32_swapped(&test), expected);
     }
 
     #[test]

@@ -199,7 +199,7 @@ fn parse_args() -> ParserOptions {
 
     // If blockchain path is not provided fill it with ~/.`coinname`/blocks/
     let blockchain_path = match blockchain_dir.is_empty() {
-        true => utils::get_default_blockchain_dir(&coin_type),
+        true => utils::get_absolute_blockchain_dir(&coin_type),
         false => PathBuf::from(blockchain_dir)
     };
 

@@ -33,14 +33,14 @@ impl BlockHeader {
 
 impl ToRaw for BlockHeader {
     fn to_bytes(&self) -> Vec<u8> {
-        [u32_to_array(self.version).as_ref(),       // Version          4 byte
-         self.prev_hash.as_ref(),                   // hashPrevBlock   32 byte
-         self.merkle_root.as_ref(),                 // hashMerkleRoot  32 byte
-         u32_to_array(self.timestamp).as_ref(),     // Time             4 byte
-         u32_to_array(self.bits).as_ref(),          // bits             4 byte
-         u32_to_array(self.nonce).as_ref()]         // nonce            4 byte
-            .iter().flat_map(|a| a.iter().cloned())
-            .collect::<Vec<u8>>()
+        let mut bytes = Vec::with_capacity(80);
+        bytes.extend_from_slice(&u32_to_array(self.version));
+        bytes.extend_from_slice(&self.prev_hash);
+        bytes.extend_from_slice(&self.merkle_root);
+        bytes.extend_from_slice(&u32_to_array(self.timestamp));
+        bytes.extend_from_slice(&u32_to_array(self.bits));
+        bytes.extend_from_slice(&u32_to_array(self.nonce));
+        return bytes;
     }
 }
 

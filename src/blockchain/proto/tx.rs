@@ -89,11 +89,10 @@ pub struct TxOutpoint {
 
 impl ToRaw for TxOutpoint {
     fn to_bytes(&self) -> Vec<u8> {
-        [self.txid.as_ref(),
-         le::u32_to_array(self.index).as_ref()]
-            .iter()
-            .flat_map(|a| a.iter().cloned())
-            .collect::<Vec<u8>>()
+        let mut bytes = Vec::with_capacity(32 + 4);
+        bytes.extend_from_slice(&self.txid);
+        bytes.extend_from_slice(&le::u32_to_array(self.index));
+        return bytes;
     }
 }
 
@@ -119,13 +118,12 @@ pub struct TxInput {
 impl ToRaw for TxInput {
     #[inline]
     fn to_bytes(&self) -> Vec<u8> {
-        [self.outpoint.to_bytes().as_ref(),
-         self.script_len.to_bytes().as_ref(),
-         self.script_sig.as_ref(),
-         le::u32_to_array(self.seq_no).as_ref()]
-            .iter()
-            .flat_map(|a| a.iter().cloned())
-            .collect::<Vec<u8>>()
+        let mut bytes = Vec::with_capacity(36 + 5 + self.script_len.value as usize + 4);
+        bytes.extend_from_slice(&self.outpoint.to_bytes());
+        bytes.extend_from_slice(&self.script_len.to_bytes());
+        bytes.extend_from_slice(&self.script_sig);
+        bytes.extend_from_slice(&le::u32_to_array(self.seq_no));
+        return bytes;
     }
 }
 
@@ -167,12 +165,11 @@ pub struct TxOutput {
 impl ToRaw for TxOutput {
     #[inline]
     fn to_bytes(&self) -> Vec<u8> {
-        [le::u64_to_array(self.value).as_ref(),
-         self.script_len.to_bytes().as_ref(),
-         self.script_pubkey.as_ref()]
-            .iter()
-            .flat_map(|a| a.iter().cloned())
-            .collect::<Vec<u8>>()
+        let mut bytes = Vec::with_capacity(8 + 5 + self.script_len.value as usize);
+        bytes.extend_from_slice(&le::u64_to_array(self.value));
+        bytes.extend_from_slice(&self.script_len.to_bytes());
+        bytes.extend_from_slice(&self.script_pubkey);
+        return bytes;
     }
 }
 
