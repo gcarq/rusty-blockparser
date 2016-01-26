@@ -84,7 +84,7 @@ impl<'a> BlockchainParser<'a> {
     }
 
     /// Starts all workers. Needs an active mpsc channel
-    pub fn run(&mut self, tx_channel: mpsc::SyncSender<ParseResult>) {
+    pub fn start_worker(&mut self, tx_channel: mpsc::SyncSender<ParseResult>) {
 
         self.t_started = time::precise_time_s();
         if self.mode == ParseMode::FullData {

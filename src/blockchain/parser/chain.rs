@@ -99,7 +99,7 @@ impl ChainStorage {
         self.hashes.get(self.index).cloned()
     }
 
-    /// Removes next hash. Panics if there are no blocks
+    /// Marks current hash as consumed. Panics if there are no blocks
     /// Used in combination with get_next()
     #[inline]
     pub fn consume_next(&mut self) {
@@ -245,5 +245,53 @@ impl<'a> Iterator for RevBlockIterator<'a> {
         };
         self.last_header = prev_header.clone();
         Some(prev_header)
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use std::env;
+    use std::fs;
+    use super::*;
+    use blockchain::utils;
+    use blockchain::proto::Hashed;
+    use blockchain::proto::header::BlockHeader;
+
+    #[test]
+    fn test_chain_storage() {
+
+        let mut chain_storage = ChainStorage::default();
+        let new_header = BlockHeader::new(
+            0x00000001,
+            [0u8; 32],
+            [0x3b, 0xa3, 0xed, 0xfd, 0x7a, 0x7b, 0x12, 0xb2,
+             0x7a, 0xc7, 0x2c, 0x3e, 0x67, 0x76, 0x8f, 0x61,
+             0x7f, 0xc8, 0x1b, 0xc3, 0x88, 0x8a, 0x51, 0x32,
+             0x3a, 0x9f, 0xb8, 0xaa, 0x4b, 0x1e, 0x5e, 0x4a],
+            1231006505,
+            0x1d00ffff,
+            2083236893);
+
+        // Extend storage
+        assert_eq!(0, chain_storage.latest_blk_idx);
+        chain_storage.extend(vec![Hashed::dsha(new_header)], 1);
+        assert_eq!(
+            &utils::hex_to_vec_swapped("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"),
+            &chain_storage.get_next().unwrap());
+        assert_eq!(1, chain_storage.latest_blk_idx);
+
+        // Serialize storage
+        let pathbuf = env::temp_dir().as_path().join("chain.test.json");
+        chain_storage.serialize(pathbuf.as_path()).unwrap();
+
+        // Load storage
+        let chain_storage = ChainStorage::load(pathbuf.as_path()).unwrap();
+        assert_eq!(
+            &utils::hex_to_vec_swapped("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"),
+            &chain_storage.get_next().unwrap());
+        assert_eq!(1, chain_storage.latest_blk_idx);
+
+        fs::remove_file(pathbuf.as_path()).unwrap();
     }
 }

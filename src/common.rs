@@ -14,6 +14,15 @@ impl SimpleLogger {
             Box::new(SimpleLogger { log_filter: log_filter })
         })
     }
+
+    #[inline]
+    fn create_line(&self, record: &LogRecord) -> String {
+        format!("[{}] {} - {}: {}",
+                 strftime("%X", &time::now()).unwrap(),
+                 record.level(),
+                 record.target(),
+                 record.args())
+    }
 }
 
 impl log::Log for SimpleLogger {
@@ -23,18 +32,13 @@ impl log::Log for SimpleLogger {
 
     fn log(&self, record: &LogRecord) {
         if self.enabled(record.metadata()) {
+            let line = self.create_line(record);
             match record.level() {
                 LogLevel::Error => {
-                    writeln!(&mut stderr(), "[{}] {} - {}: {}",
-                             strftime("%X", &time::now()).unwrap(),
-                             record.level(), record.target(), record.args())
-                        .unwrap()
+                    stderr().write_all(line.as_bytes()).unwrap();
                 }
                 _ => {
-                    writeln!(&mut stdout(), "[{}] {} - {}: {}",
-                             strftime("%X", &time::now()).unwrap(),
-                             record.level(), record.target(), record.args())
-                        .unwrap()
+                    stdout().write_all(line.as_bytes()).unwrap();
                 }
             }
         }

@@ -36,19 +36,17 @@ pub trait BlockchainRead: io::Read {
     }
 
     fn read_block_header(&mut self) -> Result<BlockHeader, io::Error> {
-        let header = BlockHeader {
-            version: try!(self.read_u32::<LittleEndian>()),
-            prev_hash: try!(self.read_256hash()),
-            merkle_root: try!(self.read_256hash()),
-            timestamp: try!(self.read_u32::<LittleEndian>()),
-            bits: try!(self.read_u32::<LittleEndian>()),
-            nonce: try!(self.read_u32::<LittleEndian>()),
-        };
-        Ok(header)
+        Ok(BlockHeader::new(
+            try!(self.read_u32::<LittleEndian>()),
+            try!(self.read_256hash()),
+            try!(self.read_256hash()),
+            try!(self.read_u32::<LittleEndian>()),
+            try!(self.read_u32::<LittleEndian>()),
+            try!(self.read_u32::<LittleEndian>())))
     }
 
     fn read_txs(&mut self, tx_count: u64) -> Result<Vec<Tx>, io::Error> {
-        let mut txs: Vec<Tx> = Vec::new();
+        let mut txs: Vec<Tx> = Vec::with_capacity(tx_count as usize);
         for _ in 0..tx_count {
             let tx_version = try!(self.read_u32::<LittleEndian>());
             let in_count = try!(VarUint::read_from(self));
@@ -60,7 +58,6 @@ pub trait BlockchainRead: io::Read {
                              in_count, &inputs,
                              out_count, &outputs,
                              tx_locktime);
-            //trace!(target: "reader.txs", "{:?}", tx);
             txs.push(tx);
         }
         Ok(txs)
@@ -75,7 +72,7 @@ pub trait BlockchainRead: io::Read {
     }
 
     fn read_tx_inputs(&mut self, input_count: u64) -> Result<Vec<TxInput>, io::Error> {
-        let mut inputs: Vec<TxInput> = Vec::new();
+        let mut inputs: Vec<TxInput> = Vec::with_capacity(input_count as usize);
         for _ in 0..input_count {
             let outpoint = try!(self.read_tx_outpoint());
             let script_len = try!(VarUint::read_from(self));
@@ -94,7 +91,7 @@ pub trait BlockchainRead: io::Read {
     }
 
     fn read_tx_outputs(&mut self, output_count: u64) -> Result<Vec<TxOutput>, io::Error> {
-        let mut outputs: Vec<TxOutput> = Vec::new();
+        let mut outputs: Vec<TxOutput> = Vec::with_capacity(output_count as usize);
         for _ in 0..output_count {
             let value = try!(self.read_u64::<LittleEndian>());
             let script_len = try!(VarUint::read_from(self));
@@ -116,7 +113,7 @@ pub trait BlockchainRead: io::Read {
 impl<R: io::Read + ?Sized> BlockchainRead for R {}
 
 
-/// Simple buffered reader.
+/// Simple Buffered Memory Reader
 pub struct BufferedMemoryReader<R> {
     inner: R,               // internal reader
     buf: Vec<u8>,           // internal buffer

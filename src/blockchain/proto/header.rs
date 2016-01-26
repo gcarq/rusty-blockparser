@@ -16,6 +16,21 @@ pub struct BlockHeader {
     pub nonce: u32,
 }
 
+impl BlockHeader {
+    pub fn new(version: u32, prev_hash: [u8; 32],
+               merkle_root: [u8; 32], timestamp: u32,
+               bits: u32, nonce: u32) -> BlockHeader {
+        BlockHeader {
+            version: version,
+            prev_hash: prev_hash,
+            merkle_root: merkle_root,
+            timestamp: timestamp,
+            bits: bits,
+            nonce: nonce
+        }
+    }
+}
+
 impl ToRaw for BlockHeader {
     fn to_bytes(&self) -> Vec<u8> {
         [u32_to_array(self.version).as_ref(),       // Version          4 byte

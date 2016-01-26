@@ -98,7 +98,7 @@ fn main() {
             let mut parser = BlockchainParser::new(&mut options,
                 parse_mode.clone(), blk_files, chain_file);
 
-            parser.run(tx);
+            parser.start_worker(tx);
             parser.dispatch(rx);
         }
 
@@ -142,8 +142,8 @@ fn parse_args() -> ParserOptions {
     let mut thread_count = 2;
     let mut resume = false;
     let mut new = false;
-    let mut blockchain_dir = String::from("./blocks");
-    let mut chain_storage_path = String::from("./chain.json");
+    let mut blockchain_dir = String::from("blocks");
+    let mut chain_storage_path = String::from("chain.json");
     let mut worker_backlog = 100;
     let mut verbose = false;
     let mut debug = false;

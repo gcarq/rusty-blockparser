@@ -100,10 +100,15 @@ pub fn arr_to_hex_swapped(data: &[u8]) -> String {
 }
 
 #[inline]
-pub fn hex_to_vec_swapped(hex_str: &String) -> Vec<u8> {
-    let mut vec = hex_str.from_hex().unwrap();
+pub fn hex_to_vec(hex_str: &str) -> Vec<u8> {
+    hex_str.from_hex().unwrap()
+}
+
+#[inline]
+pub fn hex_to_vec_swapped(hex_str: &str) -> Vec<u8> {
+    let mut vec = hex_to_vec(hex_str);
     vec.reverse();
-    return vec;
+    vec
 }
 
 #[cfg(test)]

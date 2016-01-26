@@ -56,7 +56,7 @@ impl Callback for CsvDump {
     fn parse_args(args: Vec<String>) -> Self where Self: Sized {
 
         let cb_name = String::from("csvdump");
-        let mut folder_path = String::from("dump/");
+        let mut folder_path = String::from("dump");
         {
             // Construct Callback arguments parser
             let mut ap = ArgumentParser::new();
