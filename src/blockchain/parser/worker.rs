@@ -9,34 +9,38 @@ use byteorder::{ByteOrder, LittleEndian, ReadBytesExt};
 
 use blockchain::parser::{ParseMode, ParseResult};
 use blockchain::utils::blkfile::BlkFile;
+use blockchain::parser::types::CoinType;
 use blockchain::utils::reader::{BlockchainRead, BufferedMemoryReader};
 
 /// Represents a single Worker. All workers share Vector with remaining files.
 /// It reads and parses all blocks/header from a single blk file until there are no files left.
 /// The files are send to the main thread via mpsc channels.
 pub struct Worker {
+    tx_channel: mpsc::SyncSender<ParseResult>,          // SyncSender channel to communicate main thread
     pub remaining_files: Arc<Mutex<VecDeque<BlkFile>>>, // remaining BlkFiles to parse (shared with other threads)
-
-    pub blk_file: BlkFile,                              // Current blk_file
+    pub coin_type: CoinType,                            // Coin type
+    pub blk_file: BlkFile,                              // Current blk file
     pub reader: BufferedMemoryReader<File>,             // Reader for the entire blk file content
     pub mode: ParseMode,                                // Specifies if we should read the whole block data or just the header
     pub name: String                                    // Thread name
 }
 
 impl Worker {
-    pub fn new(remaining_files: Arc<Mutex<VecDeque<BlkFile>>>, mode: ParseMode) -> Option<Worker> {
+    pub fn new(tx_channel: mpsc::SyncSender<ParseResult>, remaining_files: Arc<Mutex<VecDeque<BlkFile>>>, coin_type: CoinType, mode: ParseMode) -> Option<Self> {
 
+        let worker_name = String::from(thread::current().name().unwrap());
         // Grab initial blk file
         if let Some(blk_file) = Worker::get_next_file(&remaining_files) {
             // prepare instance variables
             let reader = blk_file.get_reader();
-            let worker_name = String::from(thread::current().name().unwrap());
             debug!(target: worker_name.as_ref(), "Parsing blk{:05}.dat ({:.2} Mb)",
                 blk_file.index,
                 blk_file.size as f64 / 1000000.0);
 
             let w = Worker {
+                tx_channel: tx_channel,
                 remaining_files: remaining_files,
+                coin_type: coin_type,
                 blk_file: blk_file,
                 reader: reader,
                 mode: mode,
@@ -44,12 +48,13 @@ impl Worker {
             };
             Some(w)
         } else {
+            tx_channel.send(ParseResult::Complete(worker_name)).unwrap();
             None
         }
     }
 
     /// Extracts data from blk files and sends them to main thread
-    pub fn process(&mut self, tx_channel: mpsc::SyncSender<ParseResult>) {
+    pub fn process(&mut self) {
         loop {
             match self.maybe_next() {
                 false => break,
@@ -61,11 +66,18 @@ impl Worker {
                         warn!(target: self.name.as_ref(), "Got 0x00000000 as magic number. Finished.");
                         break;
                     }
-                    assert_eq!(0xd9b4bef9, magic);
+
+                    // Verify magic value based on current coin type
+                    if magic != self.coin_type.magic {
+                        let err_str = format!("Got invalid magic value for {}: 0x{:x}, expected: 0x{:x}",
+                            self.coin_type.name, magic, self.coin_type.magic);
+                        self.tx_channel.send(ParseResult::Error(self.name.clone(), err_str)).unwrap();
+                        break;
+                    }
                     let result = self.extract_data().expect("Couldn't extract data!");
 
                     // Send parsed result to main thread
-                    match tx_channel.send(result) {
+                    match self.tx_channel.send(result) {
                         Ok(_) => (),
                         Err(e) => panic!("Unable to send thread signal: {}", e),
                     }
@@ -73,15 +85,13 @@ impl Worker {
             }
         }
         // No data left, time to say goodbye
-        tx_channel.send(ParseResult::Complete(self.name.clone()))
+        self.tx_channel.send(ParseResult::Complete(self.name.clone()))
             .expect("Couldn't send Complete msg");
         loop {
-            //FIXME: find a way to shutdown worker gracefully.
             // We cannot just drop the channel,
             // because the SyncedSender would destroy the buffer containing the last message.
             thread::sleep(Duration::from_secs(1));
         }
-        //drop(tx_channel);
     }
 
     /// Extracts Block or BlockHeader. See ParseMode
@@ -95,7 +105,8 @@ impl Worker {
             ParseMode::FullData => {
                 let block = try!(self.reader.read_block(self.blk_file.index,
                                                         block_offset,
-                                                        blocksize));
+                                                        blocksize,
+                                                        self.coin_type.version_id));
                 Ok(ParseResult::FullData(block))
 
             }

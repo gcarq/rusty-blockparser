@@ -25,8 +25,9 @@ use std::process;
 use argparse::{ArgumentParser, Store, StoreTrue, List, Print};
 use log::LogLevelFilter;
 
-
 use blockchain::parser::chain;
+use blockchain::parser::types::*;
+use blockchain::utils;
 use blockchain::utils::blkfile::BlkFile;
 use blockchain::parser::{ParseMode, BlockchainParser};
 use common::SimpleLogger;
@@ -38,6 +39,7 @@ use callbacks::csvdump::CsvDump;
 /// Holds all available user arguments
 pub struct ParserOptions {
     callback: Box<Callback>,        /* Name of the callback which gets executed for each block. (See callbacks/mod.rs)                      */
+    coin_type: CoinType,            /* Holds the name of the coin we want to parse                                                          */
     verify_merkle_root: bool,       /* Enable this if you want to check the merkle root of each block. Aborts if something is fishy.        */
     thread_count: u8,               /* Number of core threads. The callback gets sequentially called!                                       */
     resume: bool,                   /* Resumes from latest known hash in chain.json.                                                        */
@@ -86,7 +88,15 @@ fn main() {
             ParseMode::HeaderOnly => 0,
             ParseMode::FullData => chain_file.latest_blk_idx
         };
-        let blk_files = BlkFile::from_path(options.blockchain_dir.clone(), start_blk_idx);
+
+        // Load blk files from blockchain dir
+        let blk_files = match BlkFile::from_path(options.blockchain_dir.clone(), start_blk_idx) {
+            Ok(files) => files,
+            Err(e) => {
+                println!("{}", e);
+                process::exit(1);
+            }
+        };
 
         if parse_mode == ParseMode::FullData && chain_file.remaining() == 0 {
             info!("All {} known blocks are processed! Try again with `--resume` to scan for new blocks, or force a full rescan with `--new`", chain_file.get_cur_height());
@@ -95,8 +105,11 @@ fn main() {
 
         {   // Start parser
             let (tx, rx) = mpsc::sync_channel(options.worker_backlog);
-            let mut parser = BlockchainParser::new(&mut options,
-                parse_mode.clone(), blk_files, chain_file);
+            let mut parser = BlockchainParser::new(
+                &mut options,
+                parse_mode.clone(),
+                blk_files,
+                chain_file);
 
             parser.start_worker(tx);
             parser.dispatch(rx);
@@ -136,32 +149,36 @@ fn load_chain_file(path: &Path) -> chain::ChainStorage {
 /// Parses args or panics if some requirements are not met.
 fn parse_args() -> ParserOptions {
 
+    let mut coin_type = CoinType::from(Bitcoin);
     let mut callback_name = String::from("csvdump");
     let mut callback_args = vec!();
     let mut verify_merkle_root = false;
     let mut thread_count = 2;
     let mut resume = false;
     let mut new = false;
-    let mut blockchain_dir = String::from("blocks");
+    let mut blockchain_dir = String::from("");
     let mut chain_storage_path = String::from("chain.json");
     let mut worker_backlog = 100;
     let mut verbose = false;
     let mut debug = false;
 
+    let desc_str = "Multithreaded Blockchain Parser written in Rust";
     let verify_merkle_str = format!("Verify merkle root (default: {})", &verify_merkle_root);
     let thread_count_str = format!("Thread count (default: {})", &thread_count);
-    let blockchain_dir_str = format!("Set blockchain directory (default: {})", &blockchain_dir);
+    let blockchain_dir_str = "Set blockchain directory which contains blk.dat files (default: ~/.bitcoin/blocks)";
     let chain_file_str = format!("Specify path to chain storage. This is just a internal state file (default: {})", &chain_storage_path);
     let max_work_blog_str = format!("Set maximum worker backlog (default: {})", &worker_backlog);
     {
         let mut ap = ArgumentParser::new();
-        ap.set_description("Multithreaded Blockchain Parser written in Rust");
-        ap.add_option(&["--list-callbacks"], Print(list_callbacks()), "Lists all available callbacks");
+        ap.set_description(&desc_str);
+        ap.add_option(&["--list-coins"], Print(list_coins(&desc_str)), "Lists all implemented coins");
+        ap.add_option(&["--list-callbacks"], Print(list_callbacks(&desc_str)), "Lists all available callbacks");
+        ap.refer(&mut coin_type).add_option(&["-c", "--coin"], Store, "Specify blockchain coin (default: bitcoin)").metavar("COINNAME");
+        ap.refer(&mut blockchain_dir).add_option(&["--blockchain-dir"], Store, &blockchain_dir_str).metavar("PATH");
         ap.refer(&mut verify_merkle_root).add_option(&["--verify-merkle-root"], Store, &verify_merkle_str).metavar("BOOL");
         ap.refer(&mut thread_count).add_option(&["-t", "--threads"], Store, &thread_count_str).metavar("COUNT");
         ap.refer(&mut resume).add_option(&["-r", "--resume"], StoreTrue, "Resume from latest known block");
         ap.refer(&mut new).add_option(&["--new"], StoreTrue, "Force complete rescan");
-        ap.refer(&mut blockchain_dir).add_option(&["--blockchain-dir"], Store, &blockchain_dir_str).metavar("PATH");
         ap.refer(&mut chain_storage_path).add_option(&["-s", "--chain-storage"], Store, &chain_file_str).metavar("PATH");
         ap.refer(&mut worker_backlog).add_option(&["--backlog"], Store, &max_work_blog_str).metavar("COUNT");
         ap.refer(&mut verbose).add_option(&["-v", "--verbose"], StoreTrue, "Be verbose");
@@ -176,28 +193,34 @@ fn parse_args() -> ParserOptions {
     }
 
     if new && resume {
-        println!("Cannot apply `--new` and `--resume` at the same time!");
+        println!("\nCannot apply `--new` and `--resume` at the same time!");
         process::exit(2);
     }
 
-    callback_args.insert(0, format!("Callback {:?}", callback_name));
+    // If blockchain path is not provided fill it with ~/.`coinname`/blocks/
+    let blockchain_path = match blockchain_dir.is_empty() {
+        true => utils::get_default_blockchain_dir(&coin_type),
+        false => PathBuf::from(blockchain_dir)
+    };
 
+    callback_args.insert(0, format!("Callback {}", callback_name));
     // Add custom callbacks here. Also add them to list_callbacks()
     let callback: Box<Callback> = match callback_name.as_ref() {
         "simplestats"   => Box::new(SimpleStats::parse_args(callback_args)),
         "csvdump"       => Box::new(CsvDump::parse_args(callback_args)),
         cb @ _          => {
-            println!("Error: Invalid callback specified: {}", cb);
+            println!("\n{}\n\nCallback `{}` not found. Try `--list-callbacks`", &desc_str, &cb);
             process::exit(2);
         }
     };
     ParserOptions {
+        coin_type: coin_type,
         callback: callback,
         verify_merkle_root: verify_merkle_root,
         thread_count: thread_count,
         resume: resume,
         new: new,
-        blockchain_dir: PathBuf::from(blockchain_dir),
+        blockchain_dir: blockchain_path,
         chain_storage_path: PathBuf::from(chain_storage_path),
         worker_backlog: worker_backlog,
         verbose: verbose,
@@ -206,8 +229,27 @@ fn parse_args() -> ParserOptions {
 }
 
 /// Method to list all available callbacks. TODO: find a better solution
-fn list_callbacks() -> String {
-    String::from("Available Callbacks:\n\
-                  -> csvdump:\tDumps the whole blockchain into CSV files.\n\
-                  -> simplestats:\tCallback example. Shows simple Blockchain stats.\n")
+fn list_callbacks(desc: &str) -> String {
+    let mut s = String::new();
+    s.push_str(&format!("\n{}\n\n", &desc));
+    s.push_str("Available Callbacks:\n");
+    s.push_str("  csvdump\t\tDumps the whole blockchain into CSV files.\n");
+    s.push_str("  simplestats\t\tCallback example. Shows simple Blockchain stats.\n");
+    return s;
+}
+
+/// Lists all available coin implementations
+fn list_coins(desc: &str) -> String {
+    let mut s = String::new();
+    s.push_str(&format!("\n{}\n\n", &desc));
+    s.push_str("Implemented coins:\n");
+    s.push_str("  bitcoin\n");
+    s.push_str("  testnet3\n");
+    s.push_str("  namecoin\n");
+    s.push_str("  litecoin\n");
+    s.push_str("  dogecoin\n");
+    s.push_str("  fedoracoin\n");
+    s.push_str("  myriadcoin\n");
+    s.push_str("  unobtanium\n");
+    return s;
 }

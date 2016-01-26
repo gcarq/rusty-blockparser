@@ -295,26 +295,27 @@ impl<'a> ScriptEvaluator<'a> {
     }
 }
 
-
-pub fn extract_address_from_bytes(bytes: &[u8]) -> Result<String, ScriptError> {
+/// Extracts address from ScriptPubKey with the given network id
+pub fn extract_address_from_bytes(bytes: &[u8], version_id: u8) -> Result<String, ScriptError> {
     let mut script = ScriptEvaluator::new(bytes);
     let stack = try!(script.eval());
-    extract_address(&stack)
+    extract_address(&stack, version_id)
 }
 
-pub fn extract_address(stack: &Stack) -> Result<String, ScriptError> {
+/// Extracts address from evaluated script stack
+pub fn extract_address(stack: &Stack, version_id: u8) -> Result<String, ScriptError> {
     match stack.pattern {
         ScriptPattern::Pay2PublicKey => {
             let pub_key = try!(stack.elements[0].data());
-            return Ok(public_key_to_addr(&pub_key, 0));
+            return Ok(public_key_to_addr(&pub_key, version_id));
         }
         ScriptPattern::Pay2PublicKeyHash => {
             let h160 = try!(stack.elements[2].data());
-            return Ok(hash_160_to_address(&h160, 0));
+            return Ok(hash_160_to_address(&h160, version_id));
         }
         ScriptPattern::Pay2ScriptHash => {
             let h160 = try!(stack.elements[1].data());
-            return Ok(hash_160_to_address(&h160, 5));
+            return Ok(hash_160_to_address(&h160, 5)); //TODO: Set proper network id for p2sh
         }
         ScriptPattern::DataOutput => {
             try!(stack.elements[1].data());
@@ -356,9 +357,10 @@ fn hash_160_to_address(h160: &[u8], version: u8) -> String {
 #[cfg(test)]
 mod tests {
     use super::{ScriptEvaluator, ScriptPattern, extract_address};
+    use blockchain::parser::types::*;
 
     #[test]
-    fn test_script_p2pkh() {
+    fn test_bitcoin_script_p2pkh() {
         // Raw output script: 76a91412ab8dc588ca9d5787dde7eb29569da63c3a238c88ac
         //                    OP_DUP OP_HASH160 OP_PUSHDATA0(20 bytes) 12ab8dc588ca9d5787dde7eb29569da63c3a238c OP_EQUALVERIFY OP_CHECKSIG
         let bytes = [0x76, 0xa9, 0x14, 0x12, 0xab, 0x8d, 0xc5, 0x88,
@@ -370,11 +372,11 @@ mod tests {
 
         assert_eq!("OP_DUP OP_HASH160 12ab8dc588ca9d5787dde7eb29569da63c3a238c OP_EQUALVERIFY OP_CHECKSIG", format!("{:?}", stack));
         assert_eq!(stack.pattern, ScriptPattern::Pay2PublicKeyHash);
-        assert_eq!("12higDjoCCNXSA95xZMWUdPvXNmkAduhWv", extract_address(&stack).unwrap());
+        assert_eq!("12higDjoCCNXSA95xZMWUdPvXNmkAduhWv", extract_address(&stack, Bitcoin.version_id()).unwrap());
     }
 
     #[test]
-    fn test_script_p2pk() {
+    fn test_bitcoin_script_p2pk() {
         // Raw output script: 33022df8750480ad5b26950b25c7ba79d3e37d75f640f8e5d9bcd5b150a0f85014daac
         //                    33 0x022df8750480ad5b26950b25c7ba79d3e37d75f640f8e5d9bcd5b150a0f85014da OP_CHECKSIG
         let bytes = [0x21, 0x02, 0x2d, 0xf8, 0x75, 0x04, 0x80, 0xad,
@@ -391,7 +393,7 @@ mod tests {
     }
 
     #[test]
-    fn test_script_p2ms() {
+    fn test_bitcoin_script_p2ms() {
         // 2-of-3 Multi sig output
         // OP_2 33 0x022df8750480ad5b26950b25c7ba79d3e37d75f640f8e5d9bcd5b150a0f85014da
         // 33 0x03e3818b65bcc73a7d64064106a859cc1a5a728c4345ff0b641209fba0d90de6e9
@@ -422,7 +424,7 @@ mod tests {
     }
 
     #[test]
-    fn test_script_p2sh() {
+    fn test_bitcoin_script_p2sh() {
         // Raw output script: a914620a6eeaf538ec9eb89b6ae83f2ed8ef98566a0387
         //                    OP_HASH160 20 0x620a6eeaf538ec9eb89b6ae83f2ed8ef98566a03 OP_EQUAL
         let bytes = [0xa9, 0x14, 0x62, 0x0a, 0x6e, 0xea, 0xf5, 0x38,
@@ -436,7 +438,7 @@ mod tests {
     }
 
     #[test]
-    fn test_script_data_output() {
+    fn test_bitcoin_script_data_output() {
         // Raw output script: 6a0e68656c6c6f20776f726c64212121
         //                    OP_RETURN 14 0x68656c6c6f20776f726c64212121
         let bytes = [0x6a, 0x0e, 0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x20,

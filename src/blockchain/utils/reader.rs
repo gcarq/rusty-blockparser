@@ -28,10 +28,11 @@ pub trait BlockchainRead: io::Read {
     fn read_block(&mut self,
                   blk_index: u32,
                   blk_offset: usize,
-                  blocksize: u32) -> Result<Block, io::Error> {
+                  blocksize: u32,
+                  version_id: u8) -> Result<Block, io::Error> {
         let header = try!(self.read_block_header());
         let tx_count = try!(VarUint::read_from(self));
-        let txs = try!(self.read_txs(tx_count.value));
+        let txs = try!(self.read_txs(tx_count.value, version_id));
         Ok(Block::new(blk_index, blk_offset, blocksize, header, tx_count, txs))
     }
 
@@ -45,7 +46,7 @@ pub trait BlockchainRead: io::Read {
             try!(self.read_u32::<LittleEndian>())))
     }
 
-    fn read_txs(&mut self, tx_count: u64) -> Result<Vec<Tx>, io::Error> {
+    fn read_txs(&mut self, tx_count: u64, version_id: u8) -> Result<Vec<Tx>, io::Error> {
         let mut txs: Vec<Tx> = Vec::with_capacity(tx_count as usize);
         for _ in 0..tx_count {
             let tx_version = try!(self.read_u32::<LittleEndian>());
@@ -57,7 +58,8 @@ pub trait BlockchainRead: io::Read {
             let tx = Tx::new(tx_version,
                              in_count, &inputs,
                              out_count, &outputs,
-                             tx_locktime);
+                             tx_locktime,
+                             version_id);
             txs.push(tx);
         }
         Ok(txs)
@@ -228,9 +230,10 @@ mod tests {
     use byteorder::{LittleEndian, ReadBytesExt};
     use blockchain::utils::{arr_to_hex_swapped, arr_to_hex};
     use blockchain::proto::script;
+    use blockchain::parser::types::{Coin, Bitcoin};
 
     #[test]
-    fn test_parse_genesis_block() {
+    fn test_bitcoin_parse_genesis_block() {
         // bitcoin genesis block as raw bytes
         let raw_data = vec![0xf9, 0xbe, 0xb4, 0xd9, 0x1d, 0x01, 0x00, 0x00,
                             0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -306,7 +309,7 @@ mod tests {
         let blocksize: u32 = reader.read_u32::<LittleEndian>().unwrap();
 
         // Parse block
-        let block = reader.read_block(blk_id, blk_offset, blocksize).unwrap();
+        let block = reader.read_block(blk_id, blk_offset, blocksize, Bitcoin.version_id()).unwrap();
 
         // Block Metadata
         assert_eq!(0xd9b4bef9,  magic);
@@ -352,7 +355,7 @@ mod tests {
                                 arr_to_hex(&script_pubkey));
         assert_eq!(0x00000000,  block.txs[0].value.tx_locktime);
 
-        assert_eq!("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", script::extract_address_from_bytes(script_pubkey).unwrap());
+        assert_eq!("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", script::extract_address_from_bytes(script_pubkey, Bitcoin.version_id()).unwrap());
 
                    /******* Genesis block raw data for reference (Most fields are little endian) *******
 version            0x01000000   big endian??

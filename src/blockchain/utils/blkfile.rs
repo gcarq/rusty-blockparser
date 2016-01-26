@@ -1,5 +1,6 @@
 use std::convert::From;
 use std::iter::FromIterator;
+use std::io;
 use std::path::PathBuf;
 use std::fs::{self, File};
 use std::collections::VecDeque;
@@ -29,10 +30,10 @@ impl BlkFile {
     }
 
     /// Collects all blk*.dat paths in the given directory
-    pub fn from_path(path: PathBuf, min_blk_idx: u32) -> VecDeque<BlkFile> {
+    pub fn from_path(path: PathBuf, min_blk_idx: u32) -> io::Result<VecDeque<BlkFile>> {
 
-        info!(target: "blkfile", "Reading files from folder: {}", path.display());
-        let content = fs::read_dir(path).expect("Couldn't read blockchain directory");
+        info!(target: "blkfile", "Reading files from {} ...", path.display());
+        let content = try!(fs::read_dir(path));
 
         let mut blk_files = Vec::new();
         let blk_prefix = String::from("blk");
@@ -62,7 +63,7 @@ impl BlkFile {
         blk_files.sort_by(|a, b| a.path.cmp(&b.path));
         //blk_files.split_off(5); just for testing purposes
         trace!(target: "blkfile", "Found {} blk files", blk_files.len());
-        VecDeque::from_iter(blk_files.into_iter())
+        Ok(VecDeque::from_iter(blk_files.into_iter()))
     }
 
     /// Identifies blk file and parses index

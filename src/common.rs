@@ -3,6 +3,9 @@ use std::io::{stderr, stdout, Write};
 use time::{self, strftime};
 use log::{self, LogRecord, LogLevel, LogLevelFilter, LogMetadata, SetLoggerError};
 
+
+
+
 pub struct SimpleLogger {
     log_filter: LogLevelFilter,
 }

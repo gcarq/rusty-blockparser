@@ -1,4 +1,5 @@
 use std::io;
+use std::process;
 use std::sync::{Arc, Mutex, mpsc};
 use std::thread::{self, JoinHandle};
 use std::collections::{VecDeque, HashMap};
@@ -16,6 +17,7 @@ use callbacks::Callback;
 
 pub mod worker;
 pub mod chain;
+pub mod types;
 
 /// Specifies ParseMode. The first time the blockchain is scanned with HeaderOnly,
 /// because we just need the block hashes to determine the longest chain.
@@ -29,22 +31,23 @@ pub enum ParseMode {
 pub enum ParseResult {
     FullData(Block),
     HeaderOnly(BlockHeader),
-    Complete(String)            // contains the name of the finished thread
+    Complete(String),           // contains the name of the finished thread
+    Error(String, String)       // Indicates critical error
 }
 
 /// Small struct to hold statistics together
 #[derive(Default)]
 struct WorkerStats {
-    pub n_complete_msgs: u8, // Number of complete messages received from workers
-    pub n_valid_blocks: u64, // Number of received results from workers
-    pub latest_blk_idx: u32  // Latest processed blk file index
+    pub n_complete_msgs: usize, // Number of complete messages received from workers
+    pub n_valid_blocks: u64,    // Number of received results from workers
+    pub latest_blk_idx: u32     // Latest processed blk file index
 }
 
 /// Implements simple thread pool pattern
 pub struct BlockchainParser<'a> {
     //TODO: make the collections for headers and blocks more generic
-    unsorted_headers: HashMap<[u8; 32], BlockHeader>,   /* holds all headers in parse mode HeadersOnly */
-    unsorted_blocks:  HashMap<[u8; 32], Block>,         /* holds all blocks in parse mode FullData     */
+    unsorted_headers: HashMap<[u8; 32], BlockHeader>,   /* holds all headers in parse mode HeadersOnly  */
+    unsorted_blocks:  HashMap<[u8; 32], Block>,         /* holds all blocks in parse mode FullData      */
     remaining_files:  Arc<Mutex<VecDeque<BlkFile>>>,    /* Remaining files (shared between all threads) */
     h_workers:        Vec<JoinHandle<()>>,              /* Worker job handles                           */
     mode:             ParseMode,                        /* ParseMode (FullData or HeaderOnly)           */
@@ -62,6 +65,7 @@ impl<'a> BlockchainParser<'a> {
                blk_files: VecDeque<BlkFile>,
                chain_storage: chain::ChainStorage) -> Self {
 
+        info!(target: "parser", "Parsing {} blockchain ...", options.coin_type.name);
         match parse_mode {
             ParseMode::HeaderOnly => {
                 info!(target: "parser", "Parsing with mode HeaderOnly (first run).");
@@ -71,15 +75,15 @@ impl<'a> BlockchainParser<'a> {
             }
         };
         BlockchainParser {
-            unsorted_headers:    Default::default(),
-            unsorted_blocks:     Default::default(),
-            remaining_files:     Arc::new(Mutex::new(blk_files)),
-            h_workers:           Vec::with_capacity(options.thread_count as usize),
-            mode:                parse_mode,
-            options:             options,
-            chain_storage:       chain_storage,
-            stats:               Default::default(),
-            t_started:           0.0
+            unsorted_headers:   Default::default(),
+            unsorted_blocks:    Default::default(),
+            remaining_files:    Arc::new(Mutex::new(blk_files)),
+            h_workers:          Vec::with_capacity(options.thread_count as usize),
+            mode:               parse_mode,
+            options:            options,
+            chain_storage:      chain_storage,
+            stats:              Default::default(),
+            t_started:          0.0
         }
     }
 
@@ -103,7 +107,8 @@ impl<'a> BlockchainParser<'a> {
         // Start all workers
         for i in 0..self.options.thread_count {
             let tx = tx_channel.clone();
-            let remaining_files = self.remaining_files.clone();     // Increment arc
+            let coin_type = self.options.coin_type.clone();
+            let remaining_files = self.remaining_files.clone(); // Increment arc
             let mode = self.mode.clone();
 
             let rem = remaining_files.lock().unwrap().len();
@@ -111,9 +116,10 @@ impl<'a> BlockchainParser<'a> {
                 return;
             }
 
+            // Spawn worker
             let child = thread::Builder::new().name(format!("worker-{}", i)).spawn(move || {
-                match Worker::new(remaining_files, mode) {
-                    Some(mut w) => w.process(tx),
+                match Worker::new(tx, remaining_files, coin_type, mode) {
+                    Some(mut w) => w.process(),
                     None => {
                         info!(target: thread::current().name().unwrap(), "Stopped. Not enough workload.");
                         return;
@@ -171,14 +177,13 @@ impl<'a> BlockchainParser<'a> {
                     (*self.options.callback).on_block(block, self.chain_storage.get_cur_height());
                     self.stats.n_valid_blocks += 1;
                 }
-            } //else {
+            }
                 // Check if all threads are finished
-            if self.stats.n_complete_msgs == self.options.thread_count && self.chain_storage.remaining() == 0 {
+            if self.stats.n_complete_msgs == self.h_workers.len() && self.chain_storage.remaining() == 0 {
                 info!(target: "dispatch", "All threads finished.");
                 self.on_complete();
                 return;
             }
-            //}
         }
     }
 
@@ -214,6 +219,11 @@ impl<'a> BlockchainParser<'a> {
             ParseResult::Complete(name) => {
                 info!(target: "dispatch", "{} completed", name);
                 self.stats.n_complete_msgs += 1;
+            }
+            // Catch critical errors
+            ParseResult::Error(name, cause) => {
+                error!(target: "dispatch", "{} died: {}", name, cause);
+                process::exit(1);
             }
         }
     }

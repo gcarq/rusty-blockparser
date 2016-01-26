@@ -20,10 +20,11 @@ pub struct Tx {
 
 impl Tx {
     pub fn new(tx_version: u32, in_count: VarUint, inputs: &[TxInput],
-               out_count: VarUint, outputs: &[TxOutput], tx_locktime: u32) -> Self {
+               out_count: VarUint, outputs: &[TxOutput], tx_locktime: u32,
+               version_id: u8) -> Self {
         // Evaluate and wrap all outputs to process them later
         let evaluated_out = outputs.iter().cloned()
-            .map(|o| EvaluatedTxOut::eval_wrap(o))
+            .map(|o| EvaluatedTxOut::eval_script(o, version_id))
             .collect();
         Tx {
             tx_version: tx_version,
@@ -149,8 +150,8 @@ pub struct EvaluatedTxOut {
 
 impl EvaluatedTxOut {
     #[inline]
-    pub fn eval_wrap(out: TxOutput) -> EvaluatedTxOut {
-        let address = script::extract_address_from_bytes(&out.script_pubkey);
+    pub fn eval_script(out: TxOutput, version_id: u8) -> EvaluatedTxOut {
+        let address = script::extract_address_from_bytes(&out.script_pubkey, version_id);
         EvaluatedTxOut { address: address, out: out }
     }
 }

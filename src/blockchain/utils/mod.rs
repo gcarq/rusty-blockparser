@@ -1,7 +1,12 @@
+use std::env;
+use std::path::PathBuf;
+
 use crypto::sha2::Sha256;
 use crypto::digest::Digest;
 use crypto::ripemd160::Ripemd160;
 use rustc_serialize::hex::{ToHex, FromHex};
+
+use blockchain::parser::types::CoinType;
 
 pub mod blkfile;
 pub mod reader;
@@ -109,6 +114,14 @@ pub fn hex_to_vec_swapped(hex_str: &str) -> Vec<u8> {
     let mut vec = hex_to_vec(hex_str);
     vec.reverse();
     vec
+}
+
+/// Returns default directory. TODO: test on windows
+pub fn get_default_blockchain_dir(coin_type: &CoinType) -> PathBuf {
+    let mut pathbuf = PathBuf::from(env::home_dir().unwrap());
+    pathbuf.push(coin_type.default_folder.clone());
+    pathbuf.push("blocks");
+    return pathbuf;
 }
 
 #[cfg(test)]
