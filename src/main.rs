@@ -64,8 +64,7 @@ fn main() {
     info!(target: "main", "Starting rusty-blockparser-{} ...", env!("CARGO_PKG_VERSION"));
 
     if options.new {
-        fs::remove_file(options.chain_storage_path.clone())
-            .expect("Unable to delete chain storage!");
+        fs::remove_file(options.chain_storage_path.clone()).ok();
     }
 
     // Two iterations possible. First one could be ParseMode::HeaderOnly

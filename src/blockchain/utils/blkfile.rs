@@ -1,16 +1,16 @@
 use std::convert::From;
 use std::iter::FromIterator;
 use std::path::PathBuf;
-use std::fs::{self, File, DirEntry};
+use std::fs::{self, File};
 use std::collections::VecDeque;
 use blockchain::utils::reader::BufferedMemoryReader;
 
-/// Holds all necessary data about a blk file
+/// Holds all necessary data about a raw blk file
 #[derive(Debug)]
 pub struct BlkFile {
-    pub path: PathBuf,   // absolute file path
-    pub index: u32,     // holds Index of blk file. (E.g. blk00000.dat has index 0x00000)
-    pub size: usize,    // file size in bytes
+    pub path: PathBuf,   // File path
+    pub index: u32,      // Holds Index of blk file. (E.g. blk00000.dat has index 0x00000)
+    pub size: usize,     // File size in bytes
 }
 
 impl BlkFile {
@@ -29,44 +29,68 @@ impl BlkFile {
     }
 
     /// Collects all blk*.dat paths in the given directory
-    /// TODO: refactor me. Use PathBuf filters
     pub fn from_path(path: PathBuf, min_blk_idx: u32) -> VecDeque<BlkFile> {
 
         info!(target: "blkfile", "Reading files from folder: {}", path.display());
-        let paths = fs::read_dir(path).expect("Couldn't read blockchain directory");
+        let content = fs::read_dir(path).expect("Couldn't read blockchain directory");
 
-        let wl_start_with = String::from("blk");
-        let wl_end_with = String::from(".dat");
+        let mut blk_files = Vec::new();
+        let blk_prefix = String::from("blk");
+        let blk_ext = String::from(".dat");
 
-        // Filter invalid files out
-        let dir_entries = paths.filter_map(|entry| {
-            entry.ok().and_then(|e| {
-                e.metadata().ok().and_then(|meta| {
-                    e.file_name().into_string().ok().and_then(|name| {
-                        if meta.is_file()
-                            && name.starts_with(&wl_start_with)
-                            && name.ends_with(&wl_end_with)
-                                { Some(e) } else { None }
-                        })
-                    })
-                })
-            }).collect::<Vec<DirEntry>>();
-
-        // Build BlkFile structures
-        let mut blk_files = Vec::with_capacity(dir_entries.len());
-        for e in dir_entries {
-
-            let path = e.file_name().into_string().unwrap();
-            let index = path[wl_start_with.len()..path.len() - wl_end_with.len()]
-                            .parse::<u32>()
-                            .expect(&format!("Unable to parse blk index from path: {}", path));
-            if index >= min_blk_idx {
-                blk_files.push(BlkFile::new(e.path(), index, e.metadata().unwrap().len() as usize));
+        for entry in content {
+            if let Ok(e) = entry {
+                // Check if it's a file
+                if e.file_type().expect("Unable to get file type!").is_file() {
+                    let file_name = String::from(e.file_name().to_str().expect("Filename contains invalid characters!"));
+                    // Check if it's a valid blk file
+                    if let Some(index) = BlkFile::parse_blk_index(file_name.as_ref(), blk_prefix.as_ref(), blk_ext.as_ref()) {
+                        // Only process new blk files
+                        if index >= min_blk_idx {
+                            // Build BlkFile structures
+                            let file_len = e.metadata().expect("Unable to read metadata!").len() as usize;
+                            trace!(target: "blkfile", "Adding {}... (index: {}, size: {})", e.path().display(), index, file_len);
+                            blk_files.push(BlkFile::new(e.path(), index, file_len));
+                        }
+                    }
+                }
+            } else {
+                warn!(target: "blkfile", "Unable to read blk file!");
             }
         }
+
         blk_files.sort_by(|a, b| a.path.cmp(&b.path));
         //blk_files.split_off(5); just for testing purposes
-        let blk_files = VecDeque::from_iter(blk_files.into_iter());
-        return blk_files;
+        trace!(target: "blkfile", "Found {} blk files", blk_files.len());
+        VecDeque::from_iter(blk_files.into_iter())
+    }
+
+    /// Identifies blk file and parses index
+    /// Returns None if this is no blk file
+    fn parse_blk_index(file_name: &str, prefix: &str, ext: &str) -> Option<u32> {
+        if file_name.starts_with(prefix) && file_name.ends_with(ext) {
+            // Parse blk_index, this means we extract 42 from blk000042.dat
+            Some(file_name[prefix.len()..(file_name.len() - ext.len())]
+                .parse::<u32>()
+                .expect(&format!("Unable to parse blk index from file: {}", file_name)))
+        } else {
+            None
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_blk_index() {
+        let blk_prefix = "blk";
+        let blk_ext = ".dat";
+
+        assert_eq!(0, BlkFile::parse_blk_index("blk00000.dat", blk_prefix, blk_ext).unwrap());
+        assert_eq!(6, BlkFile::parse_blk_index("blk6.dat", blk_prefix, blk_ext).unwrap());
+        assert_eq!(1202, BlkFile::parse_blk_index("blk1202.dat", blk_prefix, blk_ext).unwrap());
+        assert_eq!(13412451, BlkFile::parse_blk_index("blk13412451.dat", blk_prefix, blk_ext).unwrap());
     }
 }
