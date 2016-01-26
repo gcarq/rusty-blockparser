@@ -1,5 +1,6 @@
 # rusty-blockparser
 
+[![Build Status](https://travis-ci.org/gcarq/rusty-blockparser.svg?branch=master)](https://travis-ci.org/gcarq/rusty-blockparser)
 
 rusty-blockparser is a multi-threaded Blockchain Parser written in **Rust language**.
 
