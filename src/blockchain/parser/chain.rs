@@ -241,7 +241,7 @@ impl<'a> Iterator for RevBlockIterator<'a> {
         let prev_hash = self.last_header.value.prev_hash;
         let prev_header = match self.header_map.get(&prev_hash) {
             Some(header) => Hashed::from(prev_hash, header.clone()),
-            None => return None,
+            None => return None
         };
         self.last_header = prev_header.clone();
         Some(prev_header)
@@ -275,6 +275,7 @@ mod tests {
 
         // Extend storage
         assert_eq!(0, chain_storage.latest_blk_idx);
+        assert_eq!(0, chain_storage.get_cur_height());
         chain_storage.extend(vec![Hashed::dsha(new_header)], 1);
         assert_eq!(
             &utils::hex_to_vec_swapped("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"),
@@ -286,12 +287,16 @@ mod tests {
         chain_storage.serialize(pathbuf.as_path()).unwrap();
 
         // Load storage
-        let chain_storage = ChainStorage::load(pathbuf.as_path()).unwrap();
+        let mut chain_storage = ChainStorage::load(pathbuf.as_path()).unwrap();
         assert_eq!(
             &utils::hex_to_vec_swapped("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"),
             &chain_storage.get_next().unwrap());
-        assert_eq!(1, chain_storage.latest_blk_idx);
 
+        assert_eq!(0, chain_storage.get_cur_height());
+        assert_eq!(1, chain_storage.latest_blk_idx);
         fs::remove_file(pathbuf.as_path()).unwrap();
+
+        chain_storage.consume_next();
+        assert_eq!(1, chain_storage.get_cur_height());
     }
 }

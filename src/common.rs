@@ -17,7 +17,7 @@ impl SimpleLogger {
 
     #[inline]
     fn create_line(&self, record: &LogRecord) -> String {
-        format!("[{}] {} - {}: {}",
+        format!("[{}] {} - {}: {}\n",
                  strftime("%X", &time::now()).unwrap(),
                  record.level(),
                  record.target(),

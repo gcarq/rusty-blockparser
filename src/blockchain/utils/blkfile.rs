@@ -70,9 +70,7 @@ impl BlkFile {
     fn parse_blk_index(file_name: &str, prefix: &str, ext: &str) -> Option<u32> {
         if file_name.starts_with(prefix) && file_name.ends_with(ext) {
             // Parse blk_index, this means we extract 42 from blk000042.dat
-            Some(file_name[prefix.len()..(file_name.len() - ext.len())]
-                .parse::<u32>()
-                .expect(&format!("Unable to parse blk index from file: {}", file_name)))
+            file_name[prefix.len()..(file_name.len() - ext.len())].parse::<u32>().ok()
         } else {
             None
         }
@@ -92,5 +90,6 @@ mod tests {
         assert_eq!(6, BlkFile::parse_blk_index("blk6.dat", blk_prefix, blk_ext).unwrap());
         assert_eq!(1202, BlkFile::parse_blk_index("blk1202.dat", blk_prefix, blk_ext).unwrap());
         assert_eq!(13412451, BlkFile::parse_blk_index("blk13412451.dat", blk_prefix, blk_ext).unwrap());
+        assert_eq!(true, BlkFile::parse_blk_index("blkindex.dat", blk_prefix, blk_ext).is_none());
     }
 }

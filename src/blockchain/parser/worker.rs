@@ -17,30 +17,34 @@ use blockchain::utils::reader::{BlockchainRead, BufferedMemoryReader};
 pub struct Worker {
     pub remaining_files: Arc<Mutex<VecDeque<BlkFile>>>, // remaining BlkFiles to parse (shared with other threads)
 
-    pub cblk_file: BlkFile,                             // Current cblk_file
+    pub blk_file: BlkFile,                              // Current blk_file
     pub reader: BufferedMemoryReader<File>,             // Reader for the entire blk file content
     pub mode: ParseMode,                                // Specifies if we should read the whole block data or just the header
     pub name: String                                    // Thread name
 }
 
 impl Worker {
-    pub fn new(remaining_files: Arc<Mutex<VecDeque<BlkFile>>>, mode: ParseMode) -> Worker {
-        // Grab initial data
+    pub fn new(remaining_files: Arc<Mutex<VecDeque<BlkFile>>>, mode: ParseMode) -> Option<Worker> {
 
-        let poisining_err = "FIXME: Unable to fetch inital file! (no files left, use fewer threads)";
-        let cblk_file = remaining_files.lock().expect(poisining_err).pop_front().expect(poisining_err);
-        let reader = cblk_file.get_reader();
-        let worker_name = String::from(thread::current().name().unwrap());
-        debug!(target: worker_name.as_ref(), "Parsing blk{:05}.dat ({:.2} Mb)",
-            cblk_file.index,
-            cblk_file.size as f64 / 1000000.0);
+        // Grab initial blk file
+        if let Some(blk_file) = Worker::get_next_file(&remaining_files) {
+            // prepare instance variables
+            let reader = blk_file.get_reader();
+            let worker_name = String::from(thread::current().name().unwrap());
+            debug!(target: worker_name.as_ref(), "Parsing blk{:05}.dat ({:.2} Mb)",
+                blk_file.index,
+                blk_file.size as f64 / 1000000.0);
 
-        Worker {
-            remaining_files: remaining_files,
-            cblk_file: cblk_file,
-            reader: reader,
-            mode: mode,
-            name: worker_name,
+            let w = Worker {
+                remaining_files: remaining_files,
+                blk_file: blk_file,
+                reader: reader,
+                mode: mode,
+                name: worker_name,
+            };
+            Some(w)
+        } else {
+            None
         }
     }
 
@@ -89,7 +93,7 @@ impl Worker {
         // Extract next block
         let result = match self.mode {
             ParseMode::FullData => {
-                let block = try!(self.reader.read_block(self.cblk_file.index,
+                let block = try!(self.reader.read_block(self.blk_file.index,
                                                         block_offset,
                                                         blocksize));
                 Ok(ParseResult::FullData(block))
@@ -102,7 +106,6 @@ impl Worker {
         };
         // Seek to next block position
         let n_bytes = blocksize as usize - (self.reader.position() - block_offset);
-
         self.reader.seek_forward(n_bytes).expect("Unable to seek reader position");
         //trace!(target: self.name.as_ref(), "reader position: {}", self.reader.position());
         return result;
@@ -113,20 +116,25 @@ impl Worker {
     fn maybe_next(&mut self) -> bool {
 
         // Check if there are some bytes left in buffer
-        if self.reader.position() >= self.cblk_file.size {
-            // Check if there are still files left
-            if self.remaining_files.lock().unwrap().is_empty() {
-                return false;
-            }
-
-            // Grab block data
-            self.cblk_file = self.remaining_files.lock().unwrap().pop_front().unwrap();
-            self.reader = self.cblk_file.get_reader();
-
+        if self.reader.position() >= self.blk_file.size {
+            // Grab next block or return false if no files are left
+            self.blk_file = match Worker::get_next_file(&self.remaining_files) {
+                Some(file) => file,
+                None => return false
+            };
+            self.reader = self.blk_file.get_reader();
             debug!(target: self.name.as_ref(), "Parsing blk{:05}.dat ({:.2} Mb)",
-                      self.cblk_file.index,
-                      self.cblk_file.size as f64 / 1000000.0);
+                      self.blk_file.index,
+                      self.blk_file.size as f64 / 1000000.0);
         }
         return true;
+    }
+
+    /// Returns next file from shared buffer or None
+    fn get_next_file(files: &Arc<Mutex<VecDeque<BlkFile>>>) -> Option<BlkFile> {
+        match files.lock() {
+            Ok(mut locked) => locked.pop_front(),
+            Err(_) => None
+        }
     }
 }

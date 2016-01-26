@@ -112,9 +112,15 @@ impl<'a> BlockchainParser<'a> {
             }
 
             let child = thread::Builder::new().name(format!("worker-{}", i)).spawn(move || {
-                let mut job = Worker::new(remaining_files, mode);
-                job.process(tx);
+                match Worker::new(remaining_files, mode) {
+                    Some(mut w) => w.process(tx),
+                    None => {
+                        info!(target: thread::current().name().unwrap(), "Stopped. Not enough workload.");
+                        return;
+                    }
+                }
             });
+
             let join_handle = match child {
                 Ok(join_handle) => join_handle,
                 Err(e)          => panic!("Unable to start worker-{}: {}", i, e)
