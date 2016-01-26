@@ -130,7 +130,7 @@ optional arguments:
                         Verify merkle root (default: false)
   -t,--threads COUNT    Thread count (default: 2)
   -r,--resume           Resume from latest known block
-  --blockchain-dir PATH Set blockchain directory (default: ~/.bitcoin/blocks)
+  --blockchain-dir PATH Set blockchain directory (default: ./blocks)
   -s,--chain-storage PATH
                         Specify path to chain storage. This is just a internal
                         state file (default: ./chain.json)
@@ -141,17 +141,17 @@ optional arguments:
 ```
 A default execution with `csvdump` callback would look like this:
 ```
-# ./blockparser -t 3 csvdump "csv-dump/"
+# ./blockparser -t 3 --blockchain-dir btc/blocks/ csvdump "csv-dump/"
 [00:42:19] INFO - main: Starting blockparser-0.3.0 ...
 [00:42:19] INFO - init: No header file found. Generating a new one ...
-[00:42:19] INFO - blkfile: Reading files from folder: ~/.bitcoin/blocks
+[00:42:19] INFO - blkfile: Reading files from folder: btc/blocks/
 [00:42:19] INFO - parser: Parsing with mode HeaderOnly (first run).
 ...
 [00:50:46] INFO - dispatch: All threads finished.
 [00:50:46] INFO - dispatch: Done. Processed 393496 blocks in 8.45 minutes. (avg: 776 blocks/sec)
 [00:50:47] INFO - chain: Inserted 393489 new blocks ...
 [00:50:48] INFO - main: Iteration 1 finished.
-[00:50:49] INFO - blkfile: Reading files from folder: ~/.bitcoin/blocks
+[00:50:49] INFO - blkfile: Reading files from folder: btc/blocks/
 [00:50:49] INFO - parser: Parsing 393489 blocks with mode FullData.
 [00:50:49] INFO - callback: Using `csvdump` with dump folder: csv-dump/ ...
 ...
