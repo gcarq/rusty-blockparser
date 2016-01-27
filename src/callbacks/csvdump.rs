@@ -1,15 +1,16 @@
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use std::io::{BufWriter, Write, stdout, stderr};
-use std::process;
 
 use argparse::{Store, ArgumentParser};
+
+use callbacks::Callback;
+use errors::{OpError, OpErrorKind, OpResult};
 
 use blockchain::proto::tx::{Tx, TxInput, EvaluatedTxOut};
 use blockchain::proto::block::Block;
 use blockchain::proto::Hashed;
 use blockchain::utils;
-use callbacks::Callback;
 
 
 /// Dumps the whole blockchain into csv files
@@ -29,33 +30,33 @@ pub struct CsvDump {
 }
 
 impl CsvDump {
-    fn new(path: &Path) -> Self where Self: Sized {
-
-        // closure - Creates a writer
-        let create_writer = |cap, file_path| {
-            let mut full_path = PathBuf::from(path);
-            full_path.push(file_path);
-            BufWriter::with_capacity(cap, File::create(full_path).expect("Unable to create csv file!"))
-        };
-
+    fn new(dump_folder: &Path) -> OpResult<Self> where Self: Sized {
         let cap = 4000000;
-        CsvDump {
-            dump_folder: PathBuf::from(path),
-            block_writer: create_writer(cap, "blocks.csv.tmp"),
-            tx_writer: create_writer(cap, "transactions.csv.tmp"),
-            txin_writer: create_writer(cap, "tx_in.csv.tmp"),
-            txout_writer: create_writer(cap, "tx_out.csv.tmp"),
+        let cb = CsvDump {
+            dump_folder: PathBuf::from(dump_folder),
+            block_writer:   try!(CsvDump::create_writer(cap, dump_folder.join("blocks.csv.tmp"))),
+            tx_writer:      try!(CsvDump::create_writer(cap, dump_folder.join("transactions.csv.tmp"))),
+            txin_writer:    try!(CsvDump::create_writer(cap, dump_folder.join("tx_in.csv.tmp"))),
+            txout_writer:   try!(CsvDump::create_writer(cap, dump_folder.join("tx_out.csv.tmp"))),
             start_height: 0, end_height: 0, tx_count: 0, in_count: 0, out_count: 0
-        }
+        };
+        Ok(cb)
+    }
+
+    fn create_writer(cap: usize, path: PathBuf) -> OpResult<BufWriter<File>> {
+        let file = match File::create(&path) {
+            Ok(f) => f,
+            Err(err) => return Err(OpError::from(err))
+        };
+        Ok(BufWriter::with_capacity(cap, file))
     }
 }
 
 impl Callback for CsvDump {
 
     /// Parse user specified arguments
-    fn parse_args(args: Vec<String>) -> Self where Self: Sized {
-
-        let cb_name = String::from("csvdump");
+    fn parse_args(args: Vec<String>) -> OpResult<Self> where Self: Sized {
+        //let cb_name = String::from("csvdump");
         let mut folder_path = String::from("dump");
         {
             // Construct Callback arguments parser
@@ -63,16 +64,18 @@ impl Callback for CsvDump {
             ap.set_description("Dumps the whole blockchain into CSV files. \
                                 Each table is saved in it's own file.");
             ap.refer(&mut folder_path).required().add_argument("folder", Store, "Folder to store CSV dumps");
-            let mut err_buf = Vec::new();
-            match ap.parse(args, &mut stdout(), &mut err_buf) {
-                Err(x) => {
-                    ap.print_help(cb_name.as_ref(), &mut stderr()).unwrap();
-                    process::exit(x)
-                }
-                Ok(_) => {}
-             }
+
+            if let Some(_) = ap.parse(args, &mut stdout(), &mut stderr()).err() {
+                return Err(OpError::new(OpErrorKind::InvalidArgsError));
+            }
         }
-        CsvDump::new(Path::new(&folder_path))
+        // Create nes instance
+        match CsvDump::new(Path::new(&folder_path)) {
+            Ok(cb) => { return Ok(cb); }
+            Err(err) => {
+                return Err(tag_err!(err, "Couldn't initialize csvdump with folder: `{}`", folder_path));
+            }
+        }
     }
 
     fn on_start(&mut self, block_height: usize) {
@@ -111,9 +114,7 @@ impl Callback for CsvDump {
         self.end_height = block_height;
 
         // Keep in sync with c'tor
-        let filenames = vec!["blocks", "transactions", "tx_in", "tx_out"];
-
-        for f in filenames {
+        for f in vec!["blocks", "transactions", "tx_in", "tx_out"] {
             // Rename temp files
             fs::rename(self.dump_folder.as_path().join(format!("{}.csv.tmp", f)),
                        self.dump_folder.as_path().join(format!("{}-{}-{}.csv", f, self.start_height, self.end_height)))

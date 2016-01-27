@@ -1,4 +1,3 @@
-use std::io;
 use std::fs::File;
 use std::sync::{Arc, Mutex, mpsc};
 use std::thread;
@@ -7,6 +6,7 @@ use std::time::Duration;
 
 use byteorder::{ByteOrder, LittleEndian, ReadBytesExt};
 
+use errors::{OpError, OpErrorKind, OpResult};
 use blockchain::parser::{ParseMode, ParseResult};
 use blockchain::utils::blkfile::BlkFile;
 use blockchain::parser::types::CoinType;
@@ -26,65 +26,57 @@ pub struct Worker {
 }
 
 impl Worker {
-    pub fn new(tx_channel: mpsc::SyncSender<ParseResult>, remaining_files: Arc<Mutex<VecDeque<BlkFile>>>, coin_type: CoinType, mode: ParseMode) -> Option<Self> {
+    pub fn new(tx_channel: mpsc::SyncSender<ParseResult>,
+        remaining_files: Arc<Mutex<VecDeque<BlkFile>>>,
+        coin_type: CoinType, mode: ParseMode) -> OpResult<Self> {
 
-        let worker_name = String::from(thread::current().name().unwrap());
+        let worker_name = String::from(transform!(thread::current().name()));
         // Grab initial blk file
-        if let Some(blk_file) = Worker::get_next_file(&remaining_files) {
-            // prepare instance variables
-            let reader = blk_file.get_reader();
-            debug!(target: worker_name.as_ref(), "Parsing blk{:05}.dat ({:.2} Mb)",
-                blk_file.index,
-                blk_file.size as f64 / 1000000.0);
+        match Worker::get_next_file(&remaining_files) {
+            Ok(file) => {
+                // prepare instance variables
+                let reader = try!(file.get_reader());
+                debug!(target: &worker_name, "Parsing blk{:05}.dat ({:.2} Mb)",
+                    file.index,
+                    file.size as f64 / 1000000.0);
 
-            let w = Worker {
-                tx_channel: tx_channel,
-                remaining_files: remaining_files,
-                coin_type: coin_type,
-                blk_file: blk_file,
-                reader: reader,
-                mode: mode,
-                name: worker_name,
-            };
-            Some(w)
-        } else {
-            tx_channel.send(ParseResult::Complete(worker_name)).unwrap();
-            None
+                let w = Worker {
+                    tx_channel: tx_channel,
+                    remaining_files: remaining_files,
+                    coin_type: coin_type,
+                    blk_file: file,
+                    reader: reader,
+                    mode: mode,
+                    name: worker_name.clone(),
+                };
+                Ok(w)
+            }
+            Err(OpError { kind: OpErrorKind::None, ..}) => {
+                try!(tx_channel.send(ParseResult::Complete(worker_name.clone())));
+                debug!(target: "worker", "{} stopped early because there no files left.", worker_name);
+                return Err(OpError::new(OpErrorKind::None));
+            }
+            Err(err) => {
+                try!(tx_channel.send(ParseResult::Error(err)));
+                return Err(OpError::new(OpErrorKind::RuntimeError));
+            }
         }
     }
 
-    /// Extracts data from blk files and sends them to main thread
+    // Highest worker loop. Handles all thread errors
     pub fn process(&mut self) {
         loop {
-            match self.maybe_next() {
-                false => break,
-                true => {
-                    // Get metadata for next block
-                    let magic = self.reader.read_u32::<LittleEndian>().expect("Unable to read magic value!");
-                    if magic == 0 {
-                        //TODO: find a better way to detect incomplete blk file
-                        warn!(target: self.name.as_ref(), "Got 0x00000000 as magic number. Finished.");
-                        break;
-                    }
-
-                    // Verify magic value based on current coin type
-                    if magic != self.coin_type.magic {
-                        let err_str = format!("Got invalid magic value for {}: 0x{:x}, expected: 0x{:x}",
-                            self.coin_type.name, magic, self.coin_type.magic);
-                        self.tx_channel.send(ParseResult::Error(self.name.clone(), err_str)).unwrap();
-                        break;
-                    }
-                    let result = self.extract_data().expect("Couldn't extract data!");
-
-                    // Send parsed result to main thread
-                    match self.tx_channel.send(result) {
-                        Ok(_) => (),
-                        Err(e) => panic!("Unable to send thread signal: {}", e),
-                    }
+            match self.exec_loop() {
+                Ok(true)  => (),
+                Ok(false) => break,
+                Err(err) => {
+                    error!(target: &self.name, "{}", &err);
+                    self.tx_channel.send(ParseResult::Error(err))
+                        .expect(&format!("Unable to contact main thread!"));
+                    break;
                 }
-            }
+            };
         }
-        // No data left, time to say goodbye
         self.tx_channel.send(ParseResult::Complete(self.name.clone()))
             .expect("Couldn't send Complete msg");
         loop {
@@ -94,8 +86,37 @@ impl Worker {
         }
     }
 
+    /// Extracts data from blk files and sends them to main thread
+    /// Returns false is if this thread can be disposed
+    fn exec_loop(&mut self) -> OpResult<bool> {
+        match try!(self.maybe_next()) {
+            false => return Ok(false),
+            true => {
+                // Get metadata for next block
+                let magic = try!(self.reader.read_u32::<LittleEndian>());
+                if magic == 0 {
+                    //TODO: find a better way to detect incomplete blk file
+                    warn!(target: &self.name, "Got 0x00000000 as magic number. Finished.");
+                    return Ok(false);
+                }
+                // Verify magic value based on current coin type
+                if magic != self.coin_type.magic {
+                    let err = OpError::new(OpErrorKind::ValidateError)
+                        .join_msg(&format!("Got invalid magic value for {}: 0x{:x}, expected: 0x{:x}",
+                        self.coin_type.name, magic,
+                        self.coin_type.magic));
+                    return Err(err);
+                }
+                let result = try!(self.extract_data());
+                // Send parsed result to main thread
+                try!(self.tx_channel.send(result));
+                Ok(true)
+            }
+        }
+    }
+
     /// Extracts Block or BlockHeader. See ParseMode
-    fn extract_data(&mut self) -> io::Result<ParseResult> {
+    fn extract_data(&mut self) -> OpResult<ParseResult> {
         // Collect block metadata
         let blocksize = try!(self.reader.read_u32::<LittleEndian>());
         let block_offset = self.reader.position();
@@ -108,7 +129,6 @@ impl Worker {
                                                         blocksize,
                                                         self.coin_type.version_id));
                 Ok(ParseResult::FullData(block))
-
             }
             ParseMode::HeaderOnly => {
                 let header = try!(self.reader.read_block_header());
@@ -117,35 +137,33 @@ impl Worker {
         };
         // Seek to next block position
         let n_bytes = blocksize as usize - (self.reader.position() - block_offset);
-        self.reader.seek_forward(n_bytes).expect("Unable to seek reader position");
-        //trace!(target: self.name.as_ref(), "reader position: {}", self.reader.position());
+        try!(self.reader.seek_forward(n_bytes));
         return result;
     }
 
-    /// Checks workload status and fetches new file if buffer is empty.
+    /// Checks workload status and fetches new a file if buffer is empty.
     /// Returns false if there are no remaining files
-    fn maybe_next(&mut self) -> bool {
-
+    fn maybe_next(&mut self) -> OpResult<bool> {
         // Check if there are some bytes left in buffer
         if self.reader.position() >= self.blk_file.size {
             // Grab next block or return false if no files are left
             self.blk_file = match Worker::get_next_file(&self.remaining_files) {
-                Some(file) => file,
-                None => return false
+                Ok(file) => file,
+                Err(OpError {kind: OpErrorKind::None, ..}) => return Ok(false),
+                Err(err) => return Err(tag_err!(err, "Unable to fetch data from reader: `{}`",
+                    self.blk_file.path.as_path().display()))
             };
-            self.reader = self.blk_file.get_reader();
+            self.reader = try!(self.blk_file.get_reader());
             debug!(target: self.name.as_ref(), "Parsing blk{:05}.dat ({:.2} Mb)",
                       self.blk_file.index,
                       self.blk_file.size as f64 / 1000000.0);
         }
-        return true;
+        return Ok(true);
     }
 
     /// Returns next file from shared buffer or None
-    fn get_next_file(files: &Arc<Mutex<VecDeque<BlkFile>>>) -> Option<BlkFile> {
-        match files.lock() {
-            Ok(mut locked) => locked.pop_front(),
-            Err(_) => None
-        }
+    fn get_next_file(files: &Arc<Mutex<VecDeque<BlkFile>>>) -> OpResult<BlkFile> {
+        let mut locked = try!(files.lock());
+        Ok(transform!(locked.pop_front()))
     }
 }

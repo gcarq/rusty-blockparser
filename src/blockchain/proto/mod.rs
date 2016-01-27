@@ -26,7 +26,7 @@ pub struct Hashed<T> {
 impl<T: ToRaw> Hashed<T> {
     /// encapsulates T and creates double sha256 as hash
     #[inline]
-    pub fn dsha(value: T) -> Hashed<T> {
+    pub fn double_sha256(value: T) -> Hashed<T> {
         Hashed {
             hash: sha256(&sha256(&value.to_bytes())),
             value: value

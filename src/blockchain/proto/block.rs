@@ -27,9 +27,9 @@ impl Block {
             blk_index: blk_index,
             blk_offset: blk_offset,
             blocksize: blocksize,
-            header: Hashed::dsha(header),
+            header: Hashed::double_sha256(header),
             tx_count: tx_count,
-            txs: txs.into_iter().map(|tx| Hashed::dsha(tx)).collect(),
+            txs: txs.into_iter().map(|tx| Hashed::double_sha256(tx)).collect(),
         }
     }
 

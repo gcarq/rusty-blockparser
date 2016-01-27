@@ -1,8 +1,8 @@
 use std::str::FromStr;
 use std::convert::From;
-use std::process;
 use std::path::{Path, PathBuf};
 
+use errors::{OpError, OpErrorKind, OpResult};
 use blockchain::utils::hex_to_arr32_swapped;
 
 /// Trait to specify the underlying coin of a blockchain
@@ -93,24 +93,6 @@ pub struct CoinType {
     pub default_folder: PathBuf
 }
 
-impl FromStr for CoinType {
-    type Err = ();
-    fn from_str(coin_name: &str) -> Result<Self, Self::Err> {
-        match coin_name {
-            "bitcoin"       => Ok(CoinType::from(Bitcoin)),
-            "testnet3"      => Ok(CoinType::from(TestNet3)),
-            "namecoin"      => Ok(CoinType::from(Namecoin)),
-            "litecoin"      => Ok(CoinType::from(Litecoin)),
-            "dogecoin"      => Ok(CoinType::from(Dogecoin)),
-            "myriadcoin"    => Ok(CoinType::from(Myriadcoin)),
-            n @ _ => {
-                println!("\nCoin `{}` not found. Try `--list-coins` or raise a Github issue if you want to add it.", n);
-                process::exit(2);
-            }
-        }
-    }
-}
-
 impl<T: Coin> From<T> for CoinType {
     fn from(coin: T) -> Self {
         CoinType {
@@ -119,6 +101,40 @@ impl<T: Coin> From<T> for CoinType {
             version_id: coin.version_id(),
             genesis_hash: coin.genesis(),
             default_folder: PathBuf::from(coin.default_folder())
+        }
+    }
+}
+
+/// Lists all available coin implementations
+pub fn list_coins(desc: &str) -> String {
+    let mut s = String::new();
+    s.push_str(&format!("\n{}\n\n", &desc));
+    s.push_str("Implemented coins:\n");
+    s.push_str("  bitcoin\n");
+    s.push_str("  testnet3\n");
+    s.push_str("  namecoin\n");
+    s.push_str("  litecoin\n");
+    s.push_str("  dogecoin\n");
+    s.push_str("  myriadcoin\n");
+    s.push_str("  unobtanium\n");
+    return s;
+}
+
+impl FromStr for CoinType {
+    type Err = OpError;
+    fn from_str(coin_name: &str) -> OpResult<Self> {
+        match coin_name {
+            "bitcoin"       => Ok(CoinType::from(Bitcoin)),
+            "testnet3"      => Ok(CoinType::from(TestNet3)),
+            "namecoin"      => Ok(CoinType::from(Namecoin)),
+            "litecoin"      => Ok(CoinType::from(Litecoin)),
+            "dogecoin"      => Ok(CoinType::from(Dogecoin)),
+            "myriadcoin"    => Ok(CoinType::from(Myriadcoin)),
+            n @ _ => {
+                let e = OpError::new(OpErrorKind::InvalidArgsError).join_msg(
+                    &format!("Coin `{}` not found. Try `--list-coins` or raise a Github issue if you want it added.", n));
+                return Err(e);
+            }
         }
     }
 }

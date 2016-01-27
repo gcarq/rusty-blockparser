@@ -1,7 +1,18 @@
 pub mod stats;
 pub mod csvdump;
 
+use errors::OpResult;
 use blockchain::proto::block::Block;
+
+/// Method whichs lists all available callbacks
+pub fn list_callbacks(desc: &str) -> String {
+    let mut s = String::new();
+    s.push_str(&format!("\n{}\n\n", &desc));
+    s.push_str("Available Callbacks:\n");
+    s.push_str("  csvdump\t\tDumps the whole blockchain into CSV files.\n");
+    s.push_str("  simplestats\t\tCallback example. Shows simple Blockchain stats.\n");
+    return s;
+}
 
 /// Implement this trait for a custom Callback.
 /// The parser ensures that the blocks arrive in the correct order.
@@ -11,8 +22,8 @@ use blockchain::proto::block::Block;
 pub trait Callback {
 
     /// Parses user supplied arguments and instantiates callback.
-    /// This method should exit the application if some values are missing.
-    fn parse_args(args: Vec<String>) -> Self where Self: Sized;
+    /// Returns Err(String) with an error message if something failed.
+    fn parse_args(args: Vec<String>) -> OpResult<Self> where Self: Sized;
 
     /// Gets called shortly before the threads are invoked.
     fn on_start(&mut self, block_height: usize);

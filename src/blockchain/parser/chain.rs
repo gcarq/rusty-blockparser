@@ -1,4 +1,4 @@
-use std::io::{self, Read, Write};
+use std::io::{Read, Write};
 use std::fs::File;
 use std::path::Path;
 use std::collections::HashMap;
@@ -6,6 +6,7 @@ use std::collections::HashMap;
 
 use rustc_serialize::json;
 
+use errors::{OpError, OpErrorKind, OpResult};
 use blockchain::proto::Hashed;
 use blockchain::proto::header::BlockHeader;
 use blockchain::utils;
@@ -28,15 +29,16 @@ pub struct ChainStorage {
 impl ChainStorage {
 
     /// Extends an existing ChainStorage with new hashes.
-    pub fn extend(&mut self, headers: Vec<Hashed<BlockHeader>>, coin_type: &CoinType, latest_blk_idx: u32) {
+    pub fn extend(&mut self, headers: Vec<Hashed<BlockHeader>>,
+        coin_type: &CoinType, latest_blk_idx: u32) -> OpResult<()> {
 
         let len = headers.len();
         let mut hashes: Vec<[u8; 32]> = Vec::with_capacity(len);
         for i in 0..len {
             if i < len - 1 {
                 if headers[i].hash != headers[i + 1].value.prev_hash {
-                    error!(target: "chain", "Longest chain consistency check failed!");
-                    panic!();
+                    return Err(OpError::new(OpErrorKind::ValidateError)
+                        .join_msg("Longest-chain consistency check failed!"));
                 }
             }
             hashes.push(headers[i].hash);
@@ -44,31 +46,30 @@ impl ChainStorage {
 
         if !hashes.is_empty() {
             if self.hashes.is_empty() {
-                // Genesis block check
-                let first_hash = hashes.first().cloned().unwrap();
+                // Genesis block consistency check
+                let first_hash = transform!(hashes.first().cloned());
                 if &coin_type.genesis_hash != &first_hash {
-                    error!(target: "chain", "Genesis hash for `{}` does not match:\n  Got: {}\n  Exp: {}",
+                    let errbuf = format!("Genesis hash for `{}` does not match:\n  Got: {}\n  Exp: {}",
                         coin_type.name,
                         utils::arr_to_hex_swapped(&first_hash),
                         utils::arr_to_hex_swapped(&coin_type.genesis_hash));
-                    panic!();
+                    return Err(OpError::new(OpErrorKind::ValidateError).join_msg(&errbuf));
                 } else {
                     debug!(target: "chain", "Genesis hash is valid.");
                 }
                 self.hashes.append(&mut hashes);
             } else {
                 // Create a slice to insert only new blocks
-                let latest_hash = self.hashes.last().unwrap().clone();
-                let latest_known_idx = headers.iter().position(|h| h.hash == latest_hash).unwrap();
+                let latest_hash = transform!(self.hashes.last()).clone();
+                let latest_known_idx = transform!(headers.iter().position(|h| h.hash == latest_hash));
 
                 let mut new_hashes = hashes.split_off(latest_known_idx + 1);
 
                 if new_hashes.len() > 0 {
                     debug!(target: "chain.extend", "\n  -> latest known:  {}\n  -> first new:     {}",
-                           utils::arr_to_hex_swapped(self.hashes.last().unwrap()),
-                           utils::arr_to_hex_swapped(new_hashes.first().unwrap()));
+                           utils::arr_to_hex_swapped(transform!(self.hashes.last())),
+                           utils::arr_to_hex_swapped(transform!(new_hashes.first())));
                 }
-
                 self.hashes.append(&mut new_hashes);
             }
         }
@@ -76,27 +77,25 @@ impl ChainStorage {
         info!(target: "chain", "Inserted {} new blocks ...", self.hashes.len() - self.hashes_len);
         self.hashes_len = self.hashes.len();
         self.latest_blk_idx = latest_blk_idx;
+        Ok(())
     }
 
     /// Loads serialized object and creates a new instance
-    pub fn load(path: &Path) -> Result<ChainStorage, io::Error> {
-        // TODO: implement From traits for error conversion.
+    pub fn load(path: &Path) -> OpResult<ChainStorage> {
         let mut encoded = String::new();
 
         let mut file = try!(File::open(&path));
         try!(file.read_to_string(&mut encoded));
 
-        let storage = json::decode::<ChainStorage>(&encoded)
-                          .expect("Unable to decode block hashes");
+        let storage = try!(json::decode::<ChainStorage>(&encoded));
         debug!(target: "chain.load", "Imported {} hashes from {}. Current block height: {} ... (latest blk.dat index: {})",
                        storage.hashes.len(), path.display(), storage.get_cur_height(), storage.latest_blk_idx);
         Ok(storage)
     }
 
     /// Serializes the current instance to a file
-    pub fn serialize(&self, path: &Path) -> Result<usize, io::Error> {
-        // TODO: implement From traits for error conversion.
-        let encoded = json::encode(&self).expect("Unable to encode block hashes");
+    pub fn serialize(&self, path: &Path) -> OpResult<usize> {
+        let encoded = try!(json::encode(&self));
         let mut file = try!(File::create(&path));
         try!(file.write_all(encoded.as_bytes()));
         debug!(target: "chain.serialize", "Serialized {} hashes to {}. Current block height: {} ... (latest blk.dat index: {})",
@@ -110,7 +109,7 @@ impl ChainStorage {
         self.hashes.get(self.index).cloned()
     }
 
-    /// Marks current hash as consumed. Panics if there are no blocks
+    /// Marks current hash as consumed.
     /// Used in combination with get_next()
     #[inline]
     pub fn consume_next(&mut self) {
@@ -124,7 +123,7 @@ impl ChainStorage {
     /// Returns number of remaining blocks
     #[inline]
     pub fn remaining(&self) -> usize {
-        self.hashes_len.checked_sub(self.index).unwrap()
+        self.hashes_len.saturating_sub(self.index)
     }
 
     /// Returns current block height
@@ -160,21 +159,21 @@ pub struct ChainBuilder<'a> {
 impl<'a> ChainBuilder<'a> {
     /// Returns a Blockchain instance with the longest chain found.
     /// First element is the genesis block.
-    pub fn extract_blockchain(header_map: &HashMap<[u8; 32], BlockHeader>) -> Vec<Hashed<BlockHeader>> {
+    pub fn extract_blockchain(header_map: &HashMap<[u8; 32], BlockHeader>) -> OpResult<Vec<Hashed<BlockHeader>>> {
 
         // Call our own Iterator implementation for ChainBuilder to traverse over the blockchain
         let builder = ChainBuilder { header_map: header_map };
         let mut chain: Vec<Hashed<BlockHeader>> = builder.into_iter().collect();
         chain.reverse();
 
-        assert_eq!(chain.is_empty(), false);
-
+        if chain.is_empty() {
+            return Err(OpError::new(OpErrorKind::RuntimeError).join_msg("extract_blockchain() chain is empty!"));
+        }
         debug!(target: "chain", "Longest chain:\n  -> height: {}\n  -> newest block:  {}\n  -> genesis block: {}",
                chain.len() - 1, // BlockHeight starts at 0
-               utils::arr_to_hex_swapped(&chain.last().unwrap().hash),
-               utils::arr_to_hex_swapped(&chain.first().unwrap().hash));
-
-        return chain;
+               utils::arr_to_hex_swapped(&transform!(chain.last()).hash),
+               utils::arr_to_hex_swapped(&transform!(chain.first()).hash));
+        return Ok(chain);
     }
 
     /// finds all blocks with no successor blocks
@@ -290,7 +289,7 @@ mod tests {
 
         // Extend storage and match genesis block
         let coin_type = CoinType::from(Bitcoin);
-        chain_storage.extend(vec![Hashed::dsha(new_header)], &coin_type, 1);
+        chain_storage.extend(vec![Hashed::double_sha256(new_header)], &coin_type, 1).unwrap();
         assert_eq!(coin_type.genesis_hash, chain_storage.get_next().unwrap());
 
         assert_eq!(1, chain_storage.latest_blk_idx);

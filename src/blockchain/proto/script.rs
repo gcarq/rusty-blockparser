@@ -1,4 +1,5 @@
 use std::fmt;
+use std::error::{self, Error};
 use std::convert::From;
 
 use rust_base58::{ToBase58};
@@ -13,6 +14,27 @@ pub enum ScriptError {
     InvalidFormat,
     NotImplemented
 }
+
+impl fmt::Display for ScriptError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Script error: {}", self.description())
+    }
+}
+
+impl error::Error for ScriptError {
+    fn description(&self) -> &str {
+        // Both underlying errors already impl `Error`, so we defer to their
+        // implementations.
+        match *self {
+            ScriptError::UnexpectedEof => "Unexpected EOF",
+            ScriptError::BadLength => "Bad Script Length",
+            ScriptError::InvalidFormat => "Invalid Script format",
+            ScriptError::NotImplemented => "Unknown pattern. Not implemented"
+        }
+    }
+}
+
+
 
 #[derive(Debug, PartialEq)]
 pub enum ScriptPattern {
@@ -80,17 +102,17 @@ impl StackElement {
 impl PartialEq for StackElement {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        match self {
-            &StackElement::Op(code) => {
-                match other {
-                    &StackElement::Op(p_code) => code == p_code,
-                    &StackElement::Data(_) => false
+        match *self {
+            StackElement::Op(code) => {
+                match *other {
+                    StackElement::Op(p_code) => code == p_code,
+                    StackElement::Data(_) => false
                 }
             }
-            &StackElement::Data(_) => {
-                match other {
-                    &StackElement::Data(_) => true,
-                    &StackElement::Op(_) => false
+            StackElement::Data(_) => {
+                match *other {
+                    StackElement::Data(_) => true,
+                    StackElement::Op(_) => false
                 }
             }
         }

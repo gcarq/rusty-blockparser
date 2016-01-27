@@ -45,18 +45,18 @@ pub fn merkle_root(hash_list: &[[u8; 32]]) -> [u8; 32] {
         return *hash_list.first().unwrap();
     }
 
-    let dsha = |a, b| sha256(&sha256(&merge_slices(a, b)));
+    let double_sha256 = |a, b| sha256(&sha256(&merge_slices(a, b)));
 
     // Calculates double sha hash for each pair. If len is odd, last value is ignored.
     let mut hash_pairs = hash_list.chunks(2)
         .filter(|c| c.len() == 2)
-        .map(|c| dsha(&c[0], &c[1]))
+        .map(|c| double_sha256(&c[0], &c[1]))
         .collect::<Vec<[u8; 32]>>();
 
     // If the length is odd, take the last hash twice
     if n_hashes % 2 == 1 {
         let last_hash = hash_list.last().unwrap();
-        hash_pairs.push(dsha(last_hash, last_hash));
+        hash_pairs.push(double_sha256(last_hash, last_hash));
     }
     return merkle_root(&mut hash_pairs);
 }

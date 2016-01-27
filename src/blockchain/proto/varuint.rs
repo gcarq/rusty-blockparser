@@ -1,6 +1,6 @@
 use std::io::{self, Read, Error, ErrorKind};
 use std::convert::From;
-use std::fmt::{Formatter, Display, Result};
+use std::fmt;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
@@ -19,12 +19,6 @@ pub struct VarUint {
 impl VarUint {
     fn new(value: u64, buf: Vec<u8>) -> VarUint {
         VarUint { value: value as u64, buf: buf }
-        /*let v = VarUint { value: value as u64, buf: buf };
-        if v.value > 999999 {
-            warn!(target: "varuint", "Potential malformed value detected: {:10}, len: {:5}, buf: 0x{}",
-                  v.value, &v.to_bytes().len(), utils::arr_to_hex(&v.to_bytes()));
-        }
-        return v;*/
     }
 
     pub fn read_from<R: Read + ?Sized>(reader: &mut R) -> io::Result<VarUint> {
@@ -79,8 +73,8 @@ impl ToRaw for VarUint {
     }
 }
 
-impl Display for VarUint {
-    fn fmt(&self, f: &mut Formatter) -> Result {
+impl fmt::Display for VarUint {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.value)
     }
 }

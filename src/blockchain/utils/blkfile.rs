@@ -1,9 +1,10 @@
 use std::convert::From;
 use std::iter::FromIterator;
-use std::io;
 use std::path::PathBuf;
 use std::fs::{self, File};
 use std::collections::VecDeque;
+
+use errors::{OpError, OpErrorKind, OpResult};
 use blockchain::utils::reader::BufferedMemoryReader;
 
 /// Holds all necessary data about a raw blk file
@@ -24,13 +25,13 @@ impl BlkFile {
     }
 
     /// Returns a BufferedMemoryReader to reduce iowait.
-    pub fn get_reader(&self) -> BufferedMemoryReader<File> {
-        let f = File::open(&self.path).expect(&format!("Unable to open blk file: {}", &self.path.display()));
-        BufferedMemoryReader::with_capacity(10000000, f)
+    pub fn get_reader(&self) -> OpResult<BufferedMemoryReader<File>> {
+        let f = try!(File::open(&self.path));
+        Ok(BufferedMemoryReader::with_capacity(10000000, f))
     }
 
     /// Collects all blk*.dat paths in the given directory
-    pub fn from_path(path: PathBuf, min_blk_idx: u32) -> io::Result<VecDeque<BlkFile>> {
+    pub fn from_path(path: PathBuf, min_blk_idx: u32) -> OpResult<VecDeque<BlkFile>> {
 
         info!(target: "blkfile", "Reading files from {} ...", path.display());
         let content = try!(fs::read_dir(path));
@@ -42,14 +43,14 @@ impl BlkFile {
         for entry in content {
             if let Ok(e) = entry {
                 // Check if it's a file
-                if e.file_type().expect("Unable to get file type!").is_file() {
-                    let file_name = String::from(e.file_name().to_str().expect("Filename contains invalid characters!"));
+                if try!(e.file_type()).is_file() {
+                    let file_name = String::from(transform!(e.file_name().to_str()));
                     // Check if it's a valid blk file
-                    if let Some(index) = BlkFile::parse_blk_index(file_name.as_ref(), blk_prefix.as_ref(), blk_ext.as_ref()) {
+                    if let Some(index) = BlkFile::parse_blk_index(&file_name, &blk_prefix, &blk_ext) {
                         // Only process new blk files
                         if index >= min_blk_idx {
                             // Build BlkFile structures
-                            let file_len = e.metadata().expect("Unable to read metadata!").len() as usize;
+                            let file_len = try!(e.metadata()).len() as usize;
                             trace!(target: "blkfile", "Adding {}... (index: {}, size: {})", e.path().display(), index, file_len);
                             blk_files.push(BlkFile::new(e.path(), index, file_len));
                         }
@@ -61,7 +62,7 @@ impl BlkFile {
         }
 
         blk_files.sort_by(|a, b| a.path.cmp(&b.path));
-        blk_files.split_off(1); //just for testing purposes
+        //blk_files.split_off(1); //just for testing purposes
         trace!(target: "blkfile", "Found {} blk files", blk_files.len());
         Ok(VecDeque::from_iter(blk_files.into_iter()))
     }
