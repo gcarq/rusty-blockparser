@@ -3,7 +3,12 @@
 
 rusty-blockparser is a multi-threaded Blockchain Parser written in **Rust language**.
 
-It allows extraction of various data types (blocks, transactions, scripts, public keys/hashes, balances, ...) from the Bitcoin blockchain.
+It allows extraction of various data types (blocks, transactions, scripts, public keys/hashes, balances, ...) from Bitcoin based blockchains.
+
+##### **Currently Supported Blockchains:**
+
+ `Bitcoin`, `Namecoin`, `Litecoin`, `Dogecoin`, `Myriadcoin` and `Unobtanium`.
+
 The parser is implemented with a thread pool pattern to ensure maximum performance.
 It assumes a local copy of the blockchain, typically downloaded by Bitcoin core. If you are not sure whether your local copy is valid you can apply `--verify-merkle-root true` to validate the merkle tree. If something doesn't match the parser prints it as warning.
 The program flow is split up in two parts.
@@ -60,7 +65,7 @@ Lets call it ParseModes:
 
 * **Low memory usage**
 
-    It runs with ~1.3GiB memory. Specify a low value for `--backlog` to further reduce memory footprint (default=100).
+    It runs with ~1.3GiB memory. Specify a low value for `--backlog` to further reduce memory footprint (default=100). Minimum required memory: ~500MiB.
 
 * **Script evaluation**
 
@@ -115,7 +120,7 @@ Now export this wrappper with: ```export RUSTC="./rustc-wrapper.sh"``` and execu
 # Usage
 ```
 Usage:
-    ./blockparser [OPTIONS] CALLBACK ARGUMENTS [...]
+    target/debug/rusty-blockparser [OPTIONS] CALLBACK ARGUMENTS [...]
 
 Multithreaded Blockchain Parser written in Rust
 
@@ -125,33 +130,41 @@ positional arguments:
 
 optional arguments:
   -h,--help             show this help message and exit
+  --list-coins          Lists all implemented coins
   --list-callbacks      Lists all available callbacks
+  -c,--coin COINNAME    Specify blockchain coin (default: bitcoin)
+  -d,--blockchain-dir PATH
+                        Set blockchain directory which contains blk.dat files
+                        (default: ~/.bitcoin/blocks)
   --verify-merkle-root BOOL
                         Verify merkle root (default: false)
   -t,--threads COUNT    Thread count (default: 2)
   -r,--resume           Resume from latest known block
-  --blockchain-dir PATH Set blockchain directory (default: ./blocks)
+  --new                 Force complete rescan
   -s,--chain-storage PATH
                         Specify path to chain storage. This is just a internal
-                        state file (default: ./chain.json)
+                        state file (default: chain.json)
   --backlog COUNT       Set maximum worker backlog (default: 100)
-  -v,--verbose          Be verbose
-  -d,--debug            Debug mode
+  -v,--verbose          Increases verbosity level. Error=0, Info=1, Debug=2,
+                        Trace=3 (default: 1)
   --version             Show version
+
 ```
-A default execution with `csvdump` callback would look like this:
+### Example
+
+To make a `csvdump` of the Bitcoin blockchain your command would look like this:
 ```
-# ./blockparser -t 3 --blockchain-dir btc/blocks/ csvdump "csv-dump/"
+# ./blockparser -t 3 csvdump /path/to/dump/
 [00:42:19] INFO - main: Starting blockparser-0.3.0 ...
 [00:42:19] INFO - init: No header file found. Generating a new one ...
-[00:42:19] INFO - blkfile: Reading files from folder: btc/blocks/
+[00:42:19] INFO - blkfile: Reading files from folder: ~/.bitcoin/blocks
 [00:42:19] INFO - parser: Parsing with mode HeaderOnly (first run).
 ...
 [00:50:46] INFO - dispatch: All threads finished.
 [00:50:46] INFO - dispatch: Done. Processed 393496 blocks in 8.45 minutes. (avg: 776 blocks/sec)
 [00:50:47] INFO - chain: Inserted 393489 new blocks ...
 [00:50:48] INFO - main: Iteration 1 finished.
-[00:50:49] INFO - blkfile: Reading files from folder: btc/blocks/
+[00:50:49] INFO - blkfile: Reading files from folder: ~/.bitcoin/blocks
 [00:50:49] INFO - parser: Parsing 393489 blocks with mode FullData.
 [00:50:49] INFO - callback: Using `csvdump` with dump folder: csv-dump/ ...
 ...
@@ -163,17 +176,19 @@ Dumped all blocks:   393489
 	-> outputs:      308285408
 [02:04:42] INFO - chain: Inserted 0 new blocks ...
 [02:04:42] INFO - main: Iteration 2 finished.
-[02:04:42] INFO - main: See ya.
 ```
+
 
 # Contributing
 
 Use the issue tracker to report problems, suggestions and questions. You may also contribute by submitting pull requests.
 
+If you find this project helpful, please consider making a donation:
+`1LFidBTeg5joAqjw35ksebiNkVM8azFM1K`
+
 
 # TODO
 
-* Implement Altcoin magic value detection and address generation
 * Implement Pay2MultiSig script evaluation
 * Improve memory management
 * Improve argument handling
