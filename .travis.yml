@@ -1,7 +1,6 @@
 sudo: false
 os:
   - linux
-  - osx
 
 language: rust
 rust:
@@ -12,6 +11,32 @@ rust:
 matrix:
   allow_failures:
     - rust: nightly
+
+addons:
+  apt:
+    packages:
+      - libcurl4-openssl-dev
+      - libelf-dev
+      - libdw-dev
+      - binutils-dev
+
+# load travis-cargo
+before_script:
+  - |
+      pip install 'travis-cargo<0.2' --user &&
+      export PATH=$HOME/.local/bin:$PATH
+
+# the main build
+script:
+  - |
+      travis-cargo build &&
+      travis-cargo test &&
+      travis-cargo --only stable doc
+after_success:
+  # measure code coverage and upload to coveralls.io (the verify
+  # argument mitigates kcov crashes due to malformed debuginfo, at the
+  # cost of some speed <https://github.com/huonw/travis-cargo/issues/12>)
+  - travis-cargo coveralls --no-sudo --verify
 
 env:
   global:
