@@ -78,7 +78,9 @@ Lets call it ParseModes:
 
 # Building
 
- Install `rust` and `cargo`.
+This tool runs on Windows, OS X and Linux.
+ Just install `rust` and `cargo`.
+ 
 
 ```bash
 cargo build --release
