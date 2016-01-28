@@ -55,7 +55,11 @@ impl OpError {
 
 impl fmt::Display for OpError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {}", &self.message, &self.kind)
+        if self.message.is_empty() {
+            write!(f, "{}", &self.kind)
+        } else {
+            write!(f, "{}. {}", &self.message, &self.kind)
+        }
     }
 }
 
@@ -91,11 +95,11 @@ impl fmt::Display for OpErrorKind {
             OpErrorKind::JsonError(ref err) => write!(f, "Json Error: {}", err),
             ref err @ OpErrorKind::PoisonError => write!(f, "Threading Error: {}", err),
             ref err @ OpErrorKind::SendError => write!(f, "Sync Error: {}", err),
-            OpErrorKind::InvalidArgsError => write!(f, "Got Invalid Arguments"),
-            OpErrorKind::CallbackError => write!(f, "Got a Callback Error"),
-            OpErrorKind::ValidateError => write!(f, "Got a Validation Error"),
-            OpErrorKind::RuntimeError => write!(f, "Got Runtime Error"),
-            OpErrorKind::None => write!(f, ""),
+            OpErrorKind::InvalidArgsError => write!(f, "InvalidArgs Error"),
+            OpErrorKind::CallbackError => write!(f, "Callback Error"),
+            OpErrorKind::ValidateError => write!(f, "Validation Error"),
+            OpErrorKind::RuntimeError => write!(f, "Runtime Error"),
+            OpErrorKind::None => write!(f, "NoneValue"),
         }
     }
 }
@@ -189,5 +193,27 @@ impl convert::From<json::EncoderError> for OpError {
 impl convert::From<json::DecoderError> for OpError {
     fn from(err: json::DecoderError) -> OpError {
         OpError::new(OpErrorKind::JsonError(String::from(err.description())))
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io;
+    use std::error::Error;
+
+    #[test]
+    fn test_op_error() {
+        let kind = io::Error::new(io::ErrorKind::BrokenPipe, "oh no!");
+        let err = OpError::from(kind);
+
+        assert_eq!(err.description(), "");
+        assert_eq!(format!("{}", err), "I/O Error: oh no!");
+
+        let err = err.join_msg("Cannot proceed");
+
+        assert_eq!(err.description(), "Cannot proceed");
+        assert_eq!(format!("{}", err), "Cannot proceed. I/O Error: oh no!");
     }
 }

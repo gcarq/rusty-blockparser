@@ -25,6 +25,7 @@ pub struct Litecoin;
 pub struct Dogecoin;
 pub struct Myriadcoin;
 pub struct Unobtanium;
+//pub struct Dash;
 
 impl Coin for Bitcoin {
     fn name(&self)        -> String { String::from("Bitcoin")  }
@@ -83,6 +84,15 @@ impl Coin for Unobtanium {
     fn default_folder(&self) -> PathBuf { Path::new(".unobtanium").join("blocks") }
 }
 
+/* TODO: implement X11
+impl Coin for Dash {
+    fn name(&self)        -> String { String::from("Dash") }
+    fn magic(&self)       -> u32 { 0xbd6b0cbf }
+    fn version_id(&self)  -> u8  { 0x4c }
+    fn genesis(&self)     -> [u8; 32] { hex_to_arr32_swapped("000007d91d1254d60e2dd1ae580383070a4ddffa4c64c2eeb4a2f9ecc0414343") }
+    fn default_folder(&self) -> PathBuf { Path::new(".dash").join("blocks") }
+}*/
+
  #[derive(Clone)]
  // Holds the selected coin type informations
 pub struct CoinType {
@@ -130,6 +140,7 @@ impl FromStr for CoinType {
             "litecoin"      => Ok(CoinType::from(Litecoin)),
             "dogecoin"      => Ok(CoinType::from(Dogecoin)),
             "myriadcoin"    => Ok(CoinType::from(Myriadcoin)),
+            "unobtanium"    => Ok(CoinType::from(Unobtanium)),
             n @ _ => {
                 let e = OpError::new(OpErrorKind::InvalidArgsError).join_msg(
                     &format!("Coin `{}` not found. Try `--list-coins` or raise a Github issue if you want it added.", n));

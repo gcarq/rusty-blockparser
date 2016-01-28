@@ -261,6 +261,7 @@ impl<'a> Iterator for RevBlockIterator<'a> {
 
 #[cfg(test)]
 mod tests {
+    use rustc_serialize::json;
     use std::env;
     use std::fs;
     use super::*;
@@ -310,5 +311,26 @@ mod tests {
 
         chain_storage.consume_next();
         assert_eq!(1, chain_storage.get_cur_height());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_load_bogus_chain_storage() {
+        // Must fail
+        let encoded = String::from("AABAAAFKAAANANFANAAMMDDMDAMDADNNDANANDNAVCACANAFMAFAMMAMDAMDM");
+        match json::decode::<ChainStorage>(&encoded) {
+            Ok(_) => return,
+            Err(_) => panic!()
+        };
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_serialize_bogus_chain_storage() {
+        let encoded = String::from("AABAAAFKAAANANFANAAMMDDMDAMDADNNDANANDNAVCACANAFMAFAMMAMDAMDM");
+        match json::decode::<ChainStorage>(&encoded) {
+            Ok(_) => return,
+            Err(_) => panic!()
+        };
     }
 }
