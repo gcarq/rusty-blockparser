@@ -358,7 +358,7 @@ mod tests {
                                 arr_to_hex(&script_pubkey));
         assert_eq!(0x00000000,  block.txs[0].value.tx_locktime);
 
-        assert_eq!("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", script::extract_address_from_bytes(script_pubkey, Bitcoin.version_id()).unwrap());
+        assert_eq!("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", script::eval_from_bytes(script_pubkey, Bitcoin.version_id()).address);
 
                    /******* Genesis block raw data for reference (Most fields are little endian) *******
 version            0x01000000   big endian??

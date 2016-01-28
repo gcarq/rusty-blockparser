@@ -119,9 +119,11 @@ impl<'a> BlockchainParser<'a> {
             let child = thread::Builder::new().name(format!("worker-{}", i)).spawn(move || {
                 match Worker::new(tx, remaining_files, coin_type, mode) {
                     Ok(mut w) => w.process(),
+                    Err(OpError { kind: OpErrorKind::None, ..}) => {
+                        return;
+                    }
                     Err(err) => {
-                        //info!(target: thread::current().name().unwrap(), "Stopped. Not enough workload.");
-                        info!(target: thread::current().name().unwrap(), "{}", err);
+                        error!(target: thread::current().name().unwrap(), "{}", err);
                         return;
                     }
                 }

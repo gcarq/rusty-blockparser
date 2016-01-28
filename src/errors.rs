@@ -99,7 +99,7 @@ impl fmt::Display for OpErrorKind {
             OpErrorKind::CallbackError => write!(f, "Callback Error"),
             OpErrorKind::ValidateError => write!(f, "Validation Error"),
             OpErrorKind::RuntimeError => write!(f, "Runtime Error"),
-            OpErrorKind::None => write!(f, "NoneValue"),
+            OpErrorKind::None => write!(f, "NoneValue")
         }
     }
 }

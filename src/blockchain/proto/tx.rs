@@ -142,15 +142,17 @@ impl fmt::Debug for TxInput {
 /// Evaluates script_pubkey and wraps TxOutput
 #[derive(Clone)]
 pub struct EvaluatedTxOut {
-    pub address: Result<String, script::ScriptError>,
+    pub script: script::EvaluatedScript,
     pub out: TxOutput
 }
 
 impl EvaluatedTxOut {
     #[inline]
     pub fn eval_script(out: TxOutput, version_id: u8) -> EvaluatedTxOut {
-        let address = script::extract_address_from_bytes(&out.script_pubkey, version_id);
-        EvaluatedTxOut { address: address, out: out }
+        EvaluatedTxOut {
+            script: script::eval_from_bytes(&out.script_pubkey, version_id),
+            out: out
+        }
     }
 }
 

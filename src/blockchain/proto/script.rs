@@ -7,7 +7,7 @@ use rust_base58::{ToBase58};
 use blockchain::proto::opcodes;
 use blockchain::utils::{self, sha256, ridemp160};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ScriptError {
     UnexpectedEof,
     BadLength,
@@ -36,12 +36,12 @@ impl error::Error for ScriptError {
 
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ScriptPattern {
     /// Null Data
     /// Pubkey Script: OP_RETURN <0 to 80 bytes of data> (formerly 40 bytes)
     /// Null data scripts cannot be spent, so there's no signature script.
-    DataOutput,
+    DataOutput(String),
 
     /// Pay to Multisig [BIP11]
     /// Pubkey script: <m> <A pubkey>[B pubkey][C pubkey...] <n> OP_CHECKMULTISIG
@@ -80,7 +80,23 @@ pub enum ScriptPattern {
     /// The script is valid but does not conform to the standard templates.
     /// Such scripts are always accepted if they are mined into blocks, but
     /// transactions with non-standard scripts may not be forwarded by peers.
-    NonStandard
+    NonStandard,
+
+    Error(ScriptError),
+}
+
+impl fmt::Display for ScriptPattern {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            ScriptPattern::DataOutput(_) => write!(f, "DataOutput (OP_RETURN)"),
+            ScriptPattern::Pay2MultiSig => write!(f, "Pay2MultiSig"),
+            ScriptPattern::Pay2PublicKey => write!(f, "Pay2PublicKey"),
+            ScriptPattern::Pay2PublicKeyHash => write!(f, "Pay2PublicKeyHash"),
+            ScriptPattern::Pay2ScriptHash => write!(f, "Pay2ScriptHash"),
+            ScriptPattern::NonStandard => write!(f, "NonStandard"),
+            ScriptPattern::Error(ref err) => write!(f, "ScriptError: {}", err)
+        }
+    }
 }
 
 pub enum StackElement {
@@ -89,10 +105,12 @@ pub enum StackElement {
 }
 
 impl StackElement {
+    /// Extracts underlyling byte array.
+    /// If the element contains an OpCode, InvalidFormat Error is returned.
     #[inline]
     pub fn data(&self) -> Result<Vec<u8>, ScriptError> {
         match *self {
-            StackElement::Op(_) => Err(ScriptError::UnexpectedEof),
+            StackElement::Op(_) => Err(ScriptError::InvalidFormat),
             StackElement::Data(ref d) => Ok(d.clone())
         }
     }
@@ -141,9 +159,15 @@ pub struct Stack {
 impl fmt::Debug for Stack {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.elements.iter()
-        .map(|e| format!("{:?}", &e))
-        .collect::<Vec<String>>().join(" "))
+            .map(|e| format!("{:?}", &e))
+            .collect::<Vec<String>>().join(" "))
     }
+}
+
+#[derive(Clone)]
+pub struct EvaluatedScript {
+    pub address: String,
+    pub pattern: ScriptPattern
 }
 
 /// Evaluates scripts
@@ -262,7 +286,11 @@ impl<'a> ScriptEvaluator<'a> {
         let data_output = [StackElement::Op(opcodes::All::OP_RETURN),
                            StackElement::Data(Vec::new())];
         if ScriptEvaluator::match_stack_pattern(&elements, &data_output) {
-            return ScriptPattern::DataOutput;
+            if let Ok(data) = elements[1].data() {
+                return ScriptPattern::DataOutput(String::from_utf8_lossy(&data).into_owned());
+            } else {
+                return ScriptPattern::Error(ScriptError::InvalidFormat);
+            }
         }
 
         //TODO: implement n to m multisig
@@ -317,43 +345,78 @@ impl<'a> ScriptEvaluator<'a> {
     }
 }
 
-/// Extracts address from ScriptPubKey with the given network id
-pub fn extract_address_from_bytes(bytes: &[u8], version_id: u8) -> Result<String, ScriptError> {
-    let mut script = ScriptEvaluator::new(bytes);
-    let stack = try!(script.eval());
-    extract_address(&stack, version_id)
+/// Extracts evaluated address from ScriptPubKey
+pub fn eval_from_bytes(bytes: &[u8], version_id: u8) -> EvaluatedScript {
+    match ScriptEvaluator::new(bytes).eval() {
+        Ok(stack) => eval_from_stack(stack, version_id) ,
+        Err(err) => EvaluatedScript { address: String::new(), pattern: ScriptPattern::Error(err) }
+    }
 }
 
-/// Extracts address from evaluated script stack
-pub fn extract_address(stack: &Stack, version_id: u8) -> Result<String, ScriptError> {
-    match stack.pattern {
-        ScriptPattern::Pay2PublicKey => {
-            let pub_key = try!(stack.elements[0].data());
-            return Ok(public_key_to_addr(&pub_key, version_id));
+/// Extracts evaluated address from script stack
+pub fn eval_from_stack(stack: Stack, version_id: u8) -> EvaluatedScript {
+
+    // Wrap everything in a closure to early catch try!()
+    match (|| -> Result<EvaluatedScript, ScriptError> {
+
+        let script = match stack.pattern {
+            ref p @ ScriptPattern::Pay2PublicKey => {
+                let pub_key = try!(stack.elements[0].data());
+                EvaluatedScript {
+                    address: public_key_to_addr(&pub_key, version_id),
+                    pattern: p.clone()
+                }
+            }
+            ref p @ ScriptPattern::Pay2PublicKeyHash => {
+                let h160 = try!(stack.elements[2].data());
+                EvaluatedScript {
+                    address: hash_160_to_address(&h160, version_id),
+                    pattern: p.clone()
+                }
+            }
+            ref p @ ScriptPattern::Pay2ScriptHash => {
+                let h160 = try!(stack.elements[1].data());
+                EvaluatedScript {
+                    address: hash_160_to_address(&h160, 5),
+                    pattern: p.clone()
+                }
+            }
+            ScriptPattern::DataOutput(ref data) => {
+                EvaluatedScript {
+                    address: String::new(),
+                    pattern: ScriptPattern::DataOutput(data.clone())
+                }
+            }
+            ref p @ ScriptPattern::Pay2MultiSig => {
+                try!(stack.elements[1].data());
+                EvaluatedScript {
+                    address: String::new(),
+                    pattern: p.clone()
+                }
+            }
+            ref p @ ScriptPattern::NonStandard => {
+                EvaluatedScript {
+                    address: String::new(),
+                    pattern: p.clone()
+                }
+            }
+            ref p @ _ => {
+                EvaluatedScript {
+                    address: String::new(),
+                    pattern: p.clone()
+                }
+            }
+        };
+        Ok(script)
+    })() {
+        Ok(script) => script,
+        Err(e) => {
+            EvaluatedScript {
+                address: String::new(),
+                pattern: ScriptPattern::Error(e)
+            }
         }
-        ScriptPattern::Pay2PublicKeyHash => {
-            let h160 = try!(stack.elements[2].data());
-            return Ok(hash_160_to_address(&h160, version_id));
-        }
-        ScriptPattern::Pay2ScriptHash => {
-            let h160 = try!(stack.elements[1].data());
-            return Ok(hash_160_to_address(&h160, 5)); //TODO: Set proper network id for p2sh
-        }
-        ScriptPattern::DataOutput => {
-            try!(stack.elements[1].data());
-            //println!("DataOutput(OK_RETURN): Format: {}", utils::arr_to_hex(&data));
-            return Err(ScriptError::NotImplemented);
-        }
-        ScriptPattern::Pay2MultiSig => {
-            try!(stack.elements[1].data());
-            //println!("Pay2MultiSig: Format: {}", utils::arr_to_hex(&data));
-            return Err(ScriptError::NotImplemented);
-        }
-        ScriptPattern::NonStandard => {
-            //debug!(target: "script", "NonStandard: {:?}", stack);
-            return Err(ScriptError::NotImplemented);
-        }
-    };
+    }
 }
 
 /// Takes full ECDSA public key (65 bytes) and a version id
@@ -378,8 +441,7 @@ fn hash_160_to_address(h160: &[u8], version: u8) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{ScriptEvaluator, ScriptPattern, extract_address};
-    use blockchain::parser::types::*;
+    use super::{ScriptEvaluator, ScriptPattern, ScriptError, eval_from_stack, eval_from_bytes};
 
     #[test]
     fn test_bitcoin_script_p2pkh() {
@@ -391,27 +453,36 @@ mod tests {
                      0xac];
         let mut script = ScriptEvaluator::new(&bytes);
         let stack = script.eval().unwrap();
-
         assert_eq!("OP_DUP OP_HASH160 12ab8dc588ca9d5787dde7eb29569da63c3a238c OP_EQUALVERIFY OP_CHECKSIG", format!("{:?}", stack));
-        assert_eq!(stack.pattern, ScriptPattern::Pay2PublicKeyHash);
-        assert_eq!("12higDjoCCNXSA95xZMWUdPvXNmkAduhWv", extract_address(&stack, Bitcoin.version_id()).unwrap());
+
+        let script = eval_from_stack(stack, 0x00);
+        assert_eq!(script.address, "12higDjoCCNXSA95xZMWUdPvXNmkAduhWv");
+        assert_eq!(script.pattern, ScriptPattern::Pay2PublicKeyHash);
     }
 
     #[test]
     fn test_bitcoin_script_p2pk() {
-        // Raw output script: 33022df8750480ad5b26950b25c7ba79d3e37d75f640f8e5d9bcd5b150a0f85014daac
-        //                    33 0x022df8750480ad5b26950b25c7ba79d3e37d75f640f8e5d9bcd5b150a0f85014da OP_CHECKSIG
-        let bytes = [0x21, 0x02, 0x2d, 0xf8, 0x75, 0x04, 0x80, 0xad,
-                     0x5b, 0x26, 0x95, 0x0b, 0x25, 0xc7, 0xba, 0x79,
-                     0xd3, 0xe3, 0x7d, 0x75, 0xf6, 0x40, 0xf8, 0xe5,
-                     0xd9, 0xbc, 0xd5, 0xb1, 0x50, 0xa0, 0xf8, 0x50,
-                     0x14, 0xda, 0xac];
+        // https://blockchain.info/tx/e36f06a8dfe44c3d64be2d3fe56c77f91f6a39da4a5ffc086ecb5db9664e8583
+        // Raw output script: 0x41 0x044bca633a91de10df85a63d0a24cb09783148fe0e16c92e937fc4491580c860757148effa0595a955f44078b48ba67fa198782e8bb68115da0daa8fde5301f7f9 OP_CHECKSIG
+        //                    OP_PUSHDATA0(65 bytes) 0x04bdca... OP_CHECKSIG
+        let bytes = [0x41, // Push next 65 bytes
+                     0x04, 0x4b, 0xca, 0x63, 0x3a, 0x91, 0xde, 0x10,
+                     0xdf, 0x85, 0xa6, 0x3d, 0x0a, 0x24, 0xcb, 0x09,
+                     0x78, 0x31, 0x48, 0xfe, 0x0e, 0x16, 0xc9, 0x2e,
+                     0x93, 0x7f, 0xc4, 0x49, 0x15, 0x80, 0xc8, 0x60,
+                     0x75, 0x71, 0x48, 0xef, 0xfa, 0x05, 0x95, 0xa9,
+                     0x55, 0xf4, 0x40, 0x78, 0xb4, 0x8b, 0xa6, 0x7f,
+                     0xa1, 0x98, 0x78, 0x2e, 0x8b, 0xb6, 0x81, 0x15,
+                     0xda, 0x0d, 0xaa, 0x8f, 0xde, 0x53, 0x01, 0xf7, 0xf9,
+                     0xac]; // OP_CHECKSIG
         let mut script = ScriptEvaluator::new(&bytes);
         let stack = script.eval().unwrap();
+        assert_eq!("044bca633a91de10df85a63d0a24cb09783148fe0e16c92e937fc4491580c860757148effa0595a955f44078b48ba67fa198782e8bb68115da0daa8fde5301f7f9 OP_CHECKSIG",
+            format!("{:?}", stack));
 
-        assert_eq!("022df8750480ad5b26950b25c7ba79d3e37d75f640f8e5d9bcd5b150a0f85014da OP_CHECKSIG", format!("{:?}", stack));
-        assert_eq!(stack.pattern, ScriptPattern::Pay2PublicKey);
-        //assert_eq!("1EiY9DVNGHFWrkpNiU9PDx747w95Fi29RS", extract_address(&stack).unwrap());
+        let script = eval_from_stack(stack, 0x00);
+        assert_eq!(script.address, "1LEWwJkDj8xriE87ALzQYcHjTmD8aqDj1f");
+        assert_eq!(script.pattern, ScriptPattern::Pay2PublicKey);
     }
 
     #[test]
@@ -420,6 +491,7 @@ mod tests {
         // OP_2 33 0x022df8750480ad5b26950b25c7ba79d3e37d75f640f8e5d9bcd5b150a0f85014da
         // 33 0x03e3818b65bcc73a7d64064106a859cc1a5a728c4345ff0b641209fba0d90de6e9
         // 33 0x021f2f6e1e50cb6a953935c3601284925decd3fd21bc445712576873fb8c6ebc18 OP_3 OP_CHECKMULTISIG
+        //TODO: complete this test
         let bytes = [0x52, 0x21, 0x02, 0x2d, 0xf8, 0x75, 0x04, 0x80,
                      0xad, 0x5b, 0x26, 0x95, 0x0b, 0x25, 0xc7, 0xba,
                      0x79, 0xd3, 0xe3, 0x7d, 0x75, 0xf6, 0x40, 0xf8,
@@ -447,29 +519,56 @@ mod tests {
 
     #[test]
     fn test_bitcoin_script_p2sh() {
-        // Raw output script: a914620a6eeaf538ec9eb89b6ae83f2ed8ef98566a0387
-        //                    OP_HASH160 20 0x620a6eeaf538ec9eb89b6ae83f2ed8ef98566a03 OP_EQUAL
-        let bytes = [0xa9, 0x14, 0x62, 0x0a, 0x6e, 0xea, 0xf5, 0x38,
-                     0xec, 0x9e, 0xb8, 0x9b, 0x6a, 0xe8, 0x3f, 0x2e,
-                     0xd8, 0xef, 0x98, 0x56, 0x6a, 0x03, 0x87];
+        // Raw output script: a914e9c3dd0c07aac76179ebc76a6c78d4d67c6c160a
+        //                    OP_HASH160 20 0xe9c3dd0c07aac76179ebc76a6c78d4d67c6c160a OP_EQUAL
+        let bytes = [0xa9, 0x14, // OP_HASH160, OP_PUSHDATA0(20 bytes)
+                     0xe9, 0xc3, 0xdd, 0x0c, 0x07, 0xaa, 0xc7, 0x61, 0x79, 0xeb,
+                     0xc7, 0x6a, 0x6c, 0x78, 0xd4, 0xd6, 0x7c, 0x6c, 0x16, 0x0a,
+                     0x87]; // OP_EQUAL
         let mut script = ScriptEvaluator::new(&bytes);
         let stack = script.eval().unwrap();
+        assert_eq!("OP_HASH160 e9c3dd0c07aac76179ebc76a6c78d4d67c6c160a OP_EQUAL", format!("{:?}", stack));
 
-        assert_eq!("OP_HASH160 620a6eeaf538ec9eb89b6ae83f2ed8ef98566a03 OP_EQUAL", format!("{:?}", stack));
-        assert_eq!(stack.pattern, ScriptPattern::Pay2ScriptHash);
+        let script = eval_from_stack(stack, 0x00);
+        assert_eq!(script.address, "3P14159f73E4gFr7JterCCQh9QjiTjiZrG");
+        assert_eq!(script.pattern, ScriptPattern::Pay2ScriptHash);
     }
 
     #[test]
     fn test_bitcoin_script_data_output() {
-        // Raw output script: 6a0e68656c6c6f20776f726c64212121
-        //                    OP_RETURN 14 0x68656c6c6f20776f726c64212121
-        let bytes = [0x6a, 0x0e, 0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x20,
-                     0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21, 0x21, 0x21];
+        // Raw output script: 6a13636861726c6579206c6f766573206865696469
+        //                    OP_RETURN 13 0x636861726c6579206c6f766573206865696469
+        let bytes = [0x6a, 0x13, 0x63, 0x68, 0x61, 0x72, 0x6c, 0x65,
+                     0x79, 0x20, 0x6c, 0x6f, 0x76, 0x65, 0x73, 0x20,
+                     0x68, 0x65, 0x69, 0x64, 0x69];
         let mut script = ScriptEvaluator::new(&bytes);
         let stack = script.eval().unwrap();
+        assert_eq!("OP_RETURN 636861726c6579206c6f766573206865696469", format!("{:?}", stack));
 
-        assert_eq!("OP_RETURN 68656c6c6f20776f726c64212121", format!("{:?}", stack));
-        assert_eq!(stack.pattern, ScriptPattern::DataOutput);
+        let script = eval_from_stack(stack, 0x00);
+        assert_eq!(script.address, "");
+        assert_eq!(script.pattern, ScriptPattern::DataOutput(String::from("charley loves heidi")));
     }
 
+    #[test]
+    fn test_bitcoin_script_non_standard() {
+        // Raw output script: 736372697074
+        //                    OP_IFDUP OP_IF OP_2SWAP OP_VERIFY OP_2OVER OP_DEPTH
+        let bytes = [0x73, 0x63, 0x72, 0x69, 0x70, 0x74];
+        let mut script = ScriptEvaluator::new(&bytes);
+        let stack = script.eval().unwrap();
+        assert_eq!("OP_IFDUP OP_IF OP_2SWAP OP_VERIFY OP_2OVER OP_DEPTH", format!("{:?}", stack));
+
+        let script = eval_from_stack(stack, 0x00);
+        assert_eq!(script.address, "");
+        assert_eq!(script.pattern, ScriptPattern::NonStandard);
+    }
+
+    #[test]
+    fn test_bitcoin_bogus_script() {
+        let bytes = [0x4c, 0xFF, 0x00];
+        let script = eval_from_bytes(&bytes, 0x00);
+        assert_eq!(script.address, "");
+        assert_eq!(script.pattern, ScriptPattern::Error(ScriptError::UnexpectedEof));
+    }
 }

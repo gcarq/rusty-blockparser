@@ -180,6 +180,6 @@ impl EvaluatedTxOut {
             &index,
             &self.out.value,
             &utils::arr_to_hex(&self.out.script_pubkey),
-            &self.address.clone().unwrap_or(String::from("null")))
+            &self.script.address)
     }
 }
