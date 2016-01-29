@@ -11,7 +11,7 @@ use errors::OpResult;
 
 #[derive(Default)]
 pub struct SimpleStats {
-    coin_type: CoinType,
+    //X coin_type: CoinType,
 
     n_valid_blocks: u64,
     block_sizes: Vec<u32>,
@@ -63,7 +63,7 @@ impl Callback for SimpleStats {
         Ok(Default::default())
     }
 
-    fn on_start(&mut self, coin_type: CoinType, _: usize) {
+    fn on_start(&mut self, _: CoinType, _: usize) {
         info!(target: "callback", "Executing SimpleStats ...");
     }
 
