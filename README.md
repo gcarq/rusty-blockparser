@@ -58,7 +58,50 @@ Lets call it ParseModes:
 
     `simplestats` is another callback. It prints some blockchain statistics like block count, transaction count, avg transactions per block, largest transaction, transaction types etc.
 
-    You can define custom callbacks. A callback gets called at startup, on each block and at the end. See [src/callbacks/mod.rs](src/callbacks/mod.rs) for more information.
+    ```
+    SimpleStats:
+   -> valid blocks:		395552
+   -> total transactions:	106540337
+   -> total tx inputs:		281575588
+   -> total tx outputs:		315913252
+   -> total tx fees:		36127.57854138 (3612757854138 units)
+   -> total volume:		2701750503.36307383 (270175050336307381 units)
+
+   -> largest tx:		550000.00000000 (55000000000000 units)
+        first seen in block #153510, txid: 29a3efd3ef04f9153d47a990bd7b048a4b2d213daaa5fb8ed670fb85f13bdbcf
+
+Averages:
+   -> avg block size:		4.18 KiB
+   -> avg time between blocks:	9.53 (minutes)
+   -> avg txs per block:	269.35
+   -> avg inputs per tx:	2.64
+   -> avg outputs per tx:	2.97
+   -> avg value per output:	8.55
+
+Transaction Types:
+   -> Pay2PublicKeyHash: 305228784 (96.62%)
+        first seen in block #728, txid: 6f7cf9580f1c2dfb3c4d5d043cdbb128c640e3f20161245aa7372e9666168516
+
+   -> Pay2PublicKey: 988671 (0.31%)
+        first seen in block #0, txid: 4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b
+
+   -> NotRecognised: 1041223 (0.33%)
+        first seen in block #71037, txid: e411dbebd2f7d64dafeef9b14b5c59ec60c36779d43f850e5e347abee1e1a455
+
+   -> Pay2ScriptHash: 8231071 (2.61%)
+        first seen in block #170053, txid: 9c08a4d78931342b37fd5f72900fb9983087e6f46c4a097d8a1f52c74e28eaf6
+
+   -> DataOutput(""): 421595 (0.13%)
+        first seen in block #228597, txid: 1a2e22a717d626fc5db363582007c46924ae6b28319f07cb1b907776bd8293fc
+
+   -> Pay2MultiSig: 1566 (0.00%)
+        first seen in block #165228, txid: 14237b92d26850730ffab1bfb138121e487ddde444734ef195eb7928102bc939
+
+   -> Error(UnexpectedEof): 342 (0.00%)
+        first seen in block #141461, txid: 9740e7d646f5278603c04706a366716e5e87212c57395e0d24761c0ae784b2c6
+   ```
+
+    You can also define custom callbacks. A callback gets called at startup, on each block and at the end. See [src/callbacks/mod.rs](src/callbacks/mod.rs) for more information.
 
 * **Multithreaded**
 
