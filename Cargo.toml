@@ -2,6 +2,13 @@
 name = "rusty-blockparser"
 version = "0.4.0"
 authors = ["gcarq <michael.egger@tsn.at>"]
+include = ["src/*", "sql/*", "LICENSE", "README.md", "Cargo.toml"]
+description = "Multithreaded Blockchain Parser for most common Cryptocurrencies"
+documentation = "https://github.com/gcarq/rusty-blockparser/blob/master/README.md"
+homepage = "https://github.com/gcarq/rusty-blockparser/"
+readme = "README.md"
+keywords = ["Cryptocurrency", "Bitcoin", "Litecoin", "Blockchain"]
+license = "GPL-3.0"
 
 [dependencies]
 time            = ">=0.1.34"
@@ -47,7 +54,7 @@ codegen-units = 1
 opt-level = 3
 debug = false
 rpath = false
-lto = false
+lto = true
 debug-assertions = false
 codegen-units = 1
 
