@@ -7,12 +7,10 @@ use rust_base58::{ToBase58};
 use blockchain::proto::opcodes;
 use blockchain::utils::{self, sha256, ridemp160};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ScriptError {
     UnexpectedEof,
-    BadLength,
-    InvalidFormat,
-    NotImplemented
+    InvalidFormat
 }
 
 impl fmt::Display for ScriptError {
@@ -27,16 +25,14 @@ impl error::Error for ScriptError {
         // implementations.
         match *self {
             ScriptError::UnexpectedEof => "Unexpected EOF",
-            ScriptError::BadLength => "Bad Script Length",
-            ScriptError::InvalidFormat => "Invalid Script format",
-            ScriptError::NotImplemented => "Unknown pattern. Not implemented"
+            ScriptError::InvalidFormat => "Invalid Script format"
         }
     }
 }
 
 
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ScriptPattern {
     /// Null Data
     /// Pubkey Script: OP_RETURN <0 to 80 bytes of data> (formerly 40 bytes)
@@ -80,7 +76,7 @@ pub enum ScriptPattern {
     /// The script is valid but does not conform to the standard templates.
     /// Such scripts are always accepted if they are mined into blocks, but
     /// transactions with non-standard scripts may not be forwarded by peers.
-    NonStandard,
+    NotRecognised,
 
     Error(ScriptError),
 }
@@ -93,7 +89,7 @@ impl fmt::Display for ScriptPattern {
             ScriptPattern::Pay2PublicKey => write!(f, "Pay2PublicKey"),
             ScriptPattern::Pay2PublicKeyHash => write!(f, "Pay2PublicKeyHash"),
             ScriptPattern::Pay2ScriptHash => write!(f, "Pay2ScriptHash"),
-            ScriptPattern::NonStandard => write!(f, "NonStandard"),
+            ScriptPattern::NotRecognised => write!(f, "NotRecognised"),
             ScriptPattern::Error(ref err) => write!(f, "ScriptError: {}", err)
         }
     }
@@ -311,7 +307,7 @@ impl<'a> ScriptEvaluator<'a> {
 
          }*/
 
-        return ScriptPattern::NonStandard;
+        return ScriptPattern::NotRecognised;
     }
 
     /// Read a script-encoded unsigned integer.
@@ -394,7 +390,7 @@ pub fn eval_from_stack(stack: Stack, version_id: u8) -> EvaluatedScript {
                     pattern: p.clone()
                 }
             }
-            ref p @ ScriptPattern::NonStandard => {
+            ref p @ ScriptPattern::NotRecognised => {
                 EvaluatedScript {
                     address: String::new(),
                     pattern: p.clone()
@@ -561,7 +557,7 @@ mod tests {
 
         let script = eval_from_stack(stack, 0x00);
         assert_eq!(script.address, "");
-        assert_eq!(script.pattern, ScriptPattern::NonStandard);
+        assert_eq!(script.pattern, ScriptPattern::NotRecognised);
     }
 
     #[test]

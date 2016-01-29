@@ -61,3 +61,26 @@ impl fmt::Debug for Block {
            .finish()
     }
 }
+
+/// Get block reward for given height
+pub fn get_base_reward(block_height: u64) -> u64 {
+    let mut reward: u64 = 50 * 100000000;
+    reward >>= block_height / 210000;
+    return reward;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::get_base_reward;
+
+    #[test]
+    fn test_get_base_reward() {
+        assert_eq!(get_base_reward(0),      5000000000);
+        assert_eq!(get_base_reward(209999), 5000000000);
+        assert_eq!(get_base_reward(210000), 2500000000);
+        assert_eq!(get_base_reward(419999), 2500000000);
+        assert_eq!(get_base_reward(420000), 1250000000);
+        assert_eq!(get_base_reward(629999), 1250000000);
+        assert_eq!(get_base_reward(630000), 0625000000);
+    }
+}

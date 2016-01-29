@@ -103,6 +103,12 @@ pub struct CoinType {
     pub default_folder: PathBuf
 }
 
+impl Default for CoinType {
+    fn default() -> Self {
+        CoinType::from(Bitcoin)
+    }
+}
+
 impl<T: Coin> From<T> for CoinType {
     fn from(coin: T) -> Self {
         CoinType {

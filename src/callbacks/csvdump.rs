@@ -8,6 +8,7 @@ use callbacks::Callback;
 use errors::{OpError, OpErrorKind, OpResult};
 
 use blockchain::proto::tx::{Tx, TxInput, EvaluatedTxOut};
+use blockchain::parser::types::CoinType;
 use blockchain::proto::block::Block;
 use blockchain::proto::Hashed;
 use blockchain::utils;
@@ -78,7 +79,7 @@ impl Callback for CsvDump {
         }
     }
 
-    fn on_start(&mut self, block_height: usize) {
+    fn on_start(&mut self, _: CoinType, block_height: usize) {
         self.start_height = block_height;
 
         info!(target: "callback", "Using `csvdump` with dump folder: {} ...", &self.dump_folder.display());

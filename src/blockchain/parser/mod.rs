@@ -91,7 +91,7 @@ impl<'a> BlockchainParser<'a> {
 
         self.t_started = time::precise_time_s();
         if self.mode == ParseMode::FullData {
-            (*self.options.callback).on_start(self.chain_storage.get_cur_height());
+            (*self.options.callback).on_start(self.options.coin_type.clone(), self.chain_storage.get_cur_height());
         }
 
         // save latest blk file index for resume mode.

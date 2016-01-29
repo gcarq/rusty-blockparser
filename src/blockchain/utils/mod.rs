@@ -128,7 +128,19 @@ pub fn hex_to_arr32_swapped(hex_str: &str) -> [u8; 32] {
 
 /// Returns default directory. TODO: test on windows
 pub fn get_absolute_blockchain_dir(coin_type: &CoinType) -> PathBuf {
-    PathBuf::from(env::home_dir().unwrap()).join(coin_type.default_folder.clone())
+    PathBuf::from(env::home_dir().expect("Unable to get home path from env!"))
+        .join(coin_type.default_folder.clone())
+}
+
+/// Get mean value from u32 slice
+#[inline]
+pub fn get_mean(slice: &[u32]) -> f64 {
+    if slice.is_empty() {
+        return 0.00;
+    }
+    let sum = slice.iter()
+       .fold(0, |sum, &s| sum + s);
+    sum as f64 / slice.len() as f64
 }
 
 #[cfg(test)]

@@ -3,6 +3,7 @@ pub mod csvdump;
 
 use errors::OpResult;
 use blockchain::proto::block::Block;
+use blockchain::parser::types::CoinType;
 
 /// Method whichs lists all available callbacks
 pub fn list_callbacks(desc: &str) -> String {
@@ -10,7 +11,7 @@ pub fn list_callbacks(desc: &str) -> String {
     s.push_str(&format!("\n{}\n\n", &desc));
     s.push_str("Available Callbacks:\n");
     s.push_str("  csvdump\t\tDumps the whole blockchain into CSV files.\n");
-    s.push_str("  simplestats\t\tCallback example. Shows simple Blockchain stats.\n");
+    s.push_str("  simplestats\t\tShows Blockchain stats.\n");
     return s;
 }
 
@@ -26,7 +27,7 @@ pub trait Callback {
     fn parse_args(args: Vec<String>) -> OpResult<Self> where Self: Sized;
 
     /// Gets called shortly before the threads are invoked.
-    fn on_start(&mut self, block_height: usize);
+    fn on_start(&mut self, coin_type: CoinType, block_height: usize);
 
     /// Gets called if a new block is available.
     fn on_block(&mut self, block: Block, block_height: usize);

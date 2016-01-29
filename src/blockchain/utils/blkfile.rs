@@ -62,7 +62,7 @@ impl BlkFile {
         }
 
         blk_files.sort_by(|a, b| a.path.cmp(&b.path));
-        //blk_files.split_off(1); //just for testing purposes
+        //blk_files.split_off(2); //just for testing purposes
         trace!(target: "blkfile", "Found {} blk files", blk_files.len());
         Ok(VecDeque::from_iter(blk_files.into_iter()))
     }

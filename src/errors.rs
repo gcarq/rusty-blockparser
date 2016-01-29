@@ -2,7 +2,7 @@ use std::error::{self, Error};
 use std::fmt;
 use std::io;
 use std::convert::{self, From};
-use std::sync::{self, PoisonError};
+use std::sync;
 use std::string;
 use blockchain::proto::script;
 
