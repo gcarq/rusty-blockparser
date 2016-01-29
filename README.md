@@ -53,10 +53,10 @@ Lets call it ParseModes:
     tx_out.csv
     txid ; indexOut ; value ; scriptPubKey ; address
     ```
-    If you want to insert the files into MySql see [schema.sql](schema.sql).
-    It contains all table structures and SQL statements for bulk inserting. Also see [views.sql](views.sql) for some query examples.
+    If you want to insert the files into MySql see [sql/schema.sql](sql/schema.sql).
+    It contains all table structures and SQL statements for bulk inserting. Also see [sql/views.sql](sql/views.sql) for some query examples.
 
-    `simplestats` is another callback. It prints some blockchain statistics like block count, transaction count, avg transactions per block, etc. The main purpose of this is to show a simple callback template.
+    `simplestats` is another callback. It prints some blockchain statistics like block count, transaction count, avg transactions per block, largest transaction, transaction types etc.
 
     You can define custom callbacks. A callback gets called at startup, on each block and at the end. See [src/callbacks/mod.rs](src/callbacks/mod.rs) for more information.
 
@@ -70,7 +70,7 @@ Lets call it ParseModes:
 
 * **Script evaluation**
 
-    Evaluates and detects P2PK, [P2PKH](https://en.bitcoin.it/wiki/Transaction#Pay-to-PubkeyHash), [P2SH](https://github.com/bitcoin/bips/blob/master/bip-0016.mediawiki) and non-standard transactions.
+    Evaluates and detects P2PK, [P2PKH](https://en.bitcoin.it/wiki/Transaction#Pay-to-PubkeyHash), [P2SH](https://github.com/bitcoin/bips/blob/master/bip-0016.mediawiki) and some non-standard transactions.
 
 * **Resume scans**
 
@@ -80,7 +80,7 @@ Lets call it ParseModes:
 
 This tool runs on Windows, OS X and Linux.
  Just install `rust` and `cargo`.
- 
+
 
 ```bash
 cargo build --release
@@ -88,6 +88,8 @@ cargo build --release
 ```
 
 It is important to build with `--release` and `opt-level = 3 (specified in Cargo.toml)`, otherwise you will get a horrible performance!
+
+To execute the tests run `cargo test`.
 
 *Tested on Arch Linux with rust-stable 1.6.0 and rust-nightly 1.7.0_2016.01.19*
 
@@ -118,7 +120,7 @@ rustc   -C opt-level=3 \
         -C passes="$passes" \
         -C llvm-args="$llvm_args" "$@"
 ```
-Now export this wrappper with: ```export RUSTC="./rustc-wrapper.sh"``` and execute `cargo build --release` as usual.
+Now export this wrappper with: `export RUSTC="./rustc-wrapper.sh"` and execute `cargo build --release` as usual.
 
 # Usage
 ```
