@@ -250,5 +250,4 @@ If you find this project helpful, please consider making a donation:
 ## TODO
 
 * Implement Pay2MultiSig script evaluation
-* Improve memory management
-* Improve argument handling
+* Improve argument handling (Planned switch to rs-clap with version 0.5)
