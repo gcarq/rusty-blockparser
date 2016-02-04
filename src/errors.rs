@@ -58,7 +58,7 @@ impl fmt::Display for OpError {
         if self.message.is_empty() {
             write!(f, "{}", &self.kind)
         } else {
-            write!(f, "{}. {}", &self.message, &self.kind)
+            write!(f, "{} {}", &self.message, &self.kind)
         }
     }
 }
@@ -211,9 +211,9 @@ mod tests {
         assert_eq!(err.description(), "");
         assert_eq!(format!("{}", err), "I/O Error: oh no!");
 
-        let err = err.join_msg("Cannot proceed");
+        let err = err.join_msg("Cannot proceed.");
 
-        assert_eq!(err.description(), "Cannot proceed");
+        assert_eq!(err.description(), "Cannot proceed.");
         assert_eq!(format!("{}", err), "Cannot proceed. I/O Error: oh no!");
     }
 }

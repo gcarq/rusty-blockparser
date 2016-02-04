@@ -62,9 +62,13 @@ impl BlkFile {
         }
 
         blk_files.sort_by(|a, b| a.path.cmp(&b.path));
-        //blk_files.split_off(2); //just for testing purposes
         trace!(target: "blkfile", "Found {} blk files", blk_files.len());
-        Ok(VecDeque::from_iter(blk_files.into_iter()))
+        if blk_files.is_empty() {
+            Err(OpError::new(OpErrorKind::RuntimeError).join_msg("No blk files found!"))
+        } else {
+            //blk_files.split_off(2); //just for testing purposes
+            Ok(VecDeque::from_iter(blk_files.into_iter()))
+        }
     }
 
     /// Identifies blk file and parses index
