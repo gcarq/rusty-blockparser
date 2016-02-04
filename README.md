@@ -1,6 +1,6 @@
 # rusty-blockparser
 
-[![Build Status](https://travis-ci.org/gcarq/rusty-blockparser.svg?branch=master)](https://travis-ci.org/gcarq/rusty-blockparser) [![Coverage Status](https://coveralls.io/repos/github/gcarq/rusty-blockparser/badge.svg?branch=master)](https://coveralls.io/github/gcarq/rusty-blockparser?branch=master)
+[![Build Status](https://travis-ci.org/gcarq/rusty-blockparser.svg?branch=master)](https://travis-ci.org/gcarq/rusty-blockparser) [![Coverage Status](https://coveralls.io/repos/github/gcarq/rusty-blockparser/badge.svg?branch=master)](https://coveralls.io/github/gcarq/rusty-blockparser?branch=master) [![Crates.io](https://img.shields.io/crates/v/rusty-blockparser.svg)](https://crates.io/crates/rusty-blockparser/)
 
 rusty-blockparser is a multi-threaded Blockchain Parser written in **Rust language**.
 
@@ -119,24 +119,36 @@ Transaction Types:
 
     If you sync the blockchain at some point later, you don't need to make a FullData rescan. Just use `--resume` to force a HeaderOnly scan followed by a FullData scan which parses only new blocks. If you want a complete FullData rescan delete the ChainStorage json file.
 
-# Building
+## Installing
 
 This tool runs on Windows, OS X and Linux.
- Just install `rust` and `cargo`.
+All you need is `rust` and `cargo`.
 
+
+### Latest Release 
+
+You can download the latest release from crates.io:
+```bash
+cargo install rusty-blockparser
+```
+Be sure to add `~/.cargo/bin` to your PATH.
+
+
+### Build from source
 
 ```bash
+git clone https://github.com/gcarq/rusty-blockparser.git
+cd rusty-blockparser
 cargo build --release
+cargo test --release
 ./target/release/blockparser --help
 ```
 
 It is important to build with `--release` and `opt-level = 3 (specified in Cargo.toml)`, otherwise you will get a horrible performance!
 
-To execute the tests run `cargo test`.
-
 *Tested on Arch Linux with rust-stable 1.6.0 and rust-nightly 1.7.0_2016.01.19*
 
-### More Tweaks
+#### Tweaks
 
 **Only proceed if you know what you are doing, because this could go horribly wrong and lead to arbitrary runtime failures!**
 
@@ -165,7 +177,7 @@ rustc   -C opt-level=3 \
 ```
 Now export this wrappper with: `export RUSTC="./rustc-wrapper.sh"` and execute `cargo build --release` as usual.
 
-# Usage
+## Usage
 ```
 Usage:
     target/debug/rusty-blockparser [OPTIONS] CALLBACK ARGUMENTS [...]
@@ -227,7 +239,7 @@ Dumped all blocks:   393489
 ```
 
 
-# Contributing
+## Contributing
 
 Use the issue tracker to report problems, suggestions and questions. You may also contribute by submitting pull requests.
 
@@ -235,8 +247,7 @@ If you find this project helpful, please consider making a donation:
 `1LFidBTeg5joAqjw35ksebiNkVM8azFM1K`
 
 
-# TODO
+## TODO
 
 * Implement Pay2MultiSig script evaluation
-* Improve memory management
-* Improve argument handling
+* Improve argument handling (Planned switch to rs-clap with version 0.5)
