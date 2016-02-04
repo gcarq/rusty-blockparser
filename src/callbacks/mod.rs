@@ -1,19 +1,11 @@
 pub mod stats;
 pub mod csvdump;
 
+use clap::{ArgMatches, App};
+
 use errors::OpResult;
 use blockchain::proto::block::Block;
 use blockchain::parser::types::CoinType;
-
-/// Method whichs lists all available callbacks
-pub fn list_callbacks(desc: &str) -> String {
-    let mut s = String::new();
-    s.push_str(&format!("\n{}\n\n", &desc));
-    s.push_str("Available Callbacks:\n");
-    s.push_str("  csvdump\t\tDumps the whole blockchain into CSV files.\n");
-    s.push_str("  simplestats\t\tShows Blockchain stats.\n");
-    return s;
-}
 
 /// Implement this trait for a custom Callback.
 /// The parser ensures that the blocks arrive in the correct order.
@@ -22,9 +14,12 @@ pub fn list_callbacks(desc: &str) -> String {
 /// (The first run to determine longest chain is running in ParseMode::HeaderOnly)
 pub trait Callback {
 
-    /// Parses user supplied arguments and instantiates callback.
-    /// Returns Err(String) with an error message if something failed.
-    fn parse_args(args: Vec<String>) -> OpResult<Self> where Self: Sized;
+    /// Builds SubCommand to specify callback name and required args,
+    /// exits if some required args are missing.
+    fn build_subcommand<'a, 'b>() -> App<'a, 'b> where Self: Sized;
+
+    /// Instantiates callback
+    fn new(matches: &ArgMatches) -> OpResult<Self> where Self: Sized;
 
     /// Gets called shortly before the threads are invoked.
     fn on_start(&mut self, coin_type: CoinType, block_height: usize);

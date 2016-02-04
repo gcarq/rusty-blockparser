@@ -1,11 +1,11 @@
 use std::fs::{self, File};
-use std::path::{Path, PathBuf};
-use std::io::{BufWriter, Write, stdout, stderr};
+use std::path::PathBuf;
+use std::io::{BufWriter, Write};
 
-use argparse::{Store, ArgumentParser};
+use clap::{Arg, ArgMatches, App, SubCommand};
 
 use callbacks::Callback;
-use errors::{OpError, OpErrorKind, OpResult};
+use errors::{OpError, OpResult};
 
 use blockchain::proto::tx::{Tx, TxInput, EvaluatedTxOut};
 use blockchain::parser::types::CoinType;
@@ -31,19 +31,6 @@ pub struct CsvDump {
 }
 
 impl CsvDump {
-    fn new(dump_folder: &Path) -> OpResult<Self> where Self: Sized {
-        let cap = 4000000;
-        let cb = CsvDump {
-            dump_folder: PathBuf::from(dump_folder),
-            block_writer:   try!(CsvDump::create_writer(cap, dump_folder.join("blocks.csv.tmp"))),
-            tx_writer:      try!(CsvDump::create_writer(cap, dump_folder.join("transactions.csv.tmp"))),
-            txin_writer:    try!(CsvDump::create_writer(cap, dump_folder.join("tx_in.csv.tmp"))),
-            txout_writer:   try!(CsvDump::create_writer(cap, dump_folder.join("tx_out.csv.tmp"))),
-            start_height: 0, end_height: 0, tx_count: 0, in_count: 0, out_count: 0
-        };
-        Ok(cb)
-    }
-
     fn create_writer(cap: usize, path: PathBuf) -> OpResult<BufWriter<File>> {
         let file = match File::create(&path) {
             Ok(f) => f,
@@ -55,33 +42,41 @@ impl CsvDump {
 
 impl Callback for CsvDump {
 
-    /// Parse user specified arguments
-    fn parse_args(args: Vec<String>) -> OpResult<Self> where Self: Sized {
-        //let cb_name = String::from("csvdump");
-        let mut folder_path = String::from("dump");
-        {
-            // Construct Callback arguments parser
-            let mut ap = ArgumentParser::new();
-            ap.set_description("Dumps the whole blockchain into CSV files. \
-                                Each table is saved in it's own file.");
-            ap.refer(&mut folder_path).required().add_argument("folder", Store, "Folder to store CSV dumps");
+    fn build_subcommand<'a, 'b>() -> App<'a, 'b> where Self: Sized {
+        SubCommand::with_name("csvdump")
+            .about("Dumps the whole blockchain into CSV files")
+            .version("0.1")
+            .author("gcarq <michael.egger@tsn.at>")
+            .arg(Arg::with_name("dump-folder")
+                .help("Folder to store csv files")
+                .index(1)
+                .required(true))
+    }
 
-            if let Some(_) = ap.parse(args, &mut stdout(), &mut stderr()).err() {
-                return Err(OpError::new(OpErrorKind::InvalidArgsError));
-            }
-        }
-        // Create nes instance
-        match CsvDump::new(Path::new(&folder_path)) {
-            Ok(cb) => { return Ok(cb); }
-            Err(err) => {
-                return Err(tag_err!(err, "Couldn't initialize csvdump with folder: `{}`", folder_path));
-            }
+    fn new(matches: &ArgMatches) -> OpResult<Self> where Self: Sized {
+        let ref dump_folder = PathBuf::from(matches.value_of("dump-folder").unwrap()); // Save to unwrap
+        match (|| -> OpResult<Self> {
+            let cap = 4000000;
+            let cb = CsvDump {
+                dump_folder:    PathBuf::from(dump_folder),
+                block_writer:   try!(CsvDump::create_writer(cap, dump_folder.join("blocks.csv.tmp"))),
+                tx_writer:      try!(CsvDump::create_writer(cap, dump_folder.join("transactions.csv.tmp"))),
+                txin_writer:    try!(CsvDump::create_writer(cap, dump_folder.join("tx_in.csv.tmp"))),
+                txout_writer:   try!(CsvDump::create_writer(cap, dump_folder.join("tx_out.csv.tmp"))),
+                start_height: 0, end_height: 0, tx_count: 0, in_count: 0, out_count: 0
+            };
+            Ok(cb)
+        })() {
+            Ok(s) => return Ok(s),
+            Err(e) => return Err(
+                tag_err!(e, "Couldn't initialize csvdump with folder: `{}`", dump_folder
+                        .as_path()
+                        .display()))
         }
     }
 
     fn on_start(&mut self, _: CoinType, block_height: usize) {
         self.start_height = block_height;
-
         info!(target: "callback", "Using `csvdump` with dump folder: {} ...", &self.dump_folder.display());
     }
 

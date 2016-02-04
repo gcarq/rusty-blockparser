@@ -1,6 +1,8 @@
 use std::io::Write;
 use std::collections::HashMap;
 
+use clap::{ArgMatches, App, SubCommand};
+
 use blockchain::proto::block::{self, Block};
 use blockchain::utils;
 use blockchain::parser::types::CoinType;
@@ -58,8 +60,14 @@ impl SimpleStats {
 
 impl Callback for SimpleStats {
 
-    fn parse_args(_: Vec<String>) -> OpResult<Self> where Self: Sized {
-        // We have no args, just return a new instance
+    fn build_subcommand<'a, 'b>() -> App<'a, 'b> where Self: Sized {
+        SubCommand::with_name("simplestats")
+            .about("Shows various Blockchain stats")
+            .version("0.1")
+            .author("gcarq <michael.egger@tsn.at>")
+    }
+
+    fn new(_: &ArgMatches) -> OpResult<Self> where Self: Sized {
         Ok(Default::default())
     }
 

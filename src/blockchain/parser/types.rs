@@ -121,21 +121,6 @@ impl<T: Coin> From<T> for CoinType {
     }
 }
 
-/// Lists all available coin implementations
-pub fn list_coins(desc: &str) -> String {
-    let mut s = String::new();
-    s.push_str(&format!("\n{}\n\n", &desc));
-    s.push_str("Implemented coins:\n");
-    s.push_str("  bitcoin\n");
-    s.push_str("  testnet3\n");
-    s.push_str("  namecoin\n");
-    s.push_str("  litecoin\n");
-    s.push_str("  dogecoin\n");
-    s.push_str("  myriadcoin\n");
-    s.push_str("  unobtanium\n");
-    return s;
-}
-
 impl FromStr for CoinType {
     type Err = OpError;
     fn from_str(coin_name: &str) -> OpResult<Self> {
@@ -149,7 +134,7 @@ impl FromStr for CoinType {
             "unobtanium"    => Ok(CoinType::from(Unobtanium)),
             n @ _ => {
                 let e = OpError::new(OpErrorKind::InvalidArgsError).join_msg(
-                    &format!("Coin `{}` not found. Try `--list-coins` or raise a Github issue if you want it added.", n));
+                    &format!("The is no impl for `{}`!", n));
                 return Err(e);
             }
         }
