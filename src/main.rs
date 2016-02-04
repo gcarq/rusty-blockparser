@@ -135,7 +135,7 @@ fn main() {
             }
         }
 
-        info!(target: "main", "Iteration {} finished.", i + 1);
+        debug!(target: "main", "Iteration {} finished.", i + 1);
 
         // If last mode was FullData we can break
         if parse_mode == ParseMode::FullData {

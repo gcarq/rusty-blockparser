@@ -74,7 +74,7 @@ impl ChainStorage {
             }
         }
 
-        info!(target: "chain", "Inserted {} new blocks ...", self.hashes.len() - self.hashes_len);
+        debug!(target: "chain", "Inserted {} new blocks ...", self.hashes.len() - self.hashes_len);
         self.hashes_len = self.hashes.len();
         self.latest_blk_idx = latest_blk_idx;
         Ok(())

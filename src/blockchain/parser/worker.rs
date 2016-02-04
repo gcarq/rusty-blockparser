@@ -96,7 +96,7 @@ impl Worker {
                 let magic = try!(self.reader.read_u32::<LittleEndian>());
                 if magic == 0 {
                     //TODO: find a better way to detect incomplete blk file
-                    warn!(target: &self.name, "Got 0x00000000 as magic number. Finished.");
+                    debug!(target: &self.name, "Got 0x00000000 as magic number. Finished.");
                     return Ok(false);
                 }
                 // Verify magic value based on current coin type

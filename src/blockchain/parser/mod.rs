@@ -214,7 +214,7 @@ impl<'a> BlockchainParser<'a> {
             }
             // Collect complete messages
             ParseResult::Complete(name) => {
-                info!(target: "dispatch", "{} completed", name);
+                debug!(target: "dispatch", "{} completed", name);
                 self.stats.n_complete_msgs += 1;
             }
             // Catch critical errors
