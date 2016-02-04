@@ -125,7 +125,7 @@ This tool runs on Windows, OS X and Linux.
 All you need is `rust` and `cargo`.
 
 
-### Latest Release 
+### Latest Release
 
 You can download the latest release from crates.io:
 ```bash
@@ -250,4 +250,3 @@ If you find this project helpful, please consider making a donation:
 ## TODO
 
 * Implement Pay2MultiSig script evaluation
-* Improve argument handling (Planned switch to rs-clap with version 0.5)
