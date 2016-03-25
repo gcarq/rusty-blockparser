@@ -406,18 +406,7 @@ tx.lock_time       0x00000000
         // Test error propagation on invalid read
         let inner = Cursor::new([0, 1, 2, 3, 4, 5]);
         let mut reader = BufferedMemoryReader::with_capacity(5, inner);
+        // Reading u64 from 6 bytes, Error has to be std::io::Error(UnexpectedEof)
         assert_eq!(ErrorKind::UnexpectedEof, reader.read_u64::<LittleEndian>().err().unwrap().kind());
-
-        // Reading u64 from 6 bytes, Error has to be ByteOrderError(UnexpectedEOF)
-//        match OpError::from(reader.read_u64::<LittleEndian>().err().unwrap()) {
-//            OpError { kind: OpErrorKind::ByteOrderError(e), .. } => {
-//                // Check error kind
-//                match e {
-//                    std::io::E => { return; }
-//                    _ => panic!()
-//                }
-//            }
-//            _ => panic!()
-//        }
     }
 }
