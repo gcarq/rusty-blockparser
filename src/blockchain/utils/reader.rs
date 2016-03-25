@@ -227,10 +227,8 @@ impl<R> fmt::Debug for BufferedMemoryReader<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::convert::From;
-    use std::io::{Cursor, Read};
-    use errors::{OpError, OpErrorKind};
-    use byteorder::{self, LittleEndian, ReadBytesExt};
+    use std::io::{Cursor, Read, ErrorKind};
+    use byteorder::{LittleEndian, ReadBytesExt};
     use blockchain::utils::{arr_to_hex_swapped, arr_to_hex};
     use blockchain::proto::script;
     use blockchain::parser::types::{Coin, Bitcoin};
@@ -408,17 +406,18 @@ tx.lock_time       0x00000000
         // Test error propagation on invalid read
         let inner = Cursor::new([0, 1, 2, 3, 4, 5]);
         let mut reader = BufferedMemoryReader::with_capacity(5, inner);
+        assert_eq!(ErrorKind::UnexpectedEof, reader.read_u64::<LittleEndian>().err().unwrap().kind());
 
         // Reading u64 from 6 bytes, Error has to be ByteOrderError(UnexpectedEOF)
-        match OpError::from(reader.read_u64::<LittleEndian>().err().unwrap()) {
-            OpError { kind: OpErrorKind::ByteOrderError(e), .. } => {
-                // Check error kind
-                match e {
-                    byteorder::Error::UnexpectedEOF => { return; }
-                    _ => panic!()
-                }
-            }
-            _ => panic!()
-        }
+//        match OpError::from(reader.read_u64::<LittleEndian>().err().unwrap()) {
+//            OpError { kind: OpErrorKind::ByteOrderError(e), .. } => {
+//                // Check error kind
+//                match e {
+//                    std::io::E => { return; }
+//                    _ => panic!()
+//                }
+//            }
+//            _ => panic!()
+//        }
     }
 }
