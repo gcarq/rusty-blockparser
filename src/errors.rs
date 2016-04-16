@@ -6,7 +6,6 @@ use std::sync;
 use std::string;
 use blockchain::proto::script;
 
-use byteorder;
 use rustc_serialize::json;
 
 
@@ -73,7 +72,7 @@ impl error::Error for OpError {
 pub enum OpErrorKind {
     None,
     IoError(io::Error),
-    ByteOrderError(byteorder::Error),
+    ByteOrderError(io::Error),
     Utf8Error(string::FromUtf8Error),
     ScriptError(script::ScriptError),
     JsonError(String),
@@ -169,12 +168,6 @@ impl<T> convert::From<sync::PoisonError<T>> for OpError {
 impl<T> convert::From<sync::mpsc::SendError<T>> for OpError {
     fn from(_: sync::mpsc::SendError<T>) -> OpError {
         OpError::new(OpErrorKind::SendError)
-    }
-}
-
-impl convert::From<byteorder::Error> for OpError {
-    fn from(err: byteorder::Error) -> OpError {
-        OpError::new(OpErrorKind::ByteOrderError(err))
     }
 }
 
