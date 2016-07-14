@@ -2,7 +2,7 @@ use std::fmt;
 use std::io::{self, BufRead, Read, Seek, SeekFrom};
 use std::borrow::BorrowMut;
 
-use byteorder::{ByteOrder, LittleEndian, ReadBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt};
 
 use errors::OpResult;
 use blockchain::proto::varuint::VarUint;

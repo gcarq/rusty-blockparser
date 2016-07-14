@@ -6,7 +6,7 @@ use crypto::digest::Digest;
 use crypto::ripemd160::Ripemd160;
 use rustc_serialize::hex::{ToHex, FromHex};
 
-use blockchain::parser::types::{Coin, CoinType};
+use blockchain::parser::types::{CoinType};
 
 pub mod blkfile;
 pub mod reader;

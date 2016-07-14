@@ -4,7 +4,7 @@ use std::thread;
 use std::collections::VecDeque;
 use std::time::Duration;
 
-use byteorder::{ByteOrder, LittleEndian, ReadBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt};
 
 use errors::{OpError, OpErrorKind, OpResult};
 use blockchain::parser::{ParseMode, ParseResult};
