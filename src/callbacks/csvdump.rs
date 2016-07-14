@@ -97,9 +97,8 @@ impl Callback for CsvDump {
             self.in_count += tx.value.in_count.value;
 
             // serialize outputs
-            let txout_idx = 0 as u32;
-            for output in &tx.value.outputs {
-                self.txout_writer.write_all(output.as_csv(&txid_str, txout_idx).as_bytes()).unwrap();
+            for (i, output) in tx.value.outputs.iter().enumerate() {
+                self.txout_writer.write_all(output.as_csv(&txid_str, i).as_bytes()).unwrap();
             }
             self.out_count += tx.value.out_count.value;
         }
@@ -169,7 +168,7 @@ impl TxInput {
 
 impl EvaluatedTxOut {
     #[inline]
-    fn as_csv(&self, txid: &str, index: u32) -> String {
+    fn as_csv(&self, txid: &str, index: usize) -> String {
         // (@txid, indexOut, value, @scriptPubKey, address)
         format!("{};{};{};{};{}\n",
             &txid,
