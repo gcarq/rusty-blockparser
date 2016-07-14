@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/gcarq/rusty-blockparser.svg?branch=master)](https://travis-ci.org/gcarq/rusty-blockparser) [![Coverage Status](https://coveralls.io/repos/github/gcarq/rusty-blockparser/badge.svg?branch=master)](https://coveralls.io/github/gcarq/rusty-blockparser?branch=master) [![Crates.io](https://img.shields.io/crates/v/rusty-blockparser.svg)](https://crates.io/crates/rusty-blockparser/)
 
-rusty-blockparser is a multi-threaded Blockchain Parser written in **Rust language**.
+rusty-blockparser is a multi-threaded Bitcoin Blockchain Parser written in **Rust language**.
 
 It allows extraction of various data types (blocks, transactions, scripts, public keys/hashes, balances, ...) from Bitcoin based blockchains.
 
