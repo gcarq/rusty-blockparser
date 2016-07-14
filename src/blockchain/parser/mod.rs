@@ -12,7 +12,6 @@ use blockchain::proto::header::BlockHeader;
 use errors::{OpError, OpErrorKind, OpResult};
 
 use ParserOptions;
-use callbacks::Callback;
 
 pub mod worker;
 pub mod chain;
