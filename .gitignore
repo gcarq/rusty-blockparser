@@ -4,5 +4,5 @@ Cargo.lock
 chain.json
 bench.txt
 test.sh
-dump
-/.project
+csvdump
+.project
