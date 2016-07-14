@@ -86,7 +86,7 @@ impl Callback for CsvDump {
 
         // serialize transaction
         let block_hash = utils::arr_to_hex_swapped(&block.header.hash);
-        for (i, tx) in block.txs.iter().enumerate() {
+        for tx in block.txs {
             self.tx_writer.write_all(tx.as_csv(&block_hash).as_bytes()).unwrap();
             let txid_str = utils::arr_to_hex_swapped(&tx.hash);
 
@@ -97,9 +97,9 @@ impl Callback for CsvDump {
             self.in_count += tx.value.in_count.value;
 
             // serialize outputs
-            let i = i as u32;
+            let txout_idx = 0 as u32;
             for output in &tx.value.outputs {
-                self.txout_writer.write_all(output.as_csv(&txid_str, i).as_bytes()).unwrap();
+                self.txout_writer.write_all(output.as_csv(&txid_str, txout_idx).as_bytes()).unwrap();
             }
             self.out_count += tx.value.out_count.value;
         }
