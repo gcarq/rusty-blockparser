@@ -38,6 +38,7 @@ use errors::{OpError, OpErrorKind, OpResult};
 use callbacks::Callback;
 use callbacks::stats::SimpleStats;
 use callbacks::csvdump::CsvDump;
+use callbacks::balancecsvdump::BalanceCsvDump;
 
 
 /// Holds all available user arguments
@@ -221,6 +222,7 @@ fn parse_args() -> OpResult<ParserOptions> {
             .help("Sets maximum worker backlog (default: 100)")
             .takes_value(true))
         // Add callbacks
+        .subcommand(BalanceCsvDump::build_subcommand())
         .subcommand(CsvDump::build_subcommand())
         .subcommand(SimpleStats::build_subcommand())
         .get_matches();
@@ -251,6 +253,8 @@ fn parse_args() -> OpResult<ParserOptions> {
          callback = Box::new(try!(SimpleStats::new(matches)));
     } else if let Some(ref matches) = matches.subcommand_matches("csvdump") {
          callback = Box::new(try!(CsvDump::new(matches)));
+    } else if let Some(ref matches) = matches.subcommand_matches("balancecsvdump") {
+         callback = Box::new(try!(BalanceCsvDump::new(matches)));
     } else {
         clap::Error {
             message: String::from("error: No Callback specified.\nFor more information try --help"),
