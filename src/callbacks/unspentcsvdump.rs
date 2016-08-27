@@ -15,12 +15,12 @@ use blockchain::utils;
 
 
 /// Dumps the whole blockchain into csv files
-pub struct BalanceCsvDump {
+pub struct UnspentCsvDump {
     // Each structure gets stored in a seperate csv file
     dump_folder:    PathBuf,
-    balance_writer: BufWriter<File>,
+    unspent_writer: BufWriter<File>,
 
-    computed_balances: HashMap<String, HashMapVal>,
+    transactions_unspent: HashMap<String, HashMapVal>,
 
     start_height:   usize,
     end_height:     usize,
@@ -30,14 +30,14 @@ pub struct BalanceCsvDump {
 }
 
 struct HashMapVal {
-	index:	usize,
+/*	txid:	String,
+	index:	usize,*/
 	block_height:	usize,
-	balance:	u64,
-	address:	String,
-	script_pubkey:	String
+	output_val:	u64,
+	address:	String
 }
 
-impl BalanceCsvDump {
+impl UnspentCsvDump {
     fn create_writer(cap: usize, path: PathBuf) -> OpResult<BufWriter<File>> {
         let file = match File::create(&path) {
             Ok(f) => f,
@@ -47,11 +47,11 @@ impl BalanceCsvDump {
     }
 }
 
-impl Callback for BalanceCsvDump {
+impl Callback for UnspentCsvDump {
 
     fn build_subcommand<'a, 'b>() -> App<'a, 'b> where Self: Sized {
-        SubCommand::with_name("balancecsvdump")
-            .about("Dumps all the non-zero balances (aka unspent output) to CSV file")
+        SubCommand::with_name("unspentcsvdump")
+            .about("Dumps the unspent outputs to CSV file")
             .version("0.1")
             .author("snarfer88 <fsvm88@gmail.com>")
             .arg(Arg::with_name("dump-folder")
@@ -64,10 +64,10 @@ impl Callback for BalanceCsvDump {
         let ref dump_folder = PathBuf::from(matches.value_of("dump-folder").unwrap()); // Save to unwrap
         match (|| -> OpResult<Self> {
             let cap = 4000000;
-            let cb = BalanceCsvDump {
+            let cb = UnspentCsvDump {
                 dump_folder:    PathBuf::from(dump_folder),
-                balance_writer:   try!(BalanceCsvDump::create_writer(cap, dump_folder.join("balances.csv.tmp"))),
-		computed_balances: HashMap::with_capacity(10000000), // Init hashmap for the final output (with 10'000'000 mln preallocated entries - currently 425k blocks contain ~5.4mln non-zero unspent values)
+                unspent_writer:   try!(UnspentCsvDump::create_writer(cap, dump_folder.join("unspent.csv.tmp"))),
+		transactions_unspent: HashMap::with_capacity(10000000), // Init hashmap for tracking the unspent transactions (with 10'000'000 mln preallocated entries)
                 start_height: 0, end_height: 0, tx_count: 0, in_count: 0, out_count: 0
             };
             Ok(cb)
@@ -82,56 +82,45 @@ impl Callback for BalanceCsvDump {
 
     fn on_start(&mut self, _: CoinType, block_height: usize) {
         self.start_height = block_height;
-        info!(target: "callback", "Using `balancecsvdump` with dump folder: {} ...", &self.dump_folder.display());
+        info!(target: "callback", "Using `unspentcsvdump` with dump folder: {} ...", &self.dump_folder.display());
     }
 
     fn on_block(&mut self, block: Block, block_height: usize) {
         // serialize transaction
         for tx in block.txs {
 	    // For each transaction in the block,
-	    // 1. apply input transactions (kill input txids == index)
-	    // 2. apply output transactions (- subtract to known addresses)
+	    // 1. apply input transactions (remove (TxID == prevTxIDOut and prevOutID == spentOutID))
+	    // 2. apply output transactions (add (TxID + curOutID -> HashMapVal))
 	    // For each address, retain:
 	    // * block height as "last modified"
-	    // * block timestamp as "last modified"
-	    // * balance
+	    // * output_val
+	    // * address
 
             //self.tx_writer.write_all(tx.as_csv(&block_hash).as_bytes()).unwrap();
             let txid_str = utils::arr_to_hex_swapped(&tx.hash);
 
             for input in &tx.value.inputs {
-	    	let input_outpoint_txid = utils::arr_to_hex_swapped(&input.outpoint.txid);
-		let val: bool = match self.computed_balances.entry(input_outpoint_txid.clone()) {
-			Occupied(entry) => (entry.get().index == (input.outpoint.index as usize)),
+	    	let input_outpoint_txid_idx = utils::arr_to_hex_swapped(&input.outpoint.txid) + &input.outpoint.index.to_string();
+		let val: bool = match self.transactions_unspent.entry(input_outpoint_txid_idx.clone()) {
+			Occupied(_) => true,
 			Vacant(_) => false,
 		};
 
 		if val {
-			self.computed_balances.remove(&input_outpoint_txid);
+			self.transactions_unspent.remove(&input_outpoint_txid_idx);
 		};
-
-		/*let removals: Vec<String> = self.computed_balances
-			.iter()
-			//.filter(|&(k, v)| (k, v.index) == (utils::arr_to_hex_swapped(&input.outpoint.txid), (input.outpoint.index as usize)))
-			//.map(|(k, _)| k.clone())
-			.filter(|&(k, v)| k == &input_outpoint_txid && v.index == (input.outpoint.index as usize))
-			.map(|(k, _)| k.clone())
-			.collect();
-		for rem in removals { self.computed_balances.remove(&rem); }*/
             }
             self.in_count += tx.value.in_count.value;
 
             // serialize outputs
             for (i, output) in tx.value.outputs.iter().enumerate() {
 	    	let hash_val: HashMapVal = HashMapVal {
-			index: i,
 			block_height: block_height,
-			balance: output.out.value,
+			output_val: output.out.value,
 			address: output.script.address.clone(),
-			//script_pubkey: script_pubkey_for_insertion
-			script_pubkey: utils::arr_to_hex(&output.out.script_pubkey)
+			//script_pubkey: utils::arr_to_hex(&output.out.script_pubkey)
 		};
-	    	self.computed_balances.insert(txid_str.clone(), hash_val);
+	    	self.transactions_unspent.insert(txid_str.clone() + &i.to_string(), hash_val);
             }
             self.out_count += tx.value.out_count.value;
         }
@@ -141,33 +130,34 @@ impl Callback for BalanceCsvDump {
     fn on_complete(&mut self, block_height: usize) {
         self.end_height = block_height;
 
-	self.balance_writer.write_all(format!(
-		"{};{};{};{};{};{}\n",
+	self.unspent_writer.write_all(format!(
+		"{};{};{};{};{}\n",
 		"txid",
 		"indexOut",
 		"height",
 		"value",
-		"address",
-		"script_pubkey"
+		"address"
 		).as_bytes()
 	).unwrap();
-	for (key, value) in self.computed_balances.iter() {
-	  if value.balance > 0 {
-	    self.balance_writer.write_all(format!(
-	    	"{};{};{};{};{};{}\n",
-		key,
-		value.index,
-		value.block_height,
-		value.balance,
-		value.address,
-		value.script_pubkey
-		).as_bytes()
-	  ).unwrap();
-	  }
+	for (key, value) in self.transactions_unspent.iter() {
+		let txid = &key[0..63];
+		let index = &key[64..key.len()-1];
+		//let  = key.len();
+		//let mut mut_key = key.clone();
+		//let index: String = mut_key.pop().unwrap().to_string();
+		self.unspent_writer.write_all(format!(
+				"{};{};{};{};{}\n",
+				txid,
+				index,
+				value.block_height,
+				value.output_val,
+				value.address
+			).as_bytes()
+		).unwrap();
 	}
 
         // Keep in sync with c'tor
-        for f in vec!["balances"] {
+        for f in vec!["unspent"] {
             // Rename temp files
             fs::rename(self.dump_folder.as_path().join(format!("{}.csv.tmp", f)),
                        self.dump_folder.as_path().join(format!("{}-{}-{}.csv", f, self.start_height, self.end_height)))
