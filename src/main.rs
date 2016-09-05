@@ -201,6 +201,7 @@ fn parse_args() -> OpResult<ParserOptions> {
             .possible_values(coins)
             .takes_value(true))
         .arg(Arg::with_name("blockchain-dir")
+            .short("d")
             .long("blockchain-dir")
             .help("Sets blockchain directory which contains blk.dat files (default: ~/.bitcoin/blocks)")
             .takes_value(true))
