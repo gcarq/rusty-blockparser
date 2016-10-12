@@ -170,9 +170,7 @@ impl<'a> BlockchainParser<'a> {
             // Check if the next block is in unsorted HashMap
             if let Some(next_hash) = self.chain_storage.get_next() {
                 if let Some(block) = self.unsorted_blocks.remove(&next_hash) {
-                    self.chain_storage.consume_next();
-                    (*self.options.callback).on_block(block, self.chain_storage.get_cur_height());
-                    self.stats.n_valid_blocks += 1;
+                    self.on_block(block);
                 }
             }
                 // Check if all threads are finished
@@ -197,9 +195,7 @@ impl<'a> BlockchainParser<'a> {
 
                 if let Some(next_hash) = self.chain_storage.get_next() {
                     if block.header.hash == next_hash {
-                        (*self.options.callback).on_block(block, self.chain_storage.get_cur_height());
-                        self.stats.n_valid_blocks += 1;
-                        self.chain_storage.consume_next();
+                        self.on_block(block);
                     } else {
                         self.unsorted_blocks.insert(block.header.hash, block);
                     }
@@ -224,7 +220,14 @@ impl<'a> BlockchainParser<'a> {
         Ok(())
     }
 
-    /// Internal method whichs gets called if all workers are finished
+    /// Triggers the callback and consumes the current block
+    fn on_block(&mut self, block: Block) {
+        (*self.options.callback).on_block(block, self.chain_storage.get_cur_height());
+        self.stats.n_valid_blocks += 1;
+        self.chain_storage.consume_next();
+    }
+
+    /// Internal method which gets called if all workers are finished
     /// Saves the chain state
     fn on_complete(&mut self) -> OpResult<()> {
         let t_fin = time::precise_time_s();
