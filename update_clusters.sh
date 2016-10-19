@@ -18,19 +18,19 @@ else
   cp -f ~/clusterizer/chain.json ~/clusterizer/chain.json.old-$(date -Iseconds)
 fi
 
-rusty-blockparser -t 16 -v "${MODE}" --chain-storage ~/clusterizer/chain.json txoutdump ~/clusterizer
+rusty-blockparser -t $(nproc) -v "${MODE}" --chain-storage ~/clusterizer/chain.json txoutdump ~/clusterizer
 
 for csvfile in ~/clusterizer/tx_out-*.csv
 do
   echo "Sorting ${csvfile}..."
-  LC_ALL=C sort -c "${csvfile}" || LC_ALL=C sort -u --parallel=16 "${csvfile}" -o "${csvfile}"
+  LC_ALL=C sort -c "${csvfile}" || LC_ALL=C sort -u --parallel=$(nproc) "${csvfile}" -o "${csvfile}"
   echo "Done."
 done
 
 echo "Running clusterizer..."
-rusty-blockparser -t 16 -v "${MODE}" --chain-storage ~/clusterizer/chain.json.old clusterizer ~/clusterizer
+rusty-blockparser -t $(nproc) -v "${MODE}" --chain-storage ~/clusterizer/chain.json.old clusterizer ~/clusterizer
 
 echo "Sorting clusters.csv..."
-LC_ALL=C sort --parallel=16 ~/clusterizer/clusters.csv -o ~/clusterizer/clusters.csv
+LC_ALL=C sort --parallel=$(nproc) ~/clusterizer/clusters.csv -o ~/clusterizer/clusters.csv
 echo "Done."
 bitcoind
