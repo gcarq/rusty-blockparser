@@ -1,5 +1,3 @@
-
-
 pub mod logger {
     use std::io::{stderr, stdout, Write};
     use time::{self, strftime};

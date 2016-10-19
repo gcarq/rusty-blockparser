@@ -1,8 +1,10 @@
+use std::collections::{VecDeque, HashMap};
+use std::hash::BuildHasherDefault;
 use std::sync::{Arc, Mutex, mpsc};
 use std::thread::{self, JoinHandle};
-use std::collections::{VecDeque, HashMap};
 
 use time;
+use twox_hash::XxHash;
 
 use blockchain::proto::Hashed;
 use blockchain::utils::blkfile::BlkFile;
@@ -44,8 +46,8 @@ struct WorkerStats {
 /// Implements simple thread pool pattern
 pub struct BlockchainParser<'a> {
     //TODO: make the collections for headers and blocks more generic
-    unsorted_headers: HashMap<[u8; 32], BlockHeader>,   /* holds all headers in parse mode HeadersOnly  */
-    unsorted_blocks:  HashMap<[u8; 32], Block>,         /* holds all blocks in parse mode FullData      */
+    unsorted_headers: HashMap<[u8; 32], BlockHeader, BuildHasherDefault<XxHash>>,   /* holds all headers in parse mode HeadersOnly  */
+    unsorted_blocks:  HashMap<[u8; 32], Block, BuildHasherDefault<XxHash>>,         /* holds all blocks in parse mode FullData      */
     remaining_files:  Arc<Mutex<VecDeque<BlkFile>>>,    /* Remaining files (shared between all threads) */
     h_workers:        Vec<JoinHandle<()>>,              /* Worker job handles                           */
     mode:             ParseMode,                        /* ParseMode (FullData or HeaderOnly)           */
@@ -170,9 +172,7 @@ impl<'a> BlockchainParser<'a> {
             // Check if the next block is in unsorted HashMap
             if let Some(next_hash) = self.chain_storage.get_next() {
                 if let Some(block) = self.unsorted_blocks.remove(&next_hash) {
-                    self.chain_storage.consume_next();
-                    (*self.options.callback).on_block(block, self.chain_storage.get_cur_height());
-                    self.stats.n_valid_blocks += 1;
+                    self.on_block(block);
                 }
             }
                 // Check if all threads are finished
@@ -197,9 +197,7 @@ impl<'a> BlockchainParser<'a> {
 
                 if let Some(next_hash) = self.chain_storage.get_next() {
                     if block.header.hash == next_hash {
-                        (*self.options.callback).on_block(block, self.chain_storage.get_cur_height());
-                        self.stats.n_valid_blocks += 1;
-                        self.chain_storage.consume_next();
+                        self.on_block(block);
                     } else {
                         self.unsorted_blocks.insert(block.header.hash, block);
                     }
@@ -222,6 +220,13 @@ impl<'a> BlockchainParser<'a> {
             }
         }
         Ok(())
+    }
+
+    /// Triggers the callback and consumes the current block
+    fn on_block(&mut self, block: Block) {
+        (*self.options.callback).on_block(block, self.chain_storage.get_cur_height());
+        self.stats.n_valid_blocks += 1;
+        self.chain_storage.consume_next();
     }
 
     /// Internal method whichs gets called if all workers are finished

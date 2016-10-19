@@ -1,5 +1,7 @@
 pub mod stats;
+pub mod clusterizer;
 pub mod csvdump;
+pub mod txoutdump;
 
 use clap::{ArgMatches, App};
 

@@ -1,7 +1,9 @@
-use std::io::Write;
 use std::collections::HashMap;
+use std::hash::BuildHasherDefault;
+use std::io::Write;
 
 use clap::{ArgMatches, App, SubCommand};
+use twox_hash::XxHash;
 
 use blockchain::proto::block::{self, Block};
 use blockchain::utils;
@@ -27,10 +29,10 @@ pub struct SimpleStats {
     /// Largest transaction (value, height, txid)
     tx_largest: (u64, usize, [u8; 32]),
     /// Contains transaction type count
-    n_tx_types: HashMap<ScriptPattern, u64>,
+    n_tx_types: HashMap<ScriptPattern, u64, BuildHasherDefault<XxHash>>,
     /// First occurence of transaction type
     /// (block_height, txid)
-    tx_first_occs: HashMap<ScriptPattern, (usize, [u8; 32], u32)>,
+    tx_first_occs: HashMap<ScriptPattern, (usize, [u8; 32], u32), BuildHasherDefault<XxHash>>,
 
     /// Time stats
     t_between_blocks: Vec<u32>,

@@ -6,3 +6,4 @@ bench.txt
 test.sh
 csvdump
 .project
+.sync-config.cson

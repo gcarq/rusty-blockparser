@@ -9,6 +9,7 @@ use rustc_serialize::hex::{ToHex, FromHex};
 use blockchain::parser::types::{CoinType};
 
 pub mod blkfile;
+pub mod csv;
 pub mod reader;
 
 #[inline]

@@ -1,5 +1,4 @@
 //#![feature(hashmap_hasher)] // requires rust-nightly
-
 #[macro_use]
 extern crate log;
 extern crate time;
@@ -7,9 +6,10 @@ extern crate crypto;
 #[macro_use]
 extern crate clap;
 extern crate rustc_serialize;
-//extern crate twox_hash; // requires rust-nightly
+extern crate twox_hash;
 extern crate byteorder;
 extern crate rust_base58;
+extern crate csv;
 
 
 #[macro_use]
@@ -37,7 +37,9 @@ use common::logger::SimpleLogger;
 use errors::{OpError, OpErrorKind, OpResult};
 use callbacks::Callback;
 use callbacks::stats::SimpleStats;
+use callbacks::clusterizer::Clusterizer;
 use callbacks::csvdump::CsvDump;
+use callbacks::txoutdump::TxOutDump;
 
 
 /// Holds all available user arguments
@@ -223,6 +225,8 @@ fn parse_args() -> OpResult<ParserOptions> {
             .takes_value(true))
         // Add callbacks
         .subcommand(CsvDump::build_subcommand())
+        .subcommand(TxOutDump::build_subcommand())
+        .subcommand(Clusterizer::build_subcommand())
         .subcommand(SimpleStats::build_subcommand())
         .get_matches();
 
@@ -252,6 +256,10 @@ fn parse_args() -> OpResult<ParserOptions> {
          callback = Box::new(try!(SimpleStats::new(matches)));
     } else if let Some(ref matches) = matches.subcommand_matches("csvdump") {
          callback = Box::new(try!(CsvDump::new(matches)));
+    } else if let Some(ref matches) = matches.subcommand_matches("txoutdump") {
+          callback = Box::new(try!(TxOutDump::new(matches)));
+    } else if let Some(ref matches) = matches.subcommand_matches("clusterizer") {
+         callback = Box::new(try!(Clusterizer::new(matches)));
     } else {
         clap::Error {
             message: String::from("error: No Callback specified.\nFor more information try --help"),

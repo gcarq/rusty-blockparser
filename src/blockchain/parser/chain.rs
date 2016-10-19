@@ -1,10 +1,11 @@
+use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::fs::File;
+use std::hash::BuildHasherDefault;
 use std::path::Path;
-use std::collections::HashMap;
-//use std::collections::hash_state::HashState;
 
 use rustc_serialize::json;
+use twox_hash::XxHash;
 
 use errors::{OpError, OpErrorKind, OpResult};
 use blockchain::proto::Hashed;
@@ -153,13 +154,13 @@ impl Default for ChainStorage {
 /// Helper class to sort blocks and determine the longest chain.
 /// The Hashmap consists of <K: BlockHash, V: BlockHeader>
 pub struct ChainBuilder<'a> {
-    header_map: &'a HashMap<[u8; 32], BlockHeader>
+    header_map: &'a HashMap<[u8; 32], BlockHeader, BuildHasherDefault<XxHash>>
 }
 
 impl<'a> ChainBuilder<'a> {
     /// Returns a Blockchain instance with the longest chain found.
     /// First element is the genesis block.
-    pub fn extract_blockchain(header_map: &HashMap<[u8; 32], BlockHeader>) -> OpResult<Vec<Hashed<BlockHeader>>> {
+    pub fn extract_blockchain(header_map: &HashMap<[u8; 32], BlockHeader, BuildHasherDefault<XxHash>>) -> OpResult<Vec<Hashed<BlockHeader>>> {
 
         // Call our own Iterator implementation for ChainBuilder to traverse over the blockchain
         let builder = ChainBuilder { header_map: header_map };
@@ -239,7 +240,7 @@ impl<'a> IntoIterator for &'a ChainBuilder<'a> {
 /// Iterator for simply traversing the blockchain
 /// Starts with the highest block found and goes down to the genesis block.
 pub struct RevBlockIterator<'a> {
-    header_map: &'a HashMap<[u8; 32], BlockHeader>,
+    header_map: &'a HashMap<[u8; 32], BlockHeader, BuildHasherDefault<XxHash>>,
     last_header: Hashed<BlockHeader>, // Indicates last position set by next()
 }
 
