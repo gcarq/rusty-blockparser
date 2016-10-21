@@ -10,7 +10,7 @@ extern crate rustc_serialize;
 //extern crate twox_hash; // requires rust-nightly
 extern crate byteorder;
 extern crate rust_base58;
-
+extern crate seek_bufread;
 
 #[macro_use]
 pub mod errors;

@@ -3,14 +3,16 @@ use std::sync::{Arc, Mutex, mpsc};
 use std::thread;
 use std::collections::VecDeque;
 use std::time::Duration;
+use std::io::{Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
+use seek_bufread::BufReader;
 
 use errors::{OpError, OpErrorKind, OpResult};
 use blockchain::parser::{ParseMode, ParseResult};
 use blockchain::utils::blkfile::BlkFile;
 use blockchain::parser::types::CoinType;
-use blockchain::utils::reader::{BlockchainRead, BufferedMemoryReader};
+use blockchain::utils::reader::{BlockchainRead};
 
 /// Represents a single Worker. All workers share Vector with remaining files.
 /// It reads and parses all blocks/header from a single blk file until there are no files left.
@@ -20,7 +22,7 @@ pub struct Worker {
     pub remaining_files: Arc<Mutex<VecDeque<BlkFile>>>, // remaining BlkFiles to parse (shared with other threads)
     pub coin_type: CoinType,                            // Coin type
     pub blk_file: BlkFile,                              // Current blk file
-    pub reader: BufferedMemoryReader<File>,             // Reader for the entire blk file content
+    pub reader: BufReader<File>,                        // Reader for the entire blk file content
     pub mode: ParseMode,                                // Specifies if we should read the whole block data or just the header
     pub name: String                                    // Thread name
 }
@@ -125,7 +127,7 @@ impl Worker {
         let result = match self.mode {
             ParseMode::FullData => {
                 let block = try!(self.reader.read_block(self.blk_file.index,
-                                                        block_offset,
+                                                        block_offset as usize,
                                                         blocksize,
                                                         self.coin_type.version_id));
                 Ok(ParseResult::FullData(block))
@@ -136,8 +138,8 @@ impl Worker {
             }
         };
         // Seek to next block position
-        let n_bytes = blocksize as usize - (self.reader.position() - block_offset);
-        try!(self.reader.seek_forward(n_bytes));
+        let n_bytes = blocksize as u64 - (self.reader.position() - block_offset);
+        try!(self.reader.seek(SeekFrom::Current(n_bytes as i64)));
         return result;
     }
 

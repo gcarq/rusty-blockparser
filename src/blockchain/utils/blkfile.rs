@@ -4,19 +4,20 @@ use std::path::PathBuf;
 use std::fs::{self, File};
 use std::collections::VecDeque;
 
+use seek_bufread::BufReader;
+
 use errors::{OpError, OpErrorKind, OpResult};
-use blockchain::utils::reader::BufferedMemoryReader;
 
 /// Holds all necessary data about a raw blk file
 #[derive(Debug)]
 pub struct BlkFile {
     pub path: PathBuf,   // File path
     pub index: u32,      // Holds Index of blk file. (E.g. blk00000.dat has index 0x00000)
-    pub size: usize,     // File size in bytes
+    pub size: u64,       // File size in bytes
 }
 
 impl BlkFile {
-    pub fn new(path: PathBuf, index: u32, size: usize) -> BlkFile {
+    pub fn new(path: PathBuf, index: u32, size: u64) -> BlkFile {
         BlkFile {
             path: path,
             index: index,
@@ -25,9 +26,9 @@ impl BlkFile {
     }
 
     /// Returns a BufferedMemoryReader to reduce iowait.
-    pub fn get_reader(&self) -> OpResult<BufferedMemoryReader<File>> {
+    pub fn get_reader(&self) -> OpResult<BufReader<File>> {
         let f = try!(File::open(&self.path));
-        Ok(BufferedMemoryReader::with_capacity(10000000, f))
+        Ok(BufReader::with_capacity(10000000, f))
     }
 
     /// Collects all blk*.dat paths in the given directory
@@ -50,7 +51,7 @@ impl BlkFile {
                         // Only process new blk files
                         if index >= min_blk_idx {
                             // Build BlkFile structures
-                            let file_len = try!(e.metadata()).len() as usize;
+                            let file_len = try!(e.metadata()).len();
                             trace!(target: "blkfile", "Adding {}... (index: {}, size: {})", e.path().display(), index, file_len);
                             blk_files.push(BlkFile::new(e.path(), index, file_len));
                         }

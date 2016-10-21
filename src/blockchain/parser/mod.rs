@@ -30,7 +30,7 @@ pub enum ParseResult {
     FullData(Block),
     HeaderOnly(BlockHeader),
     Complete(String),           // contains the name of the finished thread
-    Error(OpError)             // Indicates critical error
+    Error(OpError)              // Indicates critical error
 }
 
 /// Small struct to hold statistics together
