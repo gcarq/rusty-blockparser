@@ -98,5 +98,6 @@ mod tests {
         assert_eq!(1202, BlkFile::parse_blk_index("blk1202.dat", blk_prefix, blk_ext).unwrap());
         assert_eq!(13412451, BlkFile::parse_blk_index("blk13412451.dat", blk_prefix, blk_ext).unwrap());
         assert_eq!(true, BlkFile::parse_blk_index("blkindex.dat", blk_prefix, blk_ext).is_none());
+        assert_eq!(true, BlkFile::parse_blk_index("invalid.dat", blk_prefix, blk_ext).is_none());
     }
 }
