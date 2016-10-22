@@ -68,9 +68,14 @@ impl Worker {
     // Highest worker loop. Handles all thread errors
     pub fn process(&mut self) {
         loop {
-            match self.exec_loop() {
-                Ok(true)  => (),
-                Ok(false) => break,
+            match self.process_next_block() {
+                Ok(Some(_))  => {
+                    // There are still some blocks
+                },
+                Ok(None) => {
+                    // No blocks left
+                    break;
+                },
                 Err(err) => {
                     error!(target: &self.name, "{}", &err);
                     self.tx_channel.send(ParseResult::Error(err))
@@ -90,16 +95,16 @@ impl Worker {
 
     /// Extracts data from blk files and sends them to main thread
     /// Returns false is if this thread can be disposed
-    fn exec_loop(&mut self) -> OpResult<bool> {
+    fn process_next_block(&mut self) -> OpResult<Option<()>> {
         match try!(self.maybe_next()) {
-            false => return Ok(false),
+            false => Ok(None),
             true => {
                 // Get metadata for next block
                 let magic = try!(self.reader.read_u32::<LittleEndian>());
                 if magic == 0 {
                     //TODO: find a better way to detect incomplete blk file
                     debug!(target: &self.name, "Got 0x00000000 as magic number. Finished.");
-                    return Ok(false);
+                    return Ok(None);
                 }
                 // Verify magic value based on current coin type
                 if magic != self.coin_type.magic {
@@ -112,7 +117,7 @@ impl Worker {
                 let result = try!(self.extract_data());
                 // Send parsed result to main thread
                 try!(self.tx_channel.send(result));
-                Ok(true)
+                Ok(Some(()))
             }
         }
     }
@@ -132,9 +137,9 @@ impl Worker {
                                                         self.coin_type.version_id));
                 Ok(ParseResult::FullData(block))
             }
-            ParseMode::HeaderOnly => {
+            ParseMode::Indexing => {
                 let header = try!(self.reader.read_block_header());
-                Ok(ParseResult::HeaderOnly(header))
+                Ok(ParseResult::Indexing(header))
             }
         };
         // Seek to next block position

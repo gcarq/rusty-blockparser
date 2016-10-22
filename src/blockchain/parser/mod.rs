@@ -17,18 +17,18 @@ pub mod worker;
 pub mod chain;
 pub mod types;
 
-/// Specifies ParseMode. The first time the blockchain is scanned with HeaderOnly,
+/// Specifies ParseMode. The first time the blockchain needs to be indexed,
 /// because we just need the block hashes to determine the longest chain.
 #[derive(Clone, Debug, PartialEq)]
 pub enum ParseMode {
     FullData,
-    HeaderOnly
+    Indexing
 }
 
 /// Wrapper to pass different data between threads. Specified by ParseMode
 pub enum ParseResult {
     FullData(Block),
-    HeaderOnly(BlockHeader),
+    Indexing(BlockHeader),
     Complete(String),           // contains the name of the finished thread
     Error(OpError)              // Indicates critical error
 }
@@ -48,7 +48,7 @@ pub struct BlockchainParser<'a> {
     unsorted_blocks:  HashMap<[u8; 32], Block>,         /* holds all blocks in parse mode FullData      */
     remaining_files:  Arc<Mutex<VecDeque<BlkFile>>>,    /* Remaining files (shared between all threads) */
     h_workers:        Vec<JoinHandle<()>>,              /* Worker job handles                           */
-    mode:             ParseMode,                        /* ParseMode (FullData or HeaderOnly)           */
+    mode:             ParseMode,                        /* ParseMode (FullData or Indexing)           */
     options:          &'a mut ParserOptions,            /* struct to hold cli arguments                 */
     chain_storage:    chain::ChainStorage,              /* Hash storage with the longest chain          */
     stats:            WorkerStats,                      /* struct for thread management & statistics    */
@@ -57,7 +57,7 @@ pub struct BlockchainParser<'a> {
 
 impl<'a> BlockchainParser<'a> {
 
-    /// Instantiats a new Parser but does not start the workers.
+    /// Instantiates a new Parser but does not start the workers.
     pub fn new(options: &'a mut ParserOptions,
                parse_mode: ParseMode,
                blk_files: VecDeque<BlkFile>,
@@ -65,8 +65,8 @@ impl<'a> BlockchainParser<'a> {
 
         info!(target: "parser", "Parsing {} blockchain ...", options.coin_type.name);
         match parse_mode {
-            ParseMode::HeaderOnly => {
-                info!(target: "parser", "Parsing with mode HeaderOnly (first run).");
+            ParseMode::Indexing => {
+                info!(target: "parser", "Building blockchain index.");
             }
             ParseMode::FullData => {
                 info!(target: "parser", "Parsing {} blocks with mode FullData.", chain_storage.remaining());
@@ -95,7 +95,7 @@ impl<'a> BlockchainParser<'a> {
 
         // save latest blk file index for resume mode.
         self.stats.latest_blk_idx = match self.mode {
-            ParseMode::HeaderOnly => self.chain_storage.latest_blk_idx,
+            ParseMode::Indexing => self.chain_storage.latest_blk_idx,
             ParseMode::FullData => transform!(try!(self.remaining_files.lock()).back()).index
         };
 
@@ -151,8 +151,8 @@ impl<'a> BlockchainParser<'a> {
                     if now - t_last_log > t_measure_frame {
                         let blocks_sec = self.stats.n_valid_blocks.checked_div((now - self.t_started) as u64).unwrap_or(1);
                         match self.mode {
-                            ParseMode::HeaderOnly => {
-                                info!(target:"dispatch", "Status: {:6} Headers scanned. (avg: {:5.2} blocks/sec)",
+                            ParseMode::Indexing => {
+                                info!(target:"dispatch", "Status: {:6} Blocks added to index. (avg: {:5.2} blocks/sec)",
                                      self.stats.n_valid_blocks, blocks_sec);
                             }
                             ParseMode::FullData => {
@@ -202,7 +202,7 @@ impl<'a> BlockchainParser<'a> {
                 }
             }
             // Collect headers to built a valid blockchain
-            ParseResult::HeaderOnly(header) => {
+            ParseResult::Indexing(header) => {
                 let header = Hashed::double_sha256(header);
                 self.unsorted_headers.insert(header.hash, header.value);
                 self.stats.n_valid_blocks += 1;
@@ -252,7 +252,7 @@ impl<'a> BlockchainParser<'a> {
         debug!(target: "dispatch", "Saving block headers as {}", self.options.chain_storage_path.display());
         // Update chain storage
         let headers = match self.mode {
-            ParseMode::HeaderOnly => try!(chain::ChainBuilder::extract_blockchain(&self.unsorted_headers)),
+            ParseMode::Indexing => try!(chain::ChainBuilder::extract_blockchain(&self.unsorted_headers)),
             ParseMode::FullData => Vec::new()
         };
         try!(self.chain_storage.extend(headers, &self.options.coin_type, self.stats.latest_blk_idx));

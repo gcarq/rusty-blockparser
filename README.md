@@ -15,7 +15,7 @@ It assumes a local copy of the blockchain, typically downloaded by Bitcoin core.
 The program flow is split up in two parts.
 Lets call it ParseModes:
 
-* **HeaderOnly**
+* **Indexing**
 
     If the parser is started the first time, it iterates over all blk.dat files and seeks from header to header. It doesn't evaluates the whole block it just calculates the block hashes to determine the main chain. So we only need to keep ~50 Mb in RAM instead of the whole Blockchain. This process is very fast and takes only **7-8 minutes with 2-3 threads and a average HDD (bottleneck here is I/O)***.
     The main chain is saved as a JSON file, lets call it ChainStorage. (The path can be specified with `--chain-storage`)
@@ -117,7 +117,7 @@ Transaction Types:
 
 * **Resume scans**
 
-    If you sync the blockchain at some point later, you don't need to make a FullData rescan. Just use `--resume` to force a HeaderOnly scan followed by a FullData scan which parses only new blocks. If you want a complete FullData rescan delete the ChainStorage json file.
+    If you sync the blockchain at some point later, you don't need to make a FullData rescan. Just use `--resume` to force a Reindexing followed by a FullData scan which parses only new blocks. If you want a complete FullData rescan delete the ChainStorage json file.
 
 ## Installing
 
@@ -200,7 +200,7 @@ optional arguments:
                         Verify merkle root (default: false)
   -t,--threads COUNT    Thread count (default: 2)
   -r,--resume           Resume from latest known block
-  --new                 Force complete rescan
+  --resume              Force complete reindexing
   -s,--chain-storage PATH
                         Specify path to chain storage. This is just a internal
                         state file (default: chain.json)
@@ -218,7 +218,7 @@ To make a `csvdump` of the Bitcoin blockchain your command would look like this:
 [00:42:19] INFO - main: Starting blockparser-0.3.0 ...
 [00:42:19] INFO - init: No header file found. Generating a new one ...
 [00:42:19] INFO - blkfile: Reading files from folder: ~/.bitcoin/blocks
-[00:42:19] INFO - parser: Parsing with mode HeaderOnly (first run).
+[00:42:19] INFO - parser: Building blockchain index.
 ...
 [00:50:46] INFO - dispatch: All threads finished.
 [00:50:46] INFO - dispatch: Done. Processed 393496 blocks in 8.45 minutes. (avg: 776 blocks/sec)
