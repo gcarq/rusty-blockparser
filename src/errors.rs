@@ -22,7 +22,7 @@ macro_rules! transform {
     });
 }
 
-/// Tags a OpError with a aditional description
+/// Tags a OpError with a additional description
 macro_rules! tag_err {
     ($e:expr, $($arg:tt)*) => (
         $e.join_msg(&format!( $($arg)* ))
