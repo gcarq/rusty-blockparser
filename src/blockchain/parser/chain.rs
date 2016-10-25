@@ -28,55 +28,51 @@ pub struct ChainStorage {
 
 impl ChainStorage {
 
-    /// Inserts one header to the index
-    fn insert_header(&mut self, header: Hashed<BlockHeader>, coin_type: &CoinType) -> OpResult<()> {
-        if self.hashes.is_empty() {
-            // Genesis block consistency check
-            if &coin_type.genesis_hash == &header.hash {
-                debug!(target: "chain", "Genesis hash is valid.");
-                self.hashes.push(header.hash);
-                return Ok(());
-            } else {
-                let errbuf = format!("Genesis hash for `{}` does not match:\n  Got: {}\n  Exp: {}",
-                                     coin_type.name,
-                                     utils::arr_to_hex_swapped(&header.hash),
-                                     utils::arr_to_hex_swapped(&coin_type.genesis_hash));
-                return Err(OpError::new(OpErrorKind::ValidateError).join_msg(&errbuf));
-            }
-        } else {
-            let latest_hash = transform!(self.hashes.last()).clone();
-            if &latest_hash == &header.value.prev_hash {
-                debug!(target: "chain.extend", "inserted header:  {}",
-                    utils::arr_to_hex_swapped(&header.value.prev_hash));
-                self.hashes.push(header.hash);
-                return Ok(());
-            } else {
-                if self.hashes.iter().position(|h| h == &header.hash).is_some() {
-                    // header is already in index
-                    return Ok(());
-                }
-                let errbuf = format!("prev_hash for `{}` does not match:\n  Got: {}\n  Exp: {}",
-                                     utils::arr_to_hex_swapped(&header.hash),
-                                     utils::arr_to_hex_swapped(&header.value.prev_hash),
-                                     utils::arr_to_hex_swapped(&latest_hash));
-                return Err(OpError::new(OpErrorKind::ValidateError).join_msg(&errbuf));
-            }
-        }
-    }
-
     /// Extends an existing ChainStorage with new hashes.
     pub fn extend(&mut self, headers: Vec<Hashed<BlockHeader>>,
         coin_type: &CoinType, latest_blk_idx: u32) -> OpResult<()> {
 
-        if headers.is_empty() {
-            debug!(target: "chain", "No new blocks are inserted ...");
-            return Ok(());
+        let len = headers.len();
+        let mut hashes: Vec<[u8; 32]> = Vec::with_capacity(len);
+        for i in 0..len {
+            if i < len - 1 {
+                if headers[i].hash != headers[i + 1].value.prev_hash {
+                    return Err(OpError::new(OpErrorKind::ValidateError)
+                        .join_msg("Longest-chain consistency check failed!"));
+                }
+            }
+            hashes.push(headers[i].hash);
         }
 
-        for header in headers {
-            try!(self.insert_header(header, coin_type));
-        }
+        if !hashes.is_empty() {
+            if self.hashes.is_empty() {
+                // Genesis block consistency check
+                let first_hash = transform!(hashes.first().cloned());
+                if &coin_type.genesis_hash != &first_hash {
+                    let errbuf = format!("Genesis hash for `{}` does not match:\n  Got: {}\n  Exp: {}",
+                        coin_type.name,
+                        utils::arr_to_hex_swapped(&first_hash),
+                        utils::arr_to_hex_swapped(&coin_type.genesis_hash));
+                    return Err(OpError::new(OpErrorKind::ValidateError).join_msg(&errbuf));
+                } else {
+                    debug!(target: "chain", "Genesis hash is valid.");
+                }
+                self.hashes.append(&mut hashes);
+            } else {
+                // Create a slice to insert only new blocks
+                let latest_hash = transform!(self.hashes.last()).clone();
+                let latest_known_idx = transform!(headers.iter().position(|h| h.hash == latest_hash));
 
+                let mut new_hashes = hashes.split_off(latest_known_idx + 1);
+                if new_hashes.len() > 0 {
+                    debug!(target: "chain", "\n  -> latest known block:  {}\n  -> first new block:     {}",
+                           utils::arr_to_hex_swapped(transform!(self.hashes.last())),
+                           utils::arr_to_hex_swapped(transform!(new_hashes.first())));
+                    self.hashes.append(&mut new_hashes);
+                }
+            }
+            debug!(target: "chain", "Inserted {} new blocks ...", self.hashes.len() - self.hashes_len);
+        }
         self.hashes_len = self.hashes.len();
         self.latest_blk_idx = latest_blk_idx;
         Ok(())
@@ -90,7 +86,7 @@ impl ChainStorage {
         try!(file.read_to_string(&mut encoded));
 
         let storage = try!(json::decode::<ChainStorage>(&encoded));
-        debug!(target: "chain.load", "Imported {} hashes from {}. Current block height: {} ... (latest blk.dat index: {})",
+        debug!(target: "chain", "Imported {} hashes from {}. Current block height: {} ... (latest blk.dat index: {})",
                        storage.hashes.len(), path.display(), storage.get_cur_height(), storage.latest_blk_idx);
         Ok(storage)
     }
@@ -100,7 +96,7 @@ impl ChainStorage {
         let encoded = try!(json::encode(&self));
         let mut file = try!(File::create(&path));
         try!(file.write_all(encoded.as_bytes()));
-        debug!(target: "chain.serialize", "Serialized {} hashes to {}. Latest processed block height: {} ... (latest blk.dat index: {})",
+        debug!(target: "chain", "Serialized {} hashes to {}. Latest processed block height: {} ... (latest blk.dat index: {})",
                        self.hashes.len(), path.display(), self.get_cur_height(), self.latest_blk_idx);
         Ok(encoded.len())
     }
@@ -118,7 +114,7 @@ impl ChainStorage {
         if self.index < self.hashes_len {
             self.index += 1;
         } else {
-            panic!("consume_next() index > len");
+            panic!("FATAL: consume_next() index > len! Please report this issue.");
         }
     }
 
@@ -198,7 +194,6 @@ impl<'a> ChainBuilder<'a> {
         return leafs;
     }
 }
-
 
 
 impl<'a> IntoIterator for &'a ChainBuilder<'a> {

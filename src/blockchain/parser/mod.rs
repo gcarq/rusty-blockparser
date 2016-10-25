@@ -66,7 +66,7 @@ impl<'a> BlockchainParser<'a> {
         info!(target: "parser", "Parsing {} blockchain ...", options.coin_type.name);
         match parse_mode {
             ParseMode::Indexing => {
-                info!(target: "parser", "Building blockchain index.");
+                info!(target: "parser", "Building blockchain index ...");
             }
             ParseMode::FullData => {
                 info!(target: "parser", "Parsing {} blocks with mode FullData.", chain_storage.remaining());
@@ -249,7 +249,7 @@ impl<'a> BlockchainParser<'a> {
 
     /// Searches for the longest chain and writes the hashes t
     fn save_chain_state(&mut self) -> OpResult<usize> {
-        debug!(target: "dispatch", "Saving block headers as {}", self.options.chain_storage_path.display());
+        info!(target: "dispatch", "Saving block headers as {} ...", self.options.chain_storage_path.display());
         // Update chain storage
         let headers = match self.mode {
             ParseMode::Indexing => try!(chain::ChainBuilder::extract_blockchain(&self.unsorted_headers)),
