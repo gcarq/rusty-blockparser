@@ -174,7 +174,6 @@ fn parse_args() -> OpResult<ParserOptions> {
     let matches = App::new("Multithreaded Blockchain Parser written in Rust")
         .version(crate_version!())
         .author("gcarq <michael.egger@tsn.at>")
-        .about("Multithreaded Blockchain Parser written in Rust")
         // Add flags
         .arg(Arg::with_name("verify-merkle-root")
             .long("verify-merkle-root")
