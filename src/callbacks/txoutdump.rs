@@ -81,6 +81,7 @@ impl Callback for TxOutDump {
 
     fn on_start(&mut self, _: CoinType, block_height: usize) {
         self.start_height = block_height;
+        self.file_chunk = block_height / FILES_BLOCKS_SIZE;
         info!(target: "on_start", "Using `txoutdump` with dump folder: {} and start block {}...", &self.dump_folder.display(), self.start_height);
     }
 

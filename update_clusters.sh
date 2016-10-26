@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Show commands, expanding variables
+set -x
 # Exit on error
 set -e
 # Do not return wildcards if glob returns no matches
@@ -18,7 +20,7 @@ else
   cp -f ~/clusterizer/chain.json ~/clusterizer/chain.json.old-$(date -Iseconds)
 fi
 
-rusty-blockparser -t $(nproc) -v "${MODE}" --chain-storage ~/clusterizer/chain.json txoutdump ~/clusterizer
+rusty-blockparser -t $(nproc) "${MODE}" --chain-storage ~/clusterizer/chain.json txoutdump ~/clusterizer
 
 for csvfile in ~/clusterizer/tx_out-*.csv
 do
@@ -28,7 +30,7 @@ do
 done
 
 echo "Running clusterizer..."
-rusty-blockparser -t $(nproc) -v "${MODE}" --chain-storage ~/clusterizer/chain.json.old clusterizer ~/clusterizer
+rusty-blockparser -t $(nproc) "${MODE}" --chain-storage ~/clusterizer/chain.json.old clusterizer ~/clusterizer
 
 echo "Sorting clusters.csv..."
 LC_ALL=C sort --parallel=$(nproc) ~/clusterizer/clusters.csv -o ~/clusterizer/clusters.csv
