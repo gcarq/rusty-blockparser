@@ -20,7 +20,7 @@ use blockchain::utils::{arr_to_hex_swapped, hex_to_arr32_swapped};
 use blockchain::utils::csv::IndexedCsvFile;
 
 const FILES_BLOCKS_SIZE: usize = 10000;
-const MAX_FILES_CACHED: usize = 4;
+const MAX_FILES_CACHED: usize = 2;
 
 /// Tarjan's Union-Find Data structure
 #[derive(RustcDecodable, RustcEncodable)]
