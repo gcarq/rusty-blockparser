@@ -15,7 +15,7 @@ It assumes a local copy of the blockchain, typically downloaded by Bitcoin core.
 The program flow is split up in two parts.
 Lets call it ParseModes:
 
-* **HeaderOnly**
+* **Indexing**
 
     If the parser is started the first time, it iterates over all blk.dat files and seeks from header to header. It doesn't evaluates the whole block it just calculates the block hashes to determine the main chain. So we only need to keep ~50 Mb in RAM instead of the whole Blockchain. This process is very fast and takes only **7-8 minutes with 2-3 threads and a average HDD (bottleneck here is I/O)***.
     The main chain is saved as a JSON file, lets call it ChainStorage. (The path can be specified with `--chain-storage`)
@@ -117,7 +117,7 @@ Transaction Types:
 
 * **Resume scans**
 
-    If you sync the blockchain at some point later, you don't need to make a FullData rescan. Just use `--resume` to force a HeaderOnly scan followed by a FullData scan which parses only new blocks. If you want a complete FullData rescan delete the ChainStorage json file.
+    If you sync the blockchain at some point later, you don't need to make a FullData rescan. Just use `--resume` to force a Reindexing followed by a FullData scan which parses only new blocks. If you want a complete FullData rescan delete the ChainStorage json file.
 
 ## Installing
 
@@ -179,51 +179,42 @@ Now export this wrappper with: `export RUSTC="./rustc-wrapper.sh"` and execute `
 
 ## Usage
 ```
-Usage:
-    target/debug/rusty-blockparser [OPTIONS] CALLBACK ARGUMENTS [...]
+USAGE:
+    rusty-blockparser [FLAGS] [OPTIONS] [SUBCOMMAND]
 
-Multithreaded Blockchain Parser written in Rust
+FLAGS:
+    -h, --help                  Prints help information
+    -n, --reindex               Force complete reindexing
+    -r, --resume                Resume from latest known block
+    -V, --version               Prints version information
+    -v                          Increases verbosity level. Info=0, Debug=1, Trace=2 (default: 0)
+        --verify-merkle-root    Verifies the merkle root of each block
 
-positional arguments:
-  callback              Set a callback to execute. See `--list-callbacks`
-  arguments             All following arguments are consumed by this callback.
+OPTIONS:
+        --backlog <COUNT>                    Sets maximum worker backlog (default: 100)
+    -d, --blockchain-dir <blockchain-dir>    Sets blockchain directory which contains blk.dat files (default: ~/.bitcoin/blocks)
+        --chain-storage <FILE>               Specify path to chain storage. This is just a internal state file (default: chain.json)
+    -c, --coin <NAME>                        Specify blockchain coin (default: bitcoin) [values: bitcoin, testnet3, namecoin, litecoin, dogecoin, myriadcoin,
+                                             unobtanium]
+    -t, --threads <COUNT>                    Thread count (default: 2)
 
-optional arguments:
-  -h,--help             show this help message and exit
-  --list-coins          Lists all implemented coins
-  --list-callbacks      Lists all available callbacks
-  -c,--coin COINNAME    Specify blockchain coin (default: bitcoin)
-  -d,--blockchain-dir PATH
-                        Set blockchain directory which contains blk.dat files
-                        (default: ~/.bitcoin/blocks)
-  --verify-merkle-root BOOL
-                        Verify merkle root (default: false)
-  -t,--threads COUNT    Thread count (default: 2)
-  -r,--resume           Resume from latest known block
-  --new                 Force complete rescan
-  -s,--chain-storage PATH
-                        Specify path to chain storage. This is just a internal
-                        state file (default: chain.json)
-  --backlog COUNT       Set maximum worker backlog (default: 100)
-  -v,--verbose          Increases verbosity level. Error=0, Info=1, Debug=2,
-                        Trace=3 (default: 1)
-  --version             Show version
-
+SUBCOMMANDS:
+    csvdump        Dumps the whole blockchain into CSV files
+    help           Prints this message or the help of the given subcommand(s)
+    simplestats    Shows various Blockchain stats
 ```
 ### Example
 
 To make a `csvdump` of the Bitcoin blockchain your command would look like this:
 ```
 # ./blockparser -t 3 csvdump /path/to/dump/
-[00:42:19] INFO - main: Starting blockparser-0.3.0 ...
-[00:42:19] INFO - init: No header file found. Generating a new one ...
+[00:42:19] INFO - main: Starting rusty-blockparser v0.6.0 ...
 [00:42:19] INFO - blkfile: Reading files from folder: ~/.bitcoin/blocks
-[00:42:19] INFO - parser: Parsing with mode HeaderOnly (first run).
+[00:42:19] INFO - parser: Building blockchain index ...
 ...
 [00:50:46] INFO - dispatch: All threads finished.
 [00:50:46] INFO - dispatch: Done. Processed 393496 blocks in 8.45 minutes. (avg: 776 blocks/sec)
 [00:50:47] INFO - chain: Inserted 393489 new blocks ...
-[00:50:48] INFO - main: Iteration 1 finished.
 [00:50:49] INFO - blkfile: Reading files from folder: ~/.bitcoin/blocks
 [00:50:49] INFO - parser: Parsing 393489 blocks with mode FullData.
 [00:50:49] INFO - callback: Using `csvdump` with dump folder: csv-dump/ ...
@@ -234,8 +225,6 @@ Dumped all blocks:   393489
 	-> transactions: 103777752
 	-> inputs:       274278239
 	-> outputs:      308285408
-[02:04:42] INFO - chain: Inserted 0 new blocks ...
-[02:04:42] INFO - main: Iteration 2 finished.
 ```
 
 

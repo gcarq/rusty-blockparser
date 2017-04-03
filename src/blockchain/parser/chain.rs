@@ -65,17 +65,15 @@ impl ChainStorage {
                 let latest_known_idx = transform!(headers.iter().position(|h| h.hash == latest_hash));
 
                 let mut new_hashes = hashes.split_off(latest_known_idx + 1);
-
                 if new_hashes.len() > 0 {
-                    debug!(target: "chain.extend", "\n  -> latest known:  {}\n  -> first new:     {}",
+                    debug!(target: "chain", "\n  -> latest known block:  {}\n  -> first new block:     {}",
                            utils::arr_to_hex_swapped(transform!(self.hashes.last())),
                            utils::arr_to_hex_swapped(transform!(new_hashes.first())));
+                    self.hashes.append(&mut new_hashes);
                 }
-                self.hashes.append(&mut new_hashes);
             }
+            debug!(target: "chain", "Inserted {} new blocks ...", self.hashes.len() - self.hashes_len);
         }
-
-        debug!(target: "chain", "Inserted {} new blocks ...", self.hashes.len() - self.hashes_len);
         self.hashes_len = self.hashes.len();
         self.latest_blk_idx = latest_blk_idx;
         Ok(())
@@ -89,7 +87,7 @@ impl ChainStorage {
         try!(file.read_to_string(&mut encoded));
 
         let storage = try!(json::decode::<ChainStorage>(&encoded));
-        debug!(target: "chain.load", "Imported {} hashes from {}. Current block height: {} ... (latest blk.dat index: {})",
+        debug!(target: "chain", "Imported {} hashes from {}. Current block height: {} ... (latest blk.dat index: {})",
                        storage.hashes.len(), path.display(), storage.get_cur_height(), storage.latest_blk_idx);
         Ok(storage)
     }
@@ -99,7 +97,7 @@ impl ChainStorage {
         let encoded = try!(json::encode(&self));
         let mut file = try!(File::create(&path));
         try!(file.write_all(encoded.as_bytes()));
-        debug!(target: "chain.serialize", "Serialized {} hashes to {}. Current block height: {} ... (latest blk.dat index: {})",
+        debug!(target: "chain", "Serialized {} hashes to {}. Latest processed block height: {} ... (latest blk.dat index: {})",
                        self.hashes.len(), path.display(), self.get_cur_height(), self.latest_blk_idx);
         Ok(encoded.len())
     }
@@ -117,7 +115,7 @@ impl ChainStorage {
         if self.index < self.hashes_len {
             self.index += 1;
         } else {
-            panic!("consume_next() index > len");
+            panic!("FATAL: consume_next() index > len! Please report this issue.");
         }
     }
 
@@ -199,7 +197,6 @@ impl<'a> ChainBuilder<'a> {
 }
 
 
-
 impl<'a> IntoIterator for &'a ChainBuilder<'a> {
     type Item = Hashed<BlockHeader>;
     type IntoIter = RevBlockIterator<'a>;
@@ -272,8 +269,7 @@ mod tests {
     use blockchain::parser::types::{CoinType, Bitcoin};
 
     #[test]
-    fn test_chain_storage() {
-
+    fn chain_storage() {
         let mut chain_storage = ChainStorage::default();
         let new_header = BlockHeader::new(
             0x00000001,
@@ -316,7 +312,60 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn test_load_bogus_chain_storage() {
+    fn chain_storage_insert_bogus_header() {
+        let mut chain_storage = ChainStorage::default();
+        let new_header = BlockHeader::new(
+            0x00000001,
+            [0u8; 32],
+            [0x3b, 0xa3, 0xed, 0xfd, 0x7a, 0x7b, 0x12, 0xb2,
+                0x7a, 0xc7, 0x2c, 0x3e, 0x67, 0x76, 0x8f, 0x61,
+                0x7f, 0xc8, 0x1b, 0xc3, 0x88, 0x8a, 0x51, 0x32,
+                0x3a, 0x9f, 0xb8, 0xaa, 0x4b, 0x1e, 0x5e, 0x4a],
+            1231006505,
+            0x1d00ffff,
+            2083236893);
+
+        assert_eq!(0, chain_storage.latest_blk_idx);
+        assert_eq!(0, chain_storage.get_cur_height());
+
+        // Extend storage and match genesis block
+        let coin_type = CoinType::from(Bitcoin);
+        chain_storage.extend(vec![Hashed::double_sha256(new_header)], &coin_type, 1).unwrap();
+        assert_eq!(coin_type.genesis_hash, chain_storage.get_next().unwrap());
+        assert_eq!(1, chain_storage.latest_blk_idx);
+
+        // try to insert same header again
+        let same_header = BlockHeader::new(
+            0x00000001,
+            [0u8; 32],
+            [0x3b, 0xa3, 0xed, 0xfd, 0x7a, 0x7b, 0x12, 0xb2,
+                0x7a, 0xc7, 0x2c, 0x3e, 0x67, 0x76, 0x8f, 0x61,
+                0x7f, 0xc8, 0x1b, 0xc3, 0x88, 0x8a, 0x51, 0x32,
+                0x3a, 0x9f, 0xb8, 0xaa, 0x4b, 0x1e, 0x5e, 0x4a],
+            1231006505,
+            0x1d00ffff,
+            2083236893);
+        chain_storage.extend(vec![Hashed::double_sha256(same_header)], &coin_type, 1).unwrap();
+        assert_eq!(coin_type.genesis_hash, chain_storage.get_next().unwrap());
+        assert_eq!(1, chain_storage.latest_blk_idx);
+
+        // try to insert bogus header
+        let bogus_header = BlockHeader::new(
+            0x00000001,
+            [1u8; 32],
+            [0x3b, 0xa3, 0xed, 0xfd, 0x7a, 0x7b, 0x12, 0xb2,
+                0x7a, 0xc7, 0x2c, 0x3e, 0x67, 0x76, 0x8f, 0x61,
+                0x7f, 0xc8, 0x1b, 0xc3, 0x88, 0x8a, 0x51, 0x32,
+                0x3a, 0x9f, 0xb8, 0xaa, 0x4b, 0x1e, 0x5e, 0x4a],
+            1231006505,
+            0x1d00ffff,
+            2083236893);
+        chain_storage.extend(vec![Hashed::double_sha256(bogus_header)], &coin_type, 1).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn load_bogus_chain_storage() {
         // Must fail
         let encoded = String::from("AABAAAFKAAANANFANAAMMDDMDAMDADNNDANANDNAVCACANAFMAFAMMAMDAMDM");
         match json::decode::<ChainStorage>(&encoded) {
@@ -327,7 +376,7 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn test_serialize_bogus_chain_storage() {
+    fn serialize_bogus_chain_storage() {
         let encoded = String::from("AABAAAFKAAANANFANAAMMDDMDAMDADNNDANANDNAVCACANAFMAFAMMAMDAMDM");
         match json::decode::<ChainStorage>(&encoded) {
             Ok(_) => return,

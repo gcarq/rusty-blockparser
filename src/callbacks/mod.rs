@@ -13,7 +13,7 @@ use blockchain::parser::types::CoinType;
 /// The parser ensures that the blocks arrive in the correct order.
 /// At this stage the main chain is already determined and orphans/stales are removed.
 /// Note: These callbacks are only triggered with ParseMode::FullData.
-/// (The first run to determine longest chain is running in ParseMode::HeaderOnly)
+/// (The first run to determine longest chain is running in ParseMode::Indexing)
 pub trait Callback {
 
     /// Builds SubCommand to specify callback name and required args,

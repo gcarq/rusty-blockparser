@@ -1,6 +1,6 @@
 [package]
 name = "rusty-blockparser"
-version = "0.5.4"
+version = "0.6.0"
 authors = ["gcarq <michael.egger@tsn.at>"]
 include = ["src/*", "sql/*", "LICENSE", "README.md", "Cargo.toml"]
 description = "Multithreaded Blockchain Parser for most common Cryptocurrencies based on Bitcoin"
@@ -11,20 +11,18 @@ keywords = ["Cryptocurrency", "Bitcoin", "Litecoin", "Blockchain", "Parser"]
 license = "GPL-3.0"
 
 [dependencies]
-csv                 = "~0.14"
-time                = "~0.1"
-log                 = "~0.3"
-clap                = "~2.9"
-rust-crypto         = "~0.2"
-rustc-serialize     = "~0.3"
-byteorder           = "~0.5"
-rust-base58         = "~0.0"
-twox-hash           = "~1.0.0"
-
+time            = "~0.1"
+log             = "~0.3"
+clap            = "~2.16"
+rust-crypto     = "~0.2"
+rustc-serialize = "~0.3"
+byteorder       = "~0.5"
+rust-base58     = "~0.0"
+seek_bufread    = "~1.2"
 
 # The development profile, used for `cargo build`
 [profile.dev]
-opt-level = 3                # Controls the --opt-level the compiler builds with
+opt-level = 0                # Controls the --opt-level the compiler builds with
 debug = true                 # Controls whether the compiler passes `-g`
 rpath = false                # Controls whether the compiler passes `-C rpath`
 lto = false                  # Controls `-C lto` for binaries and staticlibs

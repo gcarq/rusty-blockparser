@@ -94,7 +94,7 @@ impl Coin for Dash {
 }*/
 
  #[derive(Clone)]
- // Holds the selected coin type informations
+ // Holds the selected coin type information
 pub struct CoinType {
     pub name: String,
     pub magic: u32,
