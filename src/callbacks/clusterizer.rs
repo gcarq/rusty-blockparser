@@ -155,7 +155,7 @@ pub struct Clusterizer {
     cache_hits: u64,
     cache_misses: u64,
     file_accesses: u64,
-    file_attempts: Vec<f32>,
+    file_attempts: HashMap<usize, usize>,
 }
 
 impl Clusterizer {
@@ -208,7 +208,6 @@ impl Clusterizer {
     }
 
     fn get_address_from_txoutpoint(&mut self, tx_outpoint: &TxOutpoint) -> OpResult<String> {
-        let mut file_attempts = 0u32;
         for address_cache_slot in self.address_by_txoutpoint_cache.iter().rev() {
             if let Some(address) = address_cache_slot.get(tx_outpoint) {
                 trace!(target: "get_address_from_txoutpoint", "Cache HIT for tx_outpoint {:#?} = {}.", tx_outpoint, address);
@@ -219,12 +218,14 @@ impl Clusterizer {
         trace!(target: "get_address_from_txoutpoint", "Cache MISS for tx_outpoint {:#?}.", tx_outpoint);
         self.cache_misses += 1;
 
+        let mut file_attempts = 0usize;
         for outputs_csv in self.outputs_csv.iter_mut().rev().skip(self.address_by_txoutpoint_cache.len()) {
             file_attempts += 1;
             match outputs_csv.binary_search(&tx_outpoint.to_string()) {
                 Ok(address) => {
                     self.file_accesses += file_attempts as u64;
-                    self.file_attempts.push(file_attempts as f32);
+                    let current_count = self.file_attempts.entry(file_attempts).or_insert(0);
+                    *current_count += 1;
                     return Ok(address.to_owned());
                 }
                 Err(_) => {
@@ -233,7 +234,8 @@ impl Clusterizer {
             };
         }
 
-        self.file_attempts.push(file_attempts as f32);
+        let current_count = self.file_attempts.entry(file_attempts).or_insert(0);
+        *current_count += 1;
         Err(OpError::from("Not found.".to_owned()))
     }
 }
@@ -284,7 +286,7 @@ impl Callback for Clusterizer {
                 cache_hits: 0,
                 cache_misses: 0,
                 file_accesses: 0,
-                file_attempts: vec![1.0],
+                file_attempts: HashMap::new(),
             };
             Ok(cb)
         })() {
@@ -326,10 +328,10 @@ impl Callback for Clusterizer {
             if cache_tries == 0f32 {
                 cache_tries = 1f32;
             }
-            let avg_file_attempts = self.file_attempts.iter().fold(0f32, |p, &q| p + q) / self.file_attempts.len() as f32;
-            self.file_attempts = vec![avg_file_attempts];
 
-            info!(target: "on_block", "Progress: block {}, {} clusters, {} transactions, cache hit ratio: {}/{} ({:.01}%), file accesses: {}, avg file attempts: {:.01}.", block_height, self.clusters.set_size, self.tx_count, self.cache_hits, self.cache_hits + self.cache_misses, 100.0 * self.cache_hits as f32/cache_tries, self.file_accesses, avg_file_attempts);
+            info!(target: "on_block", "Progress: block {}, {} clusters, {} transactions, cache hit ratio: {}/{} ({:.01}%), file accesses: {}, file attempts: {:?}.", block_height, self.clusters.set_size, self.tx_count, self.cache_hits, self.cache_hits + self.cache_misses, 100.0 * self.cache_hits as f32/cache_tries, self.file_accesses, self.file_attempts);
+
+            self.file_attempts.clear();
         }
 
         let chunk_start = block_height / FILES_BLOCKS_SIZE;
