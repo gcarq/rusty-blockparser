@@ -332,6 +332,9 @@ impl Callback for Clusterizer {
             info!(target: "on_block", "Progress: block {}, {} clusters, {} transactions, cache hit ratio: {}/{} ({:.01}%), file accesses: {}, file attempts: {:?}.", block_height, self.clusters.set_size, self.tx_count, self.cache_hits, self.cache_hits + self.cache_misses, 100.0 * self.cache_hits as f32/cache_tries, self.file_accesses, self.file_attempts);
 
             self.file_attempts.clear();
+
+            // Write clusters to file
+            let _ = self.serialize_clusters();
         }
 
         let chunk_start = block_height / FILES_BLOCKS_SIZE;
