@@ -1,7 +1,7 @@
 extern crate csv;
 
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::fs::File;
+use std::fs::{File, self};
 use std::io::{Read, Write};
 use std::hash::{BuildHasherDefault, Hash};
 use std::path::PathBuf;
@@ -163,8 +163,11 @@ impl Clusterizer {
     fn serialize_clusters(&mut self) -> OpResult<usize> {
         self.clusters.finalize();
         let encoded = try!(json::encode(&self.clusters));
-        let mut file = try!(File::create(self.dump_folder.join("clusters.dat").as_path()));
+        let temp_file_path = self.dump_folder.join("clusters.dat.new").as_path().to_owned();
+        let file_path = self.dump_folder.join("clusters.dat").as_path().to_owned();
+        let mut file = try!(File::create(temp_file_path.to_owned()));
         try!(file.write_all(encoded.as_bytes()));
+        try!(fs::rename(temp_file_path, file_path));
         debug!(target: "serialize_clusters", "Serialized {} clusters to file.",
                        self.clusters.set_size);
         Ok(encoded.len())
