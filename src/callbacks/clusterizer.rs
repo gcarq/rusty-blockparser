@@ -190,7 +190,7 @@ impl Clusterizer {
     /// Cache the last outputs CSV file
     fn cache_outputs(&mut self, indexed_file: &mut IndexedCsvFile) -> OpResult<usize> {
         let mut file_map: HashMap<TxOutpoint, String, BuildHasherDefault<XxHash>> = Default::default();
-        debug!(target: "cache_outputs", "Caching transaction outputs in {}...", indexed_file.path.display());
+        debug!(target: "cache_outputs", "Caching transaction outputs in {:?}...", indexed_file.path);
         for record in indexed_file.index.records() {
             let record_vector: Vec<String> = record.unwrap();
             let tx_outpoint = TxOutpoint {
@@ -229,7 +229,7 @@ impl Clusterizer {
                     return Ok(address.to_owned());
                 }
                 Err(_) => {
-                    trace!(target: "get_address_from_txoutpoint", "Could not find tx_outpoint {:#?} in {}.", tx_outpoint, outputs_csv.path.as_path().display());
+                    trace!(target: "get_address_from_txoutpoint", "Could not find tx_outpoint {:#?} in {:?}.", tx_outpoint, outputs_csv.path.as_path());
                 }
             };
         }
@@ -293,16 +293,15 @@ impl Callback for Clusterizer {
             Ok(s) => return Ok(s),
             Err(e) => {
                 Err(tag_err!(e,
-                             "Couldn't initialize Clusterizer with folder: `{}`",
-                             dump_folder.as_path()
-                                 .display()))
+                             "Couldn't initialize Clusterizer with folder: `{:?}`",
+                             dump_folder.as_path()))
             }
         }
     }
 
     fn on_start(&mut self, _: CoinType, block_height: usize) {
         self.start_height = block_height;
-        info!(target: "on_start", "Using `clusterizer` with dump folder {} and start block {}...", &self.dump_folder.display(), self.start_height);
+        info!(target: "on_start", "Using `clusterizer` with dump folder {:?} and start block {}...", &self.dump_folder, self.start_height);
 
         for chunk_start in 0..self.start_height / FILES_BLOCKS_SIZE {
             let csv_file_path = self.dump_folder.join(format!("tx_out-{}-{}.csv", chunk_start * FILES_BLOCKS_SIZE, (chunk_start + 1) * FILES_BLOCKS_SIZE));
