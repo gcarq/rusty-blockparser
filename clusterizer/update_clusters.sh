@@ -57,13 +57,18 @@ fi
 # Create skip-file for txoutdump
 touch ~/clusterizer/.skip-txoutdump
 
-echo "Running clusterizer..."
-${BLOCKPARSER} -t ${NPROC} ${MODE} --chain-storage ~/clusterizer/chain.json.old clusterizer ~/clusterizer
+if [ ! -f ~/clusterizer/.skip-clusterizer ]; then
+  MODE="--resume"
+  echo "Running clusterizer..."
+  ${BLOCKPARSER} -t ${NPROC} ${MODE} --chain-storage ~/clusterizer/chain.json.old clusterizer ~/clusterizer
 
-echo "Sorting clusters.csv..."
-LC_ALL=C sort --parallel=${NPROC} ~/clusterizer/clusters.csv -o ~/clusterizer/clusters.csv
-echo "Done."
+  echo "Sorting clusters.csv..."
+  LC_ALL=C sort --parallel=${NPROC} ~/clusterizer/clusters.csv -o ~/clusterizer/clusters.csv
+  echo "Done."
+fi
+
+# Create skip-file for clusterizer
+touch ~/clusterizer/.skip-clusterizer
 
 # Clean temporary files
-rm -f ~/clusterizer/chain.json ~/clusterizer/chain.json.old ~/clusterizer/.skip-txoutdump
-
+rm -f ~/clusterizer/chain.json ~/clusterizer/chain.json.old
