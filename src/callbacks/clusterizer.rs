@@ -165,8 +165,8 @@ impl Clusterizer {
         let encoded = try!(json::encode(&self.clusters));
         let temp_file_path = self.dump_folder.join("clusters.dat.new").as_path().to_owned();
         let file_path = self.dump_folder.join("clusters.dat").as_path().to_owned();
-        let file = try!(File::create(temp_file_path.to_owned()));
-        try!(LineWriter::new(file).write_all(encoded.as_bytes()));
+        let mut file = try!(File::create(temp_file_path.to_owned()));
+        try!(file.write_all(encoded.as_bytes()));
         try!(fs::rename(temp_file_path, file_path));
         debug!(target: "serialize_clusters", "Serialized {} clusters to file.",
                        self.clusters.set_size);
