@@ -59,8 +59,9 @@ touch ~/clusterizer/.skip-txoutdump
 
 if [ ! -f ~/clusterizer/.skip-clusterizer ]; then
   MODE="--resume"
+  cp -f ~/clusterizer/chain.json.old /tmp/chain.json.old
   echo "Running clusterizer..."
-  ${BLOCKPARSER} -t ${NPROC} ${MODE} --chain-storage ~/clusterizer/chain.json.old clusterizer ~/clusterizer
+  ${BLOCKPARSER} -t ${NPROC} ${MODE} --chain-storage /tmp/chain.json.old clusterizer ~/clusterizer
 
   echo "Sorting clusters.csv..."
   LC_ALL=C sort --parallel=${NPROC} ~/clusterizer/clusters.csv -o ~/clusterizer/clusters.csv
