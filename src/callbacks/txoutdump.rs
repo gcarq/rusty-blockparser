@@ -1,6 +1,6 @@
 use std::fs::{File, OpenOptions};
 use std::path::PathBuf;
-use std::io::{BufWriter, Write};
+use std::io::{LineWriter, Write};
 
 use clap::{Arg, ArgMatches, App, SubCommand};
 
@@ -18,7 +18,7 @@ const FILES_BLOCKS_SIZE: usize = 10000;
 /// Dumps only transaction outputs into a CSV file
 pub struct TxOutDump {
     dump_folder: PathBuf,
-    txout_writer: BufWriter<File>,
+    txout_writer: LineWriter<File>,
 
     start_height: usize,
     end_height: usize,
@@ -29,12 +29,12 @@ pub struct TxOutDump {
 }
 
 impl TxOutDump {
-    fn create_writer(cap: usize, path: PathBuf) -> OpResult<BufWriter<File>> {
+    fn create_writer(path: PathBuf) -> OpResult<LineWriter<File>> {
         let file = match OpenOptions::new().create(true).append(true).open(&path) {
             Ok(f) => f,
             Err(err) => return Err(OpError::from(err)),
         };
-        Ok(BufWriter::with_capacity(cap, file))
+        Ok(LineWriter::new(file))
     }
 }
 
@@ -59,7 +59,8 @@ impl Callback for TxOutDump {
         match (|| -> OpResult<Self> {
             let cb = TxOutDump {
                 dump_folder: PathBuf::from(dump_folder),
-                txout_writer: try!(TxOutDump::create_writer(4000000, dump_folder.join("tx_out-0-10000.csv"))),
+                txout_writer: try!(TxOutDump::create_writer(
+                    dump_folder.join("tx_out-0-10000.csv"))),
                 start_height: 0,
                 end_height: 0,
                 file_chunk: 0,
@@ -94,7 +95,7 @@ impl Callback for TxOutDump {
         let chunk_start = block_height / FILES_BLOCKS_SIZE;
         if chunk_start == self.file_chunk {
             let csv_file_path = self.dump_folder.join(format!("tx_out-{}-{}.csv", chunk_start * FILES_BLOCKS_SIZE, (chunk_start + 1) * FILES_BLOCKS_SIZE));
-            self.txout_writer = TxOutDump::create_writer(100000, csv_file_path.to_owned()).expect("Unable to create CSV file.");
+            self.txout_writer = TxOutDump::create_writer(csv_file_path.to_owned()).expect("Unable to create CSV file.");
             debug!(target: "txoutdump", "Using CSV file {}.", csv_file_path.display());
             self.file_chunk += 1;
         }
