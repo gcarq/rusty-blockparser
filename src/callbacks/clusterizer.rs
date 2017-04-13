@@ -182,9 +182,10 @@ impl Clusterizer {
         let temp_file_path = self.dump_folder.join("clusters.csv.new").as_path().to_owned();
         let file_path = self.dump_folder.join("clusters.csv").as_path().to_owned();
         let mut file = try!(File::create(temp_file_path.to_owned()));
+        let writer = LineWriter::new(file);
         for (address, tag) in &self.clusters.map {
             let line = format!("{};{}\n", address, self.clusters.parent[*tag]);
-            try!(LineWriter::new(file).write_all(line.as_bytes()));
+            try!(writer.write_all(line.as_bytes()));
         }
 
         try!(fs::rename(temp_file_path, file_path));
