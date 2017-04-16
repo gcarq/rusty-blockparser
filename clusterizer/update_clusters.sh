@@ -5,6 +5,8 @@ NPROC=`nproc`
 
 # Show commands, expanding variables
 set -x
+# Exit on error
+set -e
 # Do not return wildcards if glob returns no matches
 shopt -s nullglob
 
