@@ -337,7 +337,7 @@ impl Callback for Clusterizer {
 
     fn on_block(&mut self, block: Block, block_height: usize) {
         debug!(target: "on_block", "Block: {}.", block_height);
-        if block_height >= self.max_height {
+        if self.max_height > 0 && block_height >= self.max_height {
             debug!(target: "on_block", "Skipping block {} because max-height is set to {}.", block_height, self.max_height);
             return;
         }
