@@ -148,6 +148,7 @@ pub struct Clusterizer {
 
     start_height: usize,
     end_height: usize,
+    max_height: usize,
     file_chunk: usize,
     tx_count: u64,
     in_count: u64,
@@ -256,15 +257,21 @@ impl Callback for Clusterizer {
             .version("0.1")
             .author("Michele Spagnuolo <mikispag@gmail.com>")
             .arg(Arg::with_name("dump-folder")
-                .help("Folder with a sorted tx_out.csv, where to store the cluster CSV file")
+                .help("Folder with sorted tx_out-*-*.csv files, where to store the cluster CSV")
                 .index(1)
                 .required(true))
+            .arg(Arg::with_name("max-height")
+                .short("m")
+                .long("max-height")
+                .takes_value(true)
+                .help("Stop at a specified block height"))
     }
 
     fn new(matches: &ArgMatches) -> OpResult<Self>
         where Self: Sized
     {
         let ref dump_folder = PathBuf::from(matches.value_of("dump-folder").unwrap());
+        let max_height = value_t!(matches, "max-height", usize).unwrap_or(0);
         match (|| -> OpResult<Self> {
             let cb = Clusterizer {
                 dump_folder: PathBuf::from(dump_folder),
@@ -286,6 +293,7 @@ impl Callback for Clusterizer {
 
                 start_height: 0,
                 end_height: 0,
+                max_height: max_height,
                 file_chunk: 0,
                 tx_count: 0,
                 in_count: 0,
@@ -329,6 +337,10 @@ impl Callback for Clusterizer {
 
     fn on_block(&mut self, block: Block, block_height: usize) {
         debug!(target: "on_block", "Block: {}.", block_height);
+        if block_height >= self.max_height {
+            debug!(target: "on_block", "Skipping block {} because max-height is set to {}.", block_height, self.max_height);
+            return;
+        }
         if block_height % 100 == 0 {
             let mut cache_tries: f32 = self.cache_hits as f32 + self.cache_misses as f32;
             if cache_tries == 0f32 {
