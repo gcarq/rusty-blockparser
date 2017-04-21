@@ -41,7 +41,7 @@ if [ ! -f ~/clusterizer/.skip-txoutdump ]; then
     MODE="--reindex"
   fi
 
-  ${BLOCKPARSER} -t ${NPROC} ${MODE} --chain-storage ~/clusterizer/chain.json txoutdump ~/clusterizer
+  ${BLOCKPARSER} -t ${NPROC} ${MODE} --backlog 500 --chain-storage ~/clusterizer/chain.json txoutdump ~/clusterizer
 
   for csvfile in `find ~/clusterizer -name 'tx_out-*.csv' -mtime -1 -print` ; do
     echo "Sorting ${csvfile}..."
@@ -63,7 +63,7 @@ if [ ! -f ~/clusterizer/.skip-clusterizer ]; then
   MODE="--resume"
   cp -f ~/clusterizer/chain.json.old /tmp/chain.json.old
   echo "Running clusterizer..."
-  ${BLOCKPARSER} -t ${NPROC} ${MODE} --chain-storage /tmp/chain.json.old clusterizer ~/clusterizer
+  ${BLOCKPARSER} -t ${NPROC} ${MODE} --backlog 500 --chain-storage /tmp/chain.json.old clusterizer ~/clusterizer
 
   echo "Sorting clusters.csv..."
   LC_ALL=C sort --parallel=${NPROC} ~/clusterizer/clusters.csv -o ~/clusterizer/clusters.csv
