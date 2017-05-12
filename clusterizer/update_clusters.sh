@@ -1,8 +1,5 @@
 #!/bin/bash
 
-BLOCKPARSER="/usr/local/bin/rusty-blockparser"
-NPROC=`nproc`
-
 # Show commands, expanding variables
 set -x
 # Exit on error
@@ -16,8 +13,9 @@ do
   bitcoin-cli stop
   sleep 10
 done
-echo "Done."
 
+BLOCKPARSER="/usr/local/bin/rusty-blockparser"
+NPROC=`nproc`
 OLDCHAINS=(~/clusterizer/chain.json.old-*)
 
 if [ -e "${OLDCHAINS[0]}" ]; then
