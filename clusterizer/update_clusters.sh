@@ -6,6 +6,8 @@ set -x
 set -e
 # Do not return wildcards if glob returns no matches
 shopt -s nullglob
+# Show backtraces
+export RUST_BACKTRACE=1
 
 while pgrep -x "bitcoind" > /dev/null
 do
