@@ -44,7 +44,7 @@ impl IndexedCsvFile {
             Ok(r) => {
                 debug!(target: "csv", "Retrieving first-char index for CSV file {:?}...", path);
                 first_char_indices = r.has_headers(false).decode().next().unwrap().unwrap();
-                debug!(target: "csv", "Done retrieving first-char index for CSV file {:?}...", path);
+                debug!(target: "csv", "Done retrieving first-char index for CSV file {:?}: {:?}...", path, first_char_indices);
             },
             Err(_) => {
                 debug!(target: "csv", "Building first-char index for CSV file {:?}...", path);
@@ -68,7 +68,6 @@ impl IndexedCsvFile {
                 debug!(target: "csv", "Done building first-char index for CSV file {:?}: {:?}.", path, first_char_indices);
             }
         }
-        trace!(target: "csv", "first_char_indices = {:?}", first_char_indices);
         index.seek(0).unwrap();
 
         Ok(IndexedCsvFile {
