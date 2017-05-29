@@ -37,7 +37,7 @@ impl IndexedCsvFile {
         let mut index = Indexed::open(try!(csv_reader()), index_data).unwrap();
         debug!(target: "csv", "Done building index for CSV file {:?}...", path);
 
-        let mut first_char_indices: Vec<u64> = Vec::with_capacity(17);
+        let mut first_char_indices: Vec<u64> = Vec::with_capacity(20);
         let mut first_char_index_path = path.to_owned();
         first_char_index_path.set_extension("idx");
         match csv::Reader::from_file(first_char_index_path.as_path()) {
@@ -63,7 +63,7 @@ impl IndexedCsvFile {
                     }
                     line_number += 1;
                 }
-                first_char_indices.push(line_number - 1);
+                first_char_indices.push(line_number - 2);
 
                 debug!(target: "csv", "Done building first-char index for CSV file {:?}: {:?}.", path, first_char_indices);
             }
