@@ -65,7 +65,7 @@ impl IndexedCsvFile {
                 }
                 first_char_indices.push(line_number - 1);
 
-                debug!(target: "csv", "Done building first-char index for CSV file {:?}...", path);
+                debug!(target: "csv", "Done building first-char index for CSV file {:?}: {:?}.", path, first_char_indices);
             }
         }
         trace!(target: "csv", "first_char_indices = {:?}", first_char_indices);
