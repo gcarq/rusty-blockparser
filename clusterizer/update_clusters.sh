@@ -27,7 +27,7 @@ if [ -e "${OLDCHAINS[0]}" ]; then
     HASHESLEN=`tail -c 100 "${CHAINFILE}" | cut -d: -f2- | cut -d, -f1`
     INDEX=`tail -c 100 "${CHAINFILE}" | cut -d: -f3- | cut -d, -f1`
     if [ $HASHESLEN -eq $INDEX ]; then
-      echo "Last sane chain.json: ${CHAINFILE}, from block ${INDEX}."
+      echo "Last sane chain.json: ${CHAINFILE}, up to block ${INDEX}."
       break
     fi
   done
