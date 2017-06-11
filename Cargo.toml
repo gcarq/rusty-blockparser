@@ -12,15 +12,15 @@ license = "GPL-3.0"
 
 [dependencies]
 csv             = "~0.15"
-time            = "~0.1"
-log             = "~0.3"
-clap            = "~2.16"
-rust-crypto     = "~0.2"
-rustc-serialize = "~0.3"
-byteorder       = "~0.5"
-rust-base58     = "~0.0"
-seek_bufread    = "~1.2"
-twox-hash       = "~1.0.1"
+time            = ">=0.1"
+log             = ">=0.3"
+clap            = ">=2.16"
+rust-crypto     = ">=0.2"
+rustc-serialize = ">=0.3"
+byteorder       = ">=0.5"
+rust-base58     = ">=0.0"
+seek_bufread    = ">=1.2"
+twox-hash       = ">=1.0.1"
 
 # The development profile, used for `cargo build`
 [profile.dev]
