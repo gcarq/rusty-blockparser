@@ -53,7 +53,7 @@ impl Callback for UnspentCsvDump {
         SubCommand::with_name("unspentcsvdump")
             .about("Dumps the unspent outputs to CSV file")
             .version("0.1")
-            .author("snarfer88 <fsvm88@gmail.com>")
+            .author("fsvm88 <fsvm88@gmail.com>")
             .arg(Arg::with_name("dump-folder")
                 .help("Folder to store csv file")
                 .index(1)
