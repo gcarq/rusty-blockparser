@@ -66,7 +66,7 @@ touch ~/clusterizer/.skip-txoutdump
 if [ ! -f ~/clusterizer/.skip-clusterizer ]; then
   cp -f ~/clusterizer/chain.json.old /tmp/chain.json.old
   echo "Running clusterizer..."
-  ${BLOCKPARSER} -t ${NPROC} --resume --backlog 500 --chain-storage /tmp/chain.json.old clusterizer ~/clusterizer ${CLUSTERIZER_MAX_BLOCK}
+  ${BLOCKPARSER} -t ${NPROC} -v --resume --backlog 500 --chain-storage /tmp/chain.json.old clusterizer ~/clusterizer ${CLUSTERIZER_MAX_BLOCK}
 
   echo "Sorting clusters.csv..."
   LC_ALL=C sort --parallel=${NPROC} ~/clusterizer/clusters.csv -o ~/clusterizer/clusters.csv
