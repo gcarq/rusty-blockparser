@@ -28,7 +28,7 @@ impl BlkFile {
     /// Returns a BufferedMemoryReader to reduce io wait.
     pub fn get_reader(&self) -> OpResult<BufReader<File>> {
         let f = try!(File::open(&self.path));
-        Ok(BufReader::with_capacity(10000000, f))
+        Ok(BufReader::with_capacity(100000000, f))
     }
 
     /// Collects all blk*.dat paths in the given directory
