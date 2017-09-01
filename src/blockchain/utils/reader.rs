@@ -3,7 +3,7 @@ use std::borrow::BorrowMut;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-use errors::OpResult;
+use errors::{OpError, OpErrorKind, OpResult};
 use blockchain::proto::varuint::VarUint;
 use blockchain::proto::block::Block;
 use blockchain::proto::header::BlockHeader;
@@ -50,10 +50,34 @@ pub trait BlockchainRead: io::Read {
         let mut txs: Vec<Tx> = Vec::with_capacity(tx_count as usize);
         for _ in 0..tx_count {
             let tx_version = try!(self.read_u32::<LittleEndian>());
-            let in_count = try!(VarUint::read_from(self));
+            let marker = try!(self.read_u8());
+            let in_count: VarUint;
+            if marker == 0x00 {
+                // SegWit hack
+                /*let flag = */try!(self.read_u8());
+                in_count = try!(VarUint::read_from(self));
+            } else {
+                in_count = match marker {
+                    0x01...0xfc => VarUint::from(marker),
+                    0xfd => VarUint::from(try!(self.read_u16::<LittleEndian>())),
+                    0xfe => VarUint::from(try!(self.read_u32::<LittleEndian>())),
+                    0xff => VarUint::from(try!(self.read_u64::<LittleEndian>())),
+                    _ => return Err(OpError::new(OpErrorKind::RuntimeError).join_msg("Invalid VarUint value")),
+                };
+            }
             let inputs = try!(self.read_tx_inputs(in_count.value));
             let out_count = try!(VarUint::read_from(self));
             let outputs = try!(self.read_tx_outputs(out_count.value));
+            if marker == 0x00 {
+                // SegWit hack
+                for _ in 0..in_count.value {
+                    let item_count = try!(VarUint::read_from(self));
+                    for _ in 0..item_count.value {
+                        let witness_len = try!(VarUint::read_from(self));
+                        let _ = try!(self.read_u8_vec(witness_len.value as u32));
+                    }
+                }
+            }
             let tx_locktime = try!(self.read_u32::<LittleEndian>());
             let tx = Tx::new(tx_version,
                              in_count, &inputs,
