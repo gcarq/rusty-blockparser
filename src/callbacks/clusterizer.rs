@@ -156,7 +156,6 @@ pub struct Clusterizer {
     cache_hits: u64,
     cache_misses: u64,
     file_accesses: u64,
-    file_attempts: HashMap<usize, usize>,
 }
 
 impl Clusterizer {
@@ -232,8 +231,6 @@ impl Clusterizer {
             match outputs_csv.binary_search(&tx_outpoint.to_string()) {
                 Ok(address) => {
                     self.file_accesses += file_attempts as u64;
-                    let current_count = self.file_attempts.entry(file_attempts).or_insert(0);
-                    *current_count += 1;
                     return Ok(address.to_owned());
                 }
                 Err(_) => {
@@ -242,8 +239,6 @@ impl Clusterizer {
             };
         }
 
-        let current_count = self.file_attempts.entry(file_attempts).or_insert(0);
-        *current_count += 1;
         Err(OpError::from("Not found.".to_owned()))
     }
 }
@@ -301,7 +296,6 @@ impl Callback for Clusterizer {
                 cache_hits: 0,
                 cache_misses: 0,
                 file_accesses: 0,
-                file_attempts: HashMap::new(),
             };
             Ok(cb)
         })() {
@@ -347,9 +341,7 @@ impl Callback for Clusterizer {
                 cache_tries = 1f32;
             }
 
-            info!(target: "on_block", "Progress: block {}, {} clusters, {} transactions, cache hit ratio: {}/{} ({:.01}%), file accesses: {}, file attempts: {:?}.", block_height, self.clusters.set_size, self.tx_count, self.cache_hits, self.cache_hits + self.cache_misses, 100.0 * self.cache_hits as f32/cache_tries, self.file_accesses, self.file_attempts);
-
-            self.file_attempts.clear();
+            info!(target: "on_block", "Progress: block {}, {} clusters, {} transactions, cache hit ratio: {}/{} ({:.01}%), file accesses: {}.", block_height, self.clusters.set_size, self.tx_count, self.cache_hits, self.cache_hits + self.cache_misses, 100.0 * self.cache_hits as f32/cache_tries, self.file_accesses);
         }
 
         let chunk_start = block_height / FILES_BLOCKS_SIZE;
