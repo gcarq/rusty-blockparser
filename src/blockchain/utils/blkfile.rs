@@ -1,7 +1,7 @@
 use std::convert::From;
 use std::iter::FromIterator;
 use std::path::PathBuf;
-use std::fs::{self, File};
+use std::fs::{self, File, Metadata};
 use std::collections::VecDeque;
 
 use seek_bufread::BufReader;
@@ -42,21 +42,29 @@ impl BlkFile {
         let blk_ext = String::from(".dat");
 
         for entry in content {
-            if let Ok(e) = entry {
-                // Check if it's a file
-                if try!(e.file_type()).is_file() {
-                    let file_name = String::from(transform!(e.file_name().to_str()));
-                    // Check if it's a valid blk file
-                    if let Some(index) = BlkFile::parse_blk_index(&file_name, &blk_prefix, &blk_ext) {
-                        // Only process new blk files
-                        if index >= min_blk_idx {
-                            // Build BlkFile structures
-                            let file_len = try!(e.metadata()).len();
-                            trace!(target: "blkfile", "Adding {}... (index: {}, size: {})", e.path().display(), index, file_len);
-                            blk_files.push(BlkFile::new(e.path(), index, file_len));
-                        }
+            if let Ok(de) = entry {
+
+                let sl = de.file_type().unwrap().is_symlink();
+                let mut path : PathBuf = de.path();
+                let mut metadata :Metadata = de.metadata().unwrap();
+                if sl {
+                    path = fs::read_link(path.clone()).unwrap();
+                    metadata = fs::metadata(path.clone()).unwrap();
+                }
+
+                let file_name = String::from(transform!(path.as_path().file_name().unwrap().to_str()));
+
+                // Check if it's a valid blk file
+                if let Some(index) = BlkFile::parse_blk_index(&file_name, &blk_prefix, &blk_ext) {
+                    // Only process new blk files
+                    if index >= min_blk_idx {
+                        // Build BlkFile structures
+                        let file_len = metadata.len();
+                        trace!(target: "blkfile", "Adding {}... (index: {}, size: {})", path.display(), index, file_len);
+                        blk_files.push(BlkFile::new(path, index, file_len));
                     }
                 }
+
             } else {
                 warn!(target: "blkfile", "Unable to read blk file!");
             }
