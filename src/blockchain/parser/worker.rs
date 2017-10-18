@@ -38,9 +38,10 @@ impl Worker {
             Ok(file) => {
                 // prepare instance variables
                 let reader = try!(file.get_reader());
-                debug!(target: &worker_name, "Parsing blk{:05}.dat ({:.2} Mb)",
+                debug!(target: &worker_name, "Parsing blk{:05}.dat ({:.2} Mb) {:?}",
                     file.index,
-                    file.size as f64 / 1000000.0);
+                    file.size as f64 / 1000000.0,
+                    file.path.as_path());
 
                 let w = Worker {
                     tx_channel: tx_channel,
