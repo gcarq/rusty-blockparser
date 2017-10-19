@@ -3,7 +3,7 @@ use std::borrow::BorrowMut;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-use errors::OpResult;
+use errors::{OpError, OpErrorKind, OpResult};
 use blockchain::proto::varuint::VarUint;
 use blockchain::proto::block::Block;
 use blockchain::proto::header::BlockHeader;
@@ -50,10 +50,34 @@ pub trait BlockchainRead: io::Read {
         let mut txs: Vec<Tx> = Vec::with_capacity(tx_count as usize);
         for _ in 0..tx_count {
             let tx_version = try!(self.read_u32::<LittleEndian>());
-            let in_count = try!(VarUint::read_from(self));
+            let marker = try!(self.read_u8());
+            let in_count: VarUint;
+            if marker == 0x00 {
+                // SegWit hack
+                /*let flag = */try!(self.read_u8());
+                in_count = try!(VarUint::read_from(self));
+            } else {
+                in_count = match marker {
+                    0x01...0xfc => VarUint::from(marker),
+                    0xfd => VarUint::from(try!(self.read_u16::<LittleEndian>())),
+                    0xfe => VarUint::from(try!(self.read_u32::<LittleEndian>())),
+                    0xff => VarUint::from(try!(self.read_u64::<LittleEndian>())),
+                    _ => return Err(OpError::new(OpErrorKind::RuntimeError).join_msg("Invalid VarUint value")),
+                };
+            }
             let inputs = try!(self.read_tx_inputs(in_count.value));
             let out_count = try!(VarUint::read_from(self));
             let outputs = try!(self.read_tx_outputs(out_count.value));
+            if marker == 0x00 {
+                // SegWit hack
+                for _ in 0..in_count.value {
+                    let item_count = try!(VarUint::read_from(self));
+                    for _ in 0..item_count.value {
+                        let witness_len = try!(VarUint::read_from(self));
+                        let _ = try!(self.read_u8_vec(witness_len.value as u32));
+                    }
+                }
+            }
             let tx_locktime = try!(self.read_u32::<LittleEndian>());
             let tx = Tx::new(tx_version,
                              in_count, &inputs,
@@ -211,11 +235,11 @@ mod tests {
         // Block Header
         assert_eq!(0x00000001,  block.header.value.version);
         assert_eq!("0000000000000000000000000000000000000000000000000000000000000000",
-                                arr_to_hex(&block.header.value.prev_hash));
+        arr_to_hex(&block.header.value.prev_hash));
         assert_eq!("3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a",
-                                arr_to_hex(&block.header.value.merkle_root));
+        arr_to_hex(&block.header.value.merkle_root));
         assert_eq!("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
-                                arr_to_hex_swapped(&block.header.hash));
+        arr_to_hex_swapped(&block.header.hash));
 
         // Check against computed merkle root
         //assert_eq!(&block.header.merkle_root, &block.compute_merkle_root());
@@ -230,27 +254,27 @@ mod tests {
         // Tx Inputs
         assert_eq!(0x01,        block.txs[0].value.in_count.value);
         assert_eq!("0000000000000000000000000000000000000000000000000000000000000000",
-                                arr_to_hex_swapped(&block.txs[0].value.inputs[0].outpoint.txid));
+        arr_to_hex_swapped(&block.txs[0].value.inputs[0].outpoint.txid));
         assert_eq!(0xffffffff,  block.txs[0].value.inputs[0].outpoint.index);
         assert_eq!(0x4d,        block.txs[0].value.inputs[0].script_len.value);
         assert_eq!("04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73",
-                                arr_to_hex(&block.txs[0].value.inputs[0].script_sig));
+        arr_to_hex(&block.txs[0].value.inputs[0].script_sig));
         assert_eq!(0xffffffff,  block.txs[0].value.inputs[0].seq_no);
 
         // Tx Outputs
         assert_eq!(0x01,        block.txs[0].value.out_count.value);
         assert_eq!(u64::from_be(0x00f2052a01000000),
-                                block.txs[0].value.outputs[0].out.value);
+        block.txs[0].value.outputs[0].out.value);
         assert_eq!(0x43,        block.txs[0].value.outputs[0].out.script_len.value);
 
         let script_pubkey = &block.txs[0].value.outputs[0].out.script_pubkey;
         assert_eq!("4104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac",
-                                arr_to_hex(&script_pubkey));
+        arr_to_hex(&script_pubkey));
         assert_eq!(0x00000000,  block.txs[0].value.tx_locktime);
 
         assert_eq!("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", script::eval_from_bytes(script_pubkey, Bitcoin.version_id()).address);
 
-                   /******* Genesis block raw data for reference (Most fields are little endian) *******
+        /******* Genesis block raw data for reference (Most fields are little endian) *******
 version            0x01000000   big endian??
 prev_hash          0x0000000000000000000000000000000000000000000000000000000000000000
 merkle_root        0x3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a
@@ -270,6 +294,6 @@ tx.out.value       0x00f2052a01000000   big endian??
 tx.out.script_len  0x43
 tx.out.script_pubkey      0x4104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac
 tx.lock_time       0x00000000
-                   *********************************************************************************************************/
+        *********************************************************************************************************/
     }
 }
