@@ -13,10 +13,10 @@ license = "GPL-3.0"
 [dependencies]
 time            = "~0.1"
 log             = "~0.3"
-clap            = "~2.16"
+clap            = "~2.26"
 rust-crypto     = "~0.2"
 rustc-serialize = "~0.3"
-byteorder       = "~0.5"
+byteorder       = "~1.1"
 rust-base58     = "~0.0"
 seek_bufread    = "~1.2"
 
