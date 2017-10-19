@@ -43,25 +43,28 @@ impl BlkFile {
 
         for entry in content {
             if let Ok(de) = entry {
+                let file_type = de.file_type().unwrap();
+                let sl = file_type.is_symlink();
+                let fl = file_type.is_file();
+                if sl || fl {
+                    let mut path: PathBuf = de.path();
+                    let mut metadata: Metadata = de.metadata().unwrap();
+                    if sl {
+                        path = fs::read_link(path.clone()).unwrap();
+                        metadata = fs::metadata(path.clone()).unwrap();
+                    }
 
-                let sl = de.file_type().unwrap().is_symlink();
-                let mut path : PathBuf = de.path();
-                let mut metadata :Metadata = de.metadata().unwrap();
-                if sl {
-                    path = fs::read_link(path.clone()).unwrap();
-                    metadata = fs::metadata(path.clone()).unwrap();
-                }
+                    let file_name = String::from(transform!(path.as_path().file_name().unwrap().to_str()));
 
-                let file_name = String::from(transform!(path.as_path().file_name().unwrap().to_str()));
-
-                // Check if it's a valid blk file
-                if let Some(index) = BlkFile::parse_blk_index(&file_name, &blk_prefix, &blk_ext) {
-                    // Only process new blk files
-                    if index >= min_blk_idx {
-                        // Build BlkFile structures
-                        let file_len = metadata.len();
-                        trace!(target: "blkfile", "Adding {}... (index: {}, size: {})", path.display(), index, file_len);
-                        blk_files.push(BlkFile::new(path, index, file_len));
+                    // Check if it's a valid blk file
+                    if let Some(index) = BlkFile::parse_blk_index(&file_name, &blk_prefix, &blk_ext) {
+                        // Only process new blk files
+                        if index >= min_blk_idx {
+                            // Build BlkFile structures
+                            let file_len = metadata.len();
+                            trace!(target: "blkfile", "Adding {}... (index: {}, size: {})", path.display(), index, file_len);
+                            blk_files.push(BlkFile::new(path, index, file_len));
+                        }
                     }
                 }
 
