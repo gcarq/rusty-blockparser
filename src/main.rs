@@ -41,6 +41,7 @@ use callbacks::stats::SimpleStats;
 use callbacks::clusterizer::Clusterizer;
 use callbacks::csvdump::CsvDump;
 use callbacks::txoutdump::TxOutDump;
+use callbacks::unspentcsvdump::UnspentCsvDump;
 
 
 /// Holds all available user arguments
@@ -224,6 +225,7 @@ fn parse_args() -> OpResult<ParserOptions> {
             .help("Sets maximum worker backlog (default: 100)")
             .takes_value(true))
         // Add callbacks
+        .subcommand(UnspentCsvDump::build_subcommand())
         .subcommand(CsvDump::build_subcommand())
         .subcommand(TxOutDump::build_subcommand())
         .subcommand(Clusterizer::build_subcommand())
@@ -260,6 +262,8 @@ fn parse_args() -> OpResult<ParserOptions> {
           callback = Box::new(try!(TxOutDump::new(matches)));
     } else if let Some(ref matches) = matches.subcommand_matches("clusterizer") {
          callback = Box::new(try!(Clusterizer::new(matches)));
+    } else if let Some(ref matches) = matches.subcommand_matches("unspentcsvdump") {
+         callback = Box::new(try!(UnspentCsvDump::new(matches)));
     } else {
         clap::Error {
             message: String::from("error: No Callback specified.\nFor more information try --help"),
