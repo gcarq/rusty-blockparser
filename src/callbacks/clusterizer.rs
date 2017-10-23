@@ -49,7 +49,7 @@ impl<T> DisjointSet<T>
             return;
         }
 
-        let mut len = &mut self.set_size;
+        let len = &mut self.set_size;
         self.map.insert(x, *len);
         self.parent.push(*len);
         self.rank.push(0);
