@@ -33,48 +33,28 @@ if [ -e "${OLDCHAINS[0]}" ]; then
   done
 fi
 
-if [ ! -f ~/clusterizer/.skip-txoutdump ]; then
-  if [ -e "${OLDCHAINS[0]}" ]; then
-    echo "Resuming txoutdump..."
-    cp -f "${CHAINFILE}" ~/clusterizer/chain.json
-    cp -f ~/clusterizer/chain.json ~/clusterizer/chain.json.old
-  else
-    echo "Running from scratch!"
-  fi
-
-  ${BLOCKPARSER} -t ${NPROC} --resume --backlog 500 --chain-storage ~/clusterizer/chain.json txoutdump ~/clusterizer
-
-  for csvfile in `find ~/clusterizer -name 'tx_out-*.csv' -mtime -1 -print` ; do
-    echo "Sorting ${csvfile}..."
-    LC_ALL=C sort -u --parallel=${NPROC} "${csvfile}" -o "${csvfile}"
-    echo "Done."
-  done
-
-  # Copy chain.json to a frozen version
-  cp -f ~/clusterizer/chain.json ~/clusterizer/chain.json.old-$(date -Iseconds)
-
-  # Clean chain.json frozen versions older than one week
-  find ~/clusterizer -name 'chain.json.old-*' -mtime +7 -exec rm -f {} \;
+if [ -e "${OLDCHAINS[0]}" ]; then
+  echo "Resuming..."
+  RESUME_OR_REINDEX="--resume"
+  cp -f "${CHAINFILE}" ~/clusterizer/chain.json
 else
-  # Instruct the clusterizer to stop at the previously reached height
-  CLUSTERIZER_MAX_BLOCK="--max-height ${INDEX}"
+  echo "Running from scratch!"
+  RESUME_OR_REINDEX="--reindex"
 fi
 
-# Create skip-file for txoutdump
-touch ~/clusterizer/.skip-txoutdump
+echo "Running clusterizer..."
+${BLOCKPARSER} -t ${NPROC} ${RESUME_OR_REINDEX} --chain-storage ~/clusterizer/chain.json clusterizer ~/clusterizer
+echo "Done."
 
-if [ ! -f ~/clusterizer/.skip-clusterizer ]; then
-  cp -f ~/clusterizer/chain.json.old /tmp/chain.json.old
-  echo "Running clusterizer..."
-  ${BLOCKPARSER} -t ${NPROC} -v --resume --backlog 500 --chain-storage /tmp/chain.json.old clusterizer ~/clusterizer ${CLUSTERIZER_MAX_BLOCK}
+echo "Sorting clusters.csv..."
+LC_ALL=C sort --parallel=${NPROC} ~/clusterizer/clusters.csv -o ~/clusterizer/clusters.csv
+echo "Done."
 
-  echo "Sorting clusters.csv..."
-  LC_ALL=C sort --parallel=${NPROC} ~/clusterizer/clusters.csv -o ~/clusterizer/clusters.csv
-  echo "Done."
-fi
+# Copy chain.json to a frozen version
+cp -f ~/clusterizer/chain.json ~/clusterizer/chain.json.old-$(date -Iseconds)
 
-# Create skip-file for clusterizer
-touch ~/clusterizer/.skip-clusterizer
+# Clean chain.json frozen versions older than one week
+find ~/clusterizer -name 'chain.json.old-*' -mtime +7 -exec rm -f {} \;
 
 # Clean temporary files
-rm -f ~/clusterizer/chain.json ~/clusterizer/chain.json.old
+rm -f ~/clusterizer/chain.json

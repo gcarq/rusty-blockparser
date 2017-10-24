@@ -1,8 +1,8 @@
 [package]
 name = "rusty-blockparser"
 version = "0.6.1"
-authors = ["gcarq <michael.egger@tsn.at>"]
-include = ["src/*", "sql/*", "LICENSE", "README.md", "Cargo.toml"]
+authors = ["gcarq <michael.egger@tsn.at>", "Michele Spagnuolo <mikispag@gmail.com>"]
+include = ["src/*", "LICENSE", "README.md", "Cargo.toml"]
 description = "Multithreaded Blockchain Parser for most common Cryptocurrencies based on Bitcoin"
 documentation = "https://github.com/gcarq/rusty-blockparser/blob/master/README.md"
 homepage = "https://github.com/gcarq/rusty-blockparser/"
