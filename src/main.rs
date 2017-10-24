@@ -11,6 +11,7 @@ extern crate twox_hash;
 extern crate byteorder;
 extern crate rust_base58;
 extern crate csv;
+extern crate csv_index;
 extern crate seek_bufread;
 
 #[macro_use]

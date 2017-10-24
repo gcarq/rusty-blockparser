@@ -55,17 +55,14 @@ impl UTXODump {
             Err(e) => return Err(tag_err!(e, "Unable to load UTXO CSV file {}!", csv_file_path_string)),
         };
 
-        for record in indexed_file.index.records() {
-            let record_vector: Vec<String> = record.unwrap();
+        for record in indexed_file.reader.records().map(|r| r.unwrap()) {
             let tx_outpoint = TxOutpoint {
-                txid: hex_to_arr32_swapped(&record_vector[0]),
-                index: record_vector[1].parse::<u32>().unwrap(),
+                txid: hex_to_arr32_swapped(&record[0]),
+                index: record[1].parse::<u32>().unwrap(),
             };
 
-            self.utxo_set
-                .insert(tx_outpoint, record_vector[2].to_owned());
+            self.utxo_set.insert(tx_outpoint, record[2].to_owned());
         }
-
         debug!(target: "UTXODump [load_utxo_set]", "Done.");
         Ok(self.utxo_set.len())
     }
