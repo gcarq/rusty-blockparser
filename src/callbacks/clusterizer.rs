@@ -251,9 +251,14 @@ impl Clusterizer {
                 txid: hex_to_arr32_swapped(&record[0]),
                 index: record[1].parse::<u32>().unwrap(),
             };
+            let address = record[2].to_owned();
+            if address.is_empty() {
+                // Skip non-standard outputs
+                continue;
+            }
 
             trace!(target: "Clusterizer [load_utxo_set]", "Adding UTXO {:#?} to the UTXO set.", tx_outpoint);
-            self.utxo_set.insert(tx_outpoint, record[2].to_owned());
+            self.utxo_set.insert(tx_outpoint, address);
         }
 
         info!(target: "Clusterizer [load_utxo_set]", "Done.");
@@ -356,7 +361,6 @@ impl Callback for Clusterizer {
                     index: i as u32,
                 };
                 let address = output.script.address.to_owned();
-
                 if address.is_empty() {
                     // Skip non-standard outputs
                     continue;
