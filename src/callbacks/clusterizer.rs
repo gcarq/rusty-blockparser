@@ -386,8 +386,8 @@ impl Callback for Clusterizer {
                         tx_inputs.insert(address.to_owned());
                     }
                     None => {
-                        panic!("Error while retrieving {:#?} from the UTXO set!",
-                               tx_outpoint);
+                        warn!("{:#?} is not present in the UTXO set!", tx_outpoint);
+                        continue;
                     }
                 };
 
