@@ -50,12 +50,12 @@ impl UTXODump {
         let csv_file_path = self.dump_folder.join("utxo.csv");
         let csv_file_path_string = csv_file_path.as_path().to_str().unwrap();
         debug!(target: "UTXODump [load_utxo_set]", "Indexing CSV file: {}...", csv_file_path_string);
-        let mut indexed_file = match CsvFile::new(csv_file_path.to_owned(), b';') {
+        let mut csv_file = match CsvFile::new(csv_file_path.to_owned(), b';') {
             Ok(idx) => idx,
             Err(e) => return Err(tag_err!(e, "Unable to load UTXO CSV file {}!", csv_file_path_string)),
         };
 
-        for record in indexed_file.reader.records().map(|r| r.unwrap()) {
+        for record in csv_file.reader.records().map(|r| r.unwrap()) {
             let tx_outpoint = TxOutpoint {
                 txid: hex_to_arr32_swapped(&record[0]),
                 index: record[1].parse::<u32>().unwrap(),
