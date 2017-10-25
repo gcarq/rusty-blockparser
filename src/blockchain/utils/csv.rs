@@ -15,7 +15,7 @@ pub struct CsvFile {
 
 impl CsvFile {
     pub fn new(path: PathBuf, delimiter: u8) -> OpResult<CsvFile> {
-        let mut csv_reader = match ReaderBuilder::new()
+        let csv_reader = match ReaderBuilder::new()
                   .has_headers(false)
                   .delimiter(delimiter)
                   .flexible(true)
