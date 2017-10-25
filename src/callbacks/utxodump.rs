@@ -14,7 +14,7 @@ use blockchain::proto::tx::TxOutpoint;
 use blockchain::parser::types::CoinType;
 use blockchain::proto::block::Block;
 use blockchain::utils::{arr_to_hex_swapped, hex_to_arr32_swapped};
-use blockchain::utils::csv::IndexedCsvFile;
+use blockchain::utils::csv::CsvFile;
 
 
 /// Dumps the UTXO set into a CSV file
@@ -50,7 +50,7 @@ impl UTXODump {
         let csv_file_path = self.dump_folder.join("utxo.csv");
         let csv_file_path_string = csv_file_path.as_path().to_str().unwrap();
         debug!(target: "UTXODump [load_utxo_set]", "Indexing CSV file: {}...", csv_file_path_string);
-        let mut indexed_file = match IndexedCsvFile::new(csv_file_path.to_owned(), b';') {
+        let mut indexed_file = match CsvFile::new(csv_file_path.to_owned(), b';') {
             Ok(idx) => idx,
             Err(e) => return Err(tag_err!(e, "Unable to load UTXO CSV file {}!", csv_file_path_string)),
         };

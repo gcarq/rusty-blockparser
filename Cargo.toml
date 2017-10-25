@@ -12,7 +12,6 @@ license = "GPL-3.0"
 
 [dependencies]
 csv             = ">=1.0.0-beta.5"
-csv-index       = ">=0.1"
 time            = ">=0.1"
 log             = ">=0.3"
 clap            = ">=2.26"
