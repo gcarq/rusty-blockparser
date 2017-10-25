@@ -240,7 +240,6 @@ impl Clusterizer {
 
         let csv_file_path = self.dump_folder.join("utxo.csv");
         let csv_file_path_string = csv_file_path.as_path().to_str().unwrap();
-        debug!(target: "Clusterizer [load_utxo_set]", "Indexing CSV file: {}...", csv_file_path_string);
         let mut csv_file = match CsvFile::new(csv_file_path.to_owned(), b';') {
             Ok(idx) => idx,
             Err(e) => return Err(tag_err!(e, "Unable to load UTXO CSV file {}!", csv_file_path_string)),
