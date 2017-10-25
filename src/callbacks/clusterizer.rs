@@ -34,7 +34,7 @@ impl<T> DisjointSet<T>
     where T: Clone + Hash + Eq
 {
     pub fn new() -> Self {
-        const CAPACITY: usize = 200000000;
+        const CAPACITY: usize = 1000000;
         DisjointSet {
             set_size: 0,
             parent: Vec::with_capacity(CAPACITY),
