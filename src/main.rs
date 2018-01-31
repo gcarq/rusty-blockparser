@@ -91,7 +91,7 @@ fn main() {
         };
 
         // Determine ParseMode based on existing chain file
-        let parse_mode = match chain_file.len() == 0 || resume {
+        let parse_mode = match chain_file.len() == 0 || !resume {
             true => ParseMode::Indexing,
             false => ParseMode::FullData
         };
