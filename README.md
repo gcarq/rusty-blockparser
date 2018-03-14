@@ -58,8 +58,8 @@ Lets call it ParseModes:
 
     `simplestats` is another callback. It prints some blockchain statistics like block count, transaction count, avg transactions per block, largest transaction, transaction types etc.
 
-    ```
-    SimpleStats:
+```
+SimpleStats:
    -> valid blocks:		395552
    -> total transactions:	106540337
    -> total tx inputs:		281575588
@@ -99,9 +99,9 @@ Transaction Types:
 
    -> Error(UnexpectedEof): 342 (0.00%)
         first seen in block #141461, txid: 9740e7d646f5278603c04706a366716e5e87212c57395e0d24761c0ae784b2c6
-   ```
+```
 
-    You can also define custom callbacks. A callback gets called at startup, on each block and at the end. See [src/callbacks/mod.rs](src/callbacks/mod.rs) for more information.
+You can also define custom callbacks. A callback gets called at startup, on each block and at the end. See [src/callbacks/mod.rs](src/callbacks/mod.rs) for more information.
 
 * **Multithreaded**
 
