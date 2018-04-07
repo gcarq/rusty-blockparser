@@ -1,10 +1,9 @@
-use std::fmt;
-use std::io::{self, BufRead, Read, Seek, SeekFrom};
+use std::io::{self};
 use std::borrow::BorrowMut;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-use errors::OpResult;
+use errors::{OpError, OpErrorKind, OpResult};
 use blockchain::proto::varuint::VarUint;
 use blockchain::proto::block::Block;
 use blockchain::proto::header::BlockHeader;
@@ -51,10 +50,34 @@ pub trait BlockchainRead: io::Read {
         let mut txs: Vec<Tx> = Vec::with_capacity(tx_count as usize);
         for _ in 0..tx_count {
             let tx_version = try!(self.read_u32::<LittleEndian>());
-            let in_count = try!(VarUint::read_from(self));
+            let marker = try!(self.read_u8());
+            let in_count: VarUint;
+            if marker == 0x00 {
+                // SegWit hack
+                /*let flag = */try!(self.read_u8());
+                in_count = try!(VarUint::read_from(self));
+            } else {
+                in_count = match marker {
+                    0x01...0xfc => VarUint::from(marker),
+                    0xfd => VarUint::from(try!(self.read_u16::<LittleEndian>())),
+                    0xfe => VarUint::from(try!(self.read_u32::<LittleEndian>())),
+                    0xff => VarUint::from(try!(self.read_u64::<LittleEndian>())),
+                    _ => return Err(OpError::new(OpErrorKind::RuntimeError).join_msg("Invalid VarUint value")),
+                };
+            }
             let inputs = try!(self.read_tx_inputs(in_count.value));
             let out_count = try!(VarUint::read_from(self));
             let outputs = try!(self.read_tx_outputs(out_count.value));
+            if marker == 0x00 {
+                // SegWit hack
+                for _ in 0..in_count.value {
+                    let item_count = try!(VarUint::read_from(self));
+                    for _ in 0..item_count.value {
+                        let witness_len = try!(VarUint::read_from(self));
+                        let _ = try!(self.read_u8_vec(witness_len.value as u32));
+                    }
+                }
+            }
             let tx_locktime = try!(self.read_u32::<LittleEndian>());
             let tx = Tx::new(tx_version,
                              in_count, &inputs,
@@ -116,119 +139,12 @@ pub trait BlockchainRead: io::Read {
 impl<R: io::Read + ?Sized> BlockchainRead for R {}
 
 
-/// Simple Buffered Memory Reader
-pub struct BufferedMemoryReader<R> {
-    inner: R,               // internal reader
-    buf: Vec<u8>,           // internal buffer
-    buf_pos: usize,         // position within buf
-    cap: usize,             // buf capacity
-    absolute_pos: usize,    // absolute position
-}
-
-impl<R: Read + Seek> BufferedMemoryReader<R> {
-    pub fn new(inner: R) -> BufferedMemoryReader<R> {
-        BufferedMemoryReader {
-            inner: inner,
-            buf: vec![0; 10000000],
-            buf_pos: 0,
-            cap: 0,
-            absolute_pos: 0,
-        }
-    }
-
-    pub fn with_capacity(cap: usize, inner: R) -> BufferedMemoryReader<R> {
-        BufferedMemoryReader {
-            inner: inner,
-            buf: vec![0; cap],
-            buf_pos: 0,
-            cap: 0,
-            absolute_pos: 0,
-        }
-    }
-
-    /// Returns the absolute file pointer position
-    pub fn position(&self) -> usize {
-        self.absolute_pos
-    }
-
-    /// Seeks n bytes from current position. TODO: implement Seek trait
-    pub fn seek_forward(&mut self, n: usize) -> Result<usize, io::Error> {
-        if let Some(remaining) = self.cap.checked_sub(self.buf_pos) {
-            if remaining.checked_sub(n).is_some() {
-                // Seek in our internal buffer
-                self.buf_pos += n;
-                self.absolute_pos += n;
-            } else {
-                // Seek in our internal buffer first, and the remaining offset in the inner reader
-                self.buf_pos = self.cap;
-                self.absolute_pos =
-                    try!(self.inner.seek(SeekFrom::Start((self.absolute_pos + n) as u64))) as usize;
-            }
-        } else {
-            // buffer is empty, seek the inner reader
-            self.absolute_pos =
-                try!(self.inner.seek(SeekFrom::Start((self.absolute_pos + n) as u64))) as usize;
-        }
-        Ok(self.absolute_pos)
-    }
-}
-
-impl<R: Read> Read for BufferedMemoryReader<R> {
-
-    // Reads the next available bytes from buffer or inner stream.
-    // Doesn't guarantee the whole buffer is filled.
-    // A return value of 0 indicates EOF
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let n_exp = buf.len();
-        let mut n_total = 0;
-        loop {
-            let n_read = {
-                let mut rem = try!(self.fill_buf());
-                try!(rem.read(&mut buf[n_total..]))
-            };
-            self.consume(n_read);
-            n_total += n_read;
-            if n_read == 0 || n_total >= n_exp  {
-                break;
-            }
-        }
-        Ok(n_total)
-    }
-}
-
-impl<R: Read> BufRead for BufferedMemoryReader<R> {
-    fn fill_buf(&mut self) -> io::Result<&[u8]> {
-        // If we've reached the end of our internal buffer then we need to fetch
-        // some more data from the underlying reader.
-        if self.cap.saturating_sub(self.buf_pos) == 0 {
-            self.cap = try!(self.inner.read(&mut self.buf));
-            self.buf_pos = 0;
-        }
-        Ok(&self.buf[self.buf_pos..self.cap])
-    }
-
-    fn consume(&mut self, amt: usize) {
-        self.buf_pos = self.buf_pos + amt;
-        self.absolute_pos = self.absolute_pos + amt;
-    }
-}
-
-impl<R> fmt::Debug for BufferedMemoryReader<R> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt.debug_struct("BufferedMemoryReader")
-           .field("used buffer",
-                  &format_args!("{}/{}", self.buf_pos, self.buf.len()))
-           .field("cap", &self.cap)
-           .field("absolute_pos", &self.absolute_pos)
-           .finish()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::{Cursor, Read, ErrorKind};
+    use std::io::{Cursor};
     use byteorder::{LittleEndian, ReadBytesExt};
+    use seek_bufread::BufReader;
     use blockchain::utils::{arr_to_hex_swapped, arr_to_hex};
     use blockchain::proto::script;
     use blockchain::parser::types::{Coin, Bitcoin};
@@ -302,7 +218,7 @@ mod tests {
                             0x2c, 0xbf, 0x23, 0x42, 0xc8, 0x58, 0xee, 0xac,
                             0x00, 0x00, 0x00, 0x0];
         let inner = Cursor::new(raw_data);
-        let mut reader = BufferedMemoryReader::with_capacity(200, inner);
+        let mut reader = BufReader::with_capacity(200, inner);
 
         let blk_id = 0;
         let blk_offset = 9;
@@ -379,34 +295,5 @@ tx.out.script_len  0x43
 tx.out.script_pubkey      0x4104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac
 tx.lock_time       0x00000000
                    *********************************************************************************************************/
-    }
-
-    #[test]
-    fn test_buffered_memory_reader() {
-
-        let inner = Cursor::new([5, 6, 7, 0, 1, 2, 3, 4]);
-        let mut reader = BufferedMemoryReader::with_capacity(2, inner);
-
-        let mut buf = [0, 0, 0];
-        reader.read(&mut buf).unwrap();
-        assert_eq!(buf, [5, 6, 7]);
-
-        let mut buf = [0, 0];
-        reader.read(&mut buf).unwrap();
-        assert_eq!(buf, [0, 1]);
-
-        let mut buf = [0];
-        reader.read(&mut buf).unwrap();
-        assert_eq!(buf, [2]);
-    }
-
-    #[test]
-    fn test_buffered_memory_reader_eof() {
-
-        // Test error propagation on invalid read
-        let inner = Cursor::new([0, 1, 2, 3, 4, 5]);
-        let mut reader = BufferedMemoryReader::with_capacity(5, inner);
-        // Reading u64 from 6 bytes, Error has to be std::io::Error(UnexpectedEof)
-        assert_eq!(ErrorKind::UnexpectedEof, reader.read_u64::<LittleEndian>().err().unwrap().kind());
     }
 }

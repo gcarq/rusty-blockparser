@@ -1,22 +1,23 @@
 use std::convert::From;
 use std::iter::FromIterator;
 use std::path::PathBuf;
-use std::fs::{self, File};
+use std::fs::{self, File, Metadata};
 use std::collections::VecDeque;
 
+use seek_bufread::BufReader;
+
 use errors::{OpError, OpErrorKind, OpResult};
-use blockchain::utils::reader::BufferedMemoryReader;
 
 /// Holds all necessary data about a raw blk file
 #[derive(Debug)]
 pub struct BlkFile {
     pub path: PathBuf,   // File path
     pub index: u32,      // Holds Index of blk file. (E.g. blk00000.dat has index 0x00000)
-    pub size: usize,     // File size in bytes
+    pub size: u64,       // File size in bytes
 }
 
 impl BlkFile {
-    pub fn new(path: PathBuf, index: u32, size: usize) -> BlkFile {
+    pub fn new(path: PathBuf, index: u32, size: u64) -> BlkFile {
         BlkFile {
             path: path,
             index: index,
@@ -24,10 +25,10 @@ impl BlkFile {
         }
     }
 
-    /// Returns a BufferedMemoryReader to reduce iowait.
-    pub fn get_reader(&self) -> OpResult<BufferedMemoryReader<File>> {
+    /// Returns a BufferedMemoryReader to reduce io wait.
+    pub fn get_reader(&self) -> OpResult<BufReader<File>> {
         let f = try!(File::open(&self.path));
-        Ok(BufferedMemoryReader::with_capacity(10000000, f))
+        Ok(BufReader::with_capacity(100000000, f))
     }
 
     /// Collects all blk*.dat paths in the given directory
@@ -41,21 +42,32 @@ impl BlkFile {
         let blk_ext = String::from(".dat");
 
         for entry in content {
-            if let Ok(e) = entry {
-                // Check if it's a file
-                if try!(e.file_type()).is_file() {
-                    let file_name = String::from(transform!(e.file_name().to_str()));
+            if let Ok(de) = entry {
+                let file_type = de.file_type().unwrap();
+                let sl = file_type.is_symlink();
+                let fl = file_type.is_file();
+                if sl || fl {
+                    let mut path: PathBuf = de.path();
+                    let mut metadata: Metadata = de.metadata().unwrap();
+                    if sl {
+                        path = fs::read_link(path.clone()).unwrap();
+                        metadata = fs::metadata(path.clone()).unwrap();
+                    }
+
+                    let file_name = String::from(transform!(path.as_path().file_name().unwrap().to_str()));
+
                     // Check if it's a valid blk file
                     if let Some(index) = BlkFile::parse_blk_index(&file_name, &blk_prefix, &blk_ext) {
                         // Only process new blk files
                         if index >= min_blk_idx {
                             // Build BlkFile structures
-                            let file_len = try!(e.metadata()).len() as usize;
-                            trace!(target: "blkfile", "Adding {}... (index: {}, size: {})", e.path().display(), index, file_len);
-                            blk_files.push(BlkFile::new(e.path(), index, file_len));
+                            let file_len = metadata.len();
+                            trace!(target: "blkfile", "Adding {}... (index: {}, size: {})", path.display(), index, file_len);
+                            blk_files.push(BlkFile::new(path, index, file_len));
                         }
                     }
                 }
+
             } else {
                 warn!(target: "blkfile", "Unable to read blk file!");
             }
@@ -97,5 +109,6 @@ mod tests {
         assert_eq!(1202, BlkFile::parse_blk_index("blk1202.dat", blk_prefix, blk_ext).unwrap());
         assert_eq!(13412451, BlkFile::parse_blk_index("blk13412451.dat", blk_prefix, blk_ext).unwrap());
         assert_eq!(true, BlkFile::parse_blk_index("blkindex.dat", blk_prefix, blk_ext).is_none());
+        assert_eq!(true, BlkFile::parse_blk_index("invalid.dat", blk_prefix, blk_ext).is_none());
     }
 }

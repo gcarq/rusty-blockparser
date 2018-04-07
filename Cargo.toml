@@ -1,6 +1,6 @@
 [package]
 name = "rusty-blockparser"
-version = "0.5.0"
+version = "0.6.1"
 authors = ["gcarq <michael.egger@tsn.at>"]
 include = ["src/*", "sql/*", "LICENSE", "README.md", "Cargo.toml"]
 description = "Multithreaded Blockchain Parser for most common Cryptocurrencies based on Bitcoin"
@@ -11,14 +11,14 @@ keywords = ["Cryptocurrency", "Bitcoin", "Litecoin", "Blockchain", "Parser"]
 license = "GPL-3.0"
 
 [dependencies]
-time            = ">=0.1.34"
-log             = ">=0.3.6"
-clap            = ">=2.9.2"
-rust-crypto     = ">=0.2.36"
-rustc-serialize = ">=0.3.19"
-byteorder       = ">=0.5"
-rust-base58     = ">=0.0.4"
-
+time            = "~0.1"
+log             = "~0.3"
+clap            = "~2.26"
+rust-crypto     = "~0.2"
+rustc-serialize = "~0.3"
+byteorder       = "~1.1"
+rust-base58     = "~0.0"
+seek_bufread    = "~1.2"
 
 # The development profile, used for `cargo build`
 [profile.dev]

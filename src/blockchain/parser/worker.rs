@@ -3,14 +3,16 @@ use std::sync::{Arc, Mutex, mpsc};
 use std::thread;
 use std::collections::VecDeque;
 use std::time::Duration;
+use std::io::{Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
+use seek_bufread::BufReader;
 
 use errors::{OpError, OpErrorKind, OpResult};
 use blockchain::parser::{ParseMode, ParseResult};
 use blockchain::utils::blkfile::BlkFile;
 use blockchain::parser::types::CoinType;
-use blockchain::utils::reader::{BlockchainRead, BufferedMemoryReader};
+use blockchain::utils::reader::{BlockchainRead};
 
 /// Represents a single Worker. All workers share Vector with remaining files.
 /// It reads and parses all blocks/header from a single blk file until there are no files left.
@@ -20,7 +22,7 @@ pub struct Worker {
     pub remaining_files: Arc<Mutex<VecDeque<BlkFile>>>, // remaining BlkFiles to parse (shared with other threads)
     pub coin_type: CoinType,                            // Coin type
     pub blk_file: BlkFile,                              // Current blk file
-    pub reader: BufferedMemoryReader<File>,             // Reader for the entire blk file content
+    pub reader: BufReader<File>,                        // Reader for the entire blk file content
     pub mode: ParseMode,                                // Specifies if we should read the whole block data or just the header
     pub name: String                                    // Thread name
 }
@@ -66,9 +68,14 @@ impl Worker {
     // Highest worker loop. Handles all thread errors
     pub fn process(&mut self) {
         loop {
-            match self.exec_loop() {
-                Ok(true)  => (),
-                Ok(false) => break,
+            match self.process_next_block() {
+                Ok(Some(_))  => {
+                    // There are still some blocks
+                },
+                Ok(None) => {
+                    // No blocks left
+                    break;
+                },
                 Err(err) => {
                     error!(target: &self.name, "{}", &err);
                     self.tx_channel.send(ParseResult::Error(err))
@@ -88,16 +95,16 @@ impl Worker {
 
     /// Extracts data from blk files and sends them to main thread
     /// Returns false is if this thread can be disposed
-    fn exec_loop(&mut self) -> OpResult<bool> {
+    fn process_next_block(&mut self) -> OpResult<Option<()>> {
         match try!(self.maybe_next()) {
-            false => return Ok(false),
+            false => Ok(None),
             true => {
                 // Get metadata for next block
                 let magic = try!(self.reader.read_u32::<LittleEndian>());
                 if magic == 0 {
                     //TODO: find a better way to detect incomplete blk file
                     debug!(target: &self.name, "Got 0x00000000 as magic number. Finished.");
-                    return Ok(false);
+                    return Ok(None);
                 }
                 // Verify magic value based on current coin type
                 if magic != self.coin_type.magic {
@@ -110,7 +117,7 @@ impl Worker {
                 let result = try!(self.extract_data());
                 // Send parsed result to main thread
                 try!(self.tx_channel.send(result));
-                Ok(true)
+                Ok(Some(()))
             }
         }
     }
@@ -125,19 +132,19 @@ impl Worker {
         let result = match self.mode {
             ParseMode::FullData => {
                 let block = try!(self.reader.read_block(self.blk_file.index,
-                                                        block_offset,
+                                                        block_offset as usize,
                                                         blocksize,
                                                         self.coin_type.version_id));
                 Ok(ParseResult::FullData(block))
             }
-            ParseMode::HeaderOnly => {
+            ParseMode::Indexing => {
                 let header = try!(self.reader.read_block_header());
-                Ok(ParseResult::HeaderOnly(header))
+                Ok(ParseResult::Indexing(header))
             }
         };
         // Seek to next block position
-        let n_bytes = blocksize as usize - (self.reader.position() - block_offset);
-        try!(self.reader.seek_forward(n_bytes));
+        let n_bytes = blocksize as u64 - (self.reader.position() - block_offset);
+        try!(self.reader.seek(SeekFrom::Current(n_bytes as i64)));
         return result;
     }
 
