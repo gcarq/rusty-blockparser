@@ -140,8 +140,8 @@ impl Callback for UnspentCsvDump {
 		).as_bytes()
 	).unwrap();
 	for (key, value) in self.transactions_unspent.iter() {
-		let txid = &key[0..63];
-		let index = &key[64..key.len()-1];
+		let txid = &key[0..64];
+		let index = &key[64..];
 		//let  = key.len();
 		//let mut mut_key = key.clone();
 		//let index: String = mut_key.pop().unwrap().to_string();
