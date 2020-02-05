@@ -141,7 +141,7 @@ git clone https://github.com/gcarq/rusty-blockparser.git
 cd rusty-blockparser
 cargo build --release
 cargo test --release
-./target/release/blockparser --help
+./target/release/rusty-blockparser --help
 ```
 
 It is important to build with `--release` and `opt-level = 3 (specified in Cargo.toml)`, otherwise you will get a horrible performance!
