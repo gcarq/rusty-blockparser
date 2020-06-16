@@ -4,14 +4,14 @@ use std::io::{BufWriter, Write};
 
 use clap::{Arg, ArgMatches, App, SubCommand};
 
-use callbacks::Callback;
-use errors::{OpError, OpResult};
+use crate::callbacks::Callback;
+use crate::errors::{OpError, OpResult};
 
-use blockchain::proto::tx::{Tx, TxInput, EvaluatedTxOut};
-use blockchain::parser::types::CoinType;
-use blockchain::proto::block::Block;
-use blockchain::proto::Hashed;
-use blockchain::utils;
+use crate::blockchain::proto::tx::{Tx, TxInput, EvaluatedTxOut};
+use crate::blockchain::parser::types::CoinType;
+use crate::blockchain::proto::block::Block;
+use crate::blockchain::proto::Hashed;
+use crate::blockchain::utils;
 
 
 /// Dumps the whole blockchain into csv files
@@ -59,10 +59,10 @@ impl Callback for CsvDump {
             let cap = 4000000;
             let cb = CsvDump {
                 dump_folder:    PathBuf::from(dump_folder),
-                block_writer:   try!(CsvDump::create_writer(cap, dump_folder.join("blocks.csv.tmp"))),
-                tx_writer:      try!(CsvDump::create_writer(cap, dump_folder.join("transactions.csv.tmp"))),
-                txin_writer:    try!(CsvDump::create_writer(cap, dump_folder.join("tx_in.csv.tmp"))),
-                txout_writer:   try!(CsvDump::create_writer(cap, dump_folder.join("tx_out.csv.tmp"))),
+                block_writer:   CsvDump::create_writer(cap, dump_folder.join("blocks.csv.tmp"))?,
+                tx_writer:      CsvDump::create_writer(cap, dump_folder.join("transactions.csv.tmp"))?,
+                txin_writer:    CsvDump::create_writer(cap, dump_folder.join("tx_in.csv.tmp"))?,
+                txout_writer:   CsvDump::create_writer(cap, dump_folder.join("tx_out.csv.tmp"))?,
                 start_height: 0, end_height: 0, tx_count: 0, in_count: 0, out_count: 0
             };
             Ok(cb)

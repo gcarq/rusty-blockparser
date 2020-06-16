@@ -3,13 +3,13 @@ use std::collections::HashMap;
 
 use clap::{ArgMatches, App, SubCommand};
 
-use blockchain::proto::block::{self, Block};
-use blockchain::utils;
-use blockchain::parser::types::CoinType;
-use blockchain::proto::script::ScriptPattern;
+use crate::blockchain::proto::block::{self, Block};
+use crate::blockchain::utils;
+use crate::blockchain::parser::types::CoinType;
+use crate::blockchain::proto::script::ScriptPattern;
 
-use callbacks::Callback;
-use errors::OpResult;
+use crate::callbacks::Callback;
+use crate::errors::OpResult;
 
 #[derive(Default)]
 pub struct SimpleStats {

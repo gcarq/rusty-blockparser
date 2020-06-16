@@ -4,7 +4,7 @@ use std::io;
 use std::convert::{self, From};
 use std::sync;
 use std::string;
-use blockchain::proto::script;
+use crate::blockchain::proto::script;
 
 use rustc_serialize::json;
 
@@ -18,7 +18,7 @@ macro_rules! line_mark {
 /// If the Option contains None, a line mark will be placed along with OpErrorKind::None
 macro_rules! transform {
     ($e:expr) => ({
-        try!($e.ok_or(OpError::new(OpErrorKind::None).join_msg(&line_mark!())))
+        $e.ok_or(OpError::new(OpErrorKind::None).join_msg(&line_mark!()))?
     });
 }
 
@@ -64,7 +64,7 @@ impl fmt::Display for OpError {
 
 impl error::Error for OpError {
     fn description(&self) -> &str { self.message.as_ref() }
-    fn cause(&self) -> Option<&error::Error> { self.kind.cause() }
+    fn cause(&self) -> Option<&dyn error::Error> { self.kind.cause() }
 }
 
 
@@ -122,7 +122,7 @@ impl error::Error for OpErrorKind {
         }
     }
 
-    fn cause(&self) -> Option<&error::Error> {
+    fn cause(&self) -> Option<&dyn error::Error> {
         match *self {
             OpErrorKind::IoError(ref err) => Some(err),
             OpErrorKind::ByteOrderError(ref err) => Some(err),

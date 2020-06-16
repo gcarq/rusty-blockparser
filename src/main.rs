@@ -28,22 +28,22 @@ use std::boxed::Box;
 use clap::{Arg, App};
 use log::LogLevelFilter;
 
-use blockchain::parser::chain;
-use blockchain::parser::types::{CoinType, Bitcoin};
-use blockchain::utils;
-use blockchain::utils::blkfile::BlkFile;
-use blockchain::parser::{ParseMode, BlockchainParser};
-use common::logger::SimpleLogger;
-use errors::{OpError, OpErrorKind, OpResult};
-use callbacks::Callback;
-use callbacks::stats::SimpleStats;
-use callbacks::csvdump::CsvDump;
-use callbacks::unspentcsvdump::UnspentCsvDump;
+use crate::blockchain::parser::chain;
+use crate::blockchain::parser::types::{CoinType, Bitcoin};
+use crate::blockchain::utils;
+use crate::blockchain::utils::blkfile::BlkFile;
+use crate::blockchain::parser::{ParseMode, BlockchainParser};
+use crate::common::logger::SimpleLogger;
+use crate::errors::{OpError, OpErrorKind, OpResult};
+use crate::callbacks::Callback;
+use crate::callbacks::stats::SimpleStats;
+use crate::callbacks::csvdump::CsvDump;
+use crate::callbacks::unspentcsvdump::UnspentCsvDump;
 
 
 /// Holds all available user arguments
 pub struct ParserOptions {
-    callback: Box<Callback>,         /* Name of the callback which gets executed for each block. (See callbacks/mod.rs)                      */
+    callback: Box<dyn Callback>,         /* Name of the callback which gets executed for each block. (See callbacks/mod.rs)                      */
     coin_type: CoinType,             /* Holds the name of the coin we want to parse                                                          */
     verify_merkle_root: bool,        /* Enable this if you want to check the merkle root of each block. Aborts if something is fishy.        */
     thread_count: u8,                /* Number of core threads. The callback gets sequentially called!                                       */
@@ -248,13 +248,13 @@ fn parse_args() -> OpResult<ParserOptions> {
     let worker_backlog = value_t!(matches, "backlog", usize).unwrap_or(100);
 
     // Set callback
-    let callback: Box<Callback>;
+    let callback: Box<dyn Callback>;
     if let Some(ref matches) = matches.subcommand_matches("simplestats") {
-         callback = Box::new(try!(SimpleStats::new(matches)));
+         callback = Box::new(SimpleStats::new(matches)?);
     } else if let Some(ref matches) = matches.subcommand_matches("csvdump") {
-         callback = Box::new(try!(CsvDump::new(matches)));
+         callback = Box::new(CsvDump::new(matches)?);
     } else if let Some(ref matches) = matches.subcommand_matches("unspentcsvdump") {
-         callback = Box::new(try!(UnspentCsvDump::new(matches)));
+         callback = Box::new(UnspentCsvDump::new(matches)?);
     } else {
         clap::Error {
             message: String::from("error: No Callback specified.\nFor more information try --help"),

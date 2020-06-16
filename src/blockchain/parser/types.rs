@@ -2,8 +2,8 @@ use std::str::FromStr;
 use std::convert::From;
 use std::path::{Path, PathBuf};
 
-use errors::{OpError, OpErrorKind, OpResult};
-use blockchain::utils::hex_to_arr32_swapped;
+use crate::errors::{OpError, OpErrorKind, OpResult};
+use crate::blockchain::utils::hex_to_arr32_swapped;
 
 /// Trait to specify the underlying coin of a blockchain
 /// Needs a proper magic value and a network id for address prefixes

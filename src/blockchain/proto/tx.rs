@@ -1,9 +1,9 @@
 use std::fmt;
 
-use blockchain::proto::ToRaw;
-use blockchain::proto::varuint::VarUint;
-use blockchain::proto::script;
-use blockchain::utils::{self, le, arr_to_hex_swapped};
+use crate::blockchain::proto::ToRaw;
+use crate::blockchain::proto::varuint::VarUint;
+use crate::blockchain::proto::script;
+use crate::blockchain::utils::{self, le, arr_to_hex_swapped};
 
 
 /// Simple transaction struct

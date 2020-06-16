@@ -1,10 +1,10 @@
 use std::fmt;
 
-use blockchain::proto::Hashed;
-use blockchain::proto::varuint::VarUint;
-use blockchain::proto::tx::Tx;
-use blockchain::proto::header::BlockHeader;
-use blockchain::utils::{merkle_root, arr_to_hex_swapped};
+use crate::blockchain::proto::Hashed;
+use crate::blockchain::proto::varuint::VarUint;
+use crate::blockchain::proto::tx::Tx;
+use crate::blockchain::proto::header::BlockHeader;
+use crate::blockchain::utils::{merkle_root, arr_to_hex_swapped};
 
 
 /// Basic block structure which holds all information

@@ -1,5 +1,5 @@
 use std::fmt;
-use blockchain::utils::{arr_to_hex_swapped, sha256};
+use crate::blockchain::utils::{arr_to_hex_swapped, sha256};
 
 
 pub mod block;

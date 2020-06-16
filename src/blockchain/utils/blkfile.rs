@@ -6,7 +6,7 @@ use std::collections::VecDeque;
 
 use seek_bufread::BufReader;
 
-use errors::{OpError, OpErrorKind, OpResult};
+use crate::errors::{OpError, OpErrorKind, OpResult};
 
 /// Holds all necessary data about a raw blk file
 #[derive(Debug)]
@@ -27,7 +27,7 @@ impl BlkFile {
 
     /// Returns a BufferedMemoryReader to reduce io wait.
     pub fn get_reader(&self) -> OpResult<BufReader<File>> {
-        let f = try!(File::open(&self.path));
+        let f = File::open(&self.path)?;
         Ok(BufReader::with_capacity(100000000, f))
     }
 
@@ -35,7 +35,7 @@ impl BlkFile {
     pub fn from_path(path: PathBuf, min_blk_idx: u32) -> OpResult<VecDeque<BlkFile>> {
 
         info!(target: "blkfile", "Reading files from {} ...", path.display());
-        let content = try!(fs::read_dir(path));
+        let content = fs::read_dir(path)?;
 
         let mut blk_files = Vec::new();
         let blk_prefix = String::from("blk");

@@ -4,8 +4,8 @@ use std::convert::From;
 
 use rust_base58::{ToBase58};
 
-use blockchain::proto::opcodes;
-use blockchain::utils::{self, sha256, ridemp160};
+use crate::blockchain::proto::opcodes;
+use crate::blockchain::utils::{self, sha256, ridemp160};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ScriptError {
@@ -189,7 +189,7 @@ impl<'a> ScriptEvaluator<'a> {
 
             let opcode = opcodes::All::from(self.bytes[self.ip]);
             let opcode_class = opcode.classify();
-            let data_len = try!(self.maybe_push_data(opcode, opcode_class));
+            let data_len = self.maybe_push_data(opcode, opcode_class)?;
             self.ip += 1;
 
             if data_len > 0 {
@@ -224,7 +224,7 @@ impl<'a> ScriptEvaluator<'a> {
                     if self.ip + 1 > self.n_bytes {
                         return Err(ScriptError::UnexpectedEof);
                     }
-                    let val = try!(ScriptEvaluator::read_uint(&self.bytes[self.ip..], 1));
+                    let val = ScriptEvaluator::read_uint(&self.bytes[self.ip..], 1)?;
                     self.ip += 1;
                     val
                 }
@@ -232,7 +232,7 @@ impl<'a> ScriptEvaluator<'a> {
                     if self.ip + 2 > self.n_bytes {
                         return Err(ScriptError::UnexpectedEof);
                     }
-                    let val = try!(ScriptEvaluator::read_uint(&self.bytes[self.ip..], 2));
+                    let val = ScriptEvaluator::read_uint(&self.bytes[self.ip..], 2)?;
                     self.ip += 2;
                     val
                 }
@@ -240,7 +240,7 @@ impl<'a> ScriptEvaluator<'a> {
                     if self.ip + 4 > self.n_bytes {
                         return Err(ScriptError::UnexpectedEof);
                     }
-                    let val = try!(ScriptEvaluator::read_uint(&self.bytes[self.ip..], 4));
+                    let val = ScriptEvaluator::read_uint(&self.bytes[self.ip..], 4)?;
                     self.ip += 4;
                     val
                 }
@@ -357,21 +357,21 @@ pub fn eval_from_stack(stack: Stack, version_id: u8) -> EvaluatedScript {
 
         let script = match stack.pattern {
             ref p @ ScriptPattern::Pay2PublicKey => {
-                let pub_key = try!(stack.elements[0].data());
+                let pub_key = stack.elements[0].data()?;
                 EvaluatedScript {
                     address: public_key_to_addr(&pub_key, version_id),
                     pattern: p.clone()
                 }
             }
             ref p @ ScriptPattern::Pay2PublicKeyHash => {
-                let h160 = try!(stack.elements[2].data());
+                let h160 = stack.elements[2].data()?;
                 EvaluatedScript {
                     address: hash_160_to_address(&h160, version_id),
                     pattern: p.clone()
                 }
             }
             ref p @ ScriptPattern::Pay2ScriptHash => {
-                let h160 = try!(stack.elements[1].data());
+                let h160 = stack.elements[1].data()?;
                 EvaluatedScript {
                     address: hash_160_to_address(&h160, 5),
                     pattern: p.clone()
@@ -384,7 +384,7 @@ pub fn eval_from_stack(stack: Stack, version_id: u8) -> EvaluatedScript {
                 }
             }
             ref p @ ScriptPattern::Pay2MultiSig => {
-                try!(stack.elements[1].data());
+                stack.elements[1].data()?;
                 EvaluatedScript {
                     address: String::new(),
                     pattern: p.clone()

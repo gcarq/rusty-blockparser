@@ -1,11 +1,11 @@
-use std::io::{self, Read, Error, ErrorKind};
+use std::io::{self, Read};
 use std::convert::From;
 use std::fmt;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-use blockchain::proto::ToRaw;
-use blockchain::utils::le;
+use crate::blockchain::proto::ToRaw;
+use crate::blockchain::utils::le;
 
 
 /// Variable length integer
@@ -22,13 +22,12 @@ impl VarUint {
     }
 
     pub fn read_from<R: Read + ?Sized>(reader: &mut R) -> io::Result<VarUint> {
-        let first = try!(reader.read_u8()); // read first length byte
+        let first = reader.read_u8()?; // read first length byte
         let vint = match first {
-            0x00...0xfc => VarUint::from(first),
-            0xfd => VarUint::from(try!(reader.read_u16::<LittleEndian>())),
-            0xfe => VarUint::from(try!(reader.read_u32::<LittleEndian>())),
-            0xff => VarUint::from(try!(reader.read_u64::<LittleEndian>())),
-            _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid VarUint value")),
+            0x00..=0xfc => VarUint::from(first),
+            0xfd => VarUint::from(reader.read_u16::<LittleEndian>()?),
+            0xfe => VarUint::from(reader.read_u32::<LittleEndian>()?),
+            0xff => VarUint::from(reader.read_u64::<LittleEndian>()?),
         };
         Ok(vint)
     }
@@ -82,8 +81,8 @@ impl fmt::Display for VarUint {
 #[cfg(test)]
 mod tests {
     use std::io;
-    use blockchain::proto::ToRaw;
-    use blockchain::proto::varuint::VarUint;
+    use crate::blockchain::proto::ToRaw;
+    use crate::blockchain::proto::varuint::VarUint;
 
     #[test]
     fn test_varuint_u8() {

@@ -4,14 +4,14 @@ use std::collections::{VecDeque, HashMap};
 
 use time;
 
-use blockchain::proto::Hashed;
-use blockchain::utils::blkfile::BlkFile;
-use blockchain::parser::worker::Worker;
-use blockchain::proto::block::Block;
-use blockchain::proto::header::BlockHeader;
-use errors::{OpError, OpErrorKind, OpResult};
+use crate::blockchain::proto::Hashed;
+use crate::blockchain::utils::blkfile::BlkFile;
+use crate::blockchain::parser::worker::Worker;
+use crate::blockchain::proto::block::Block;
+use crate::blockchain::proto::header::BlockHeader;
+use crate::errors::{OpError, OpErrorKind, OpResult};
 
-use ParserOptions;
+use crate::ParserOptions;
 
 pub mod worker;
 pub mod chain;
@@ -96,7 +96,7 @@ impl<'a> BlockchainParser<'a> {
         // save latest blk file index for resume mode.
         self.stats.latest_blk_idx = match self.mode {
             ParseMode::Indexing => self.chain_storage.latest_blk_idx,
-            ParseMode::FullData => transform!(try!(self.remaining_files.lock()).back()).index
+            ParseMode::FullData => transform!((self.remaining_files.lock())?.back()).index
         };
 
         debug!(target: "parser", "Starting {} threads. {:?}",
@@ -109,7 +109,7 @@ impl<'a> BlockchainParser<'a> {
             let remaining_files = self.remaining_files.clone(); // Increment arc
             let mode = self.mode.clone();
 
-            let rem = try!(remaining_files.lock()).len();
+            let rem = remaining_files.lock()?.len();
             if rem == 0 {
                 return Ok(());
             }
@@ -127,7 +127,7 @@ impl<'a> BlockchainParser<'a> {
                     }
                 }
             });
-            self.h_workers.push(try!(child));
+            self.h_workers.push(child?);
         }
         Ok(())
     }
@@ -144,7 +144,7 @@ impl<'a> BlockchainParser<'a> {
             // Retrieve data from mpsc channel
             match rx.try_recv() {
                 Ok(result) => {
-                    try!(self.dispatch_worker_msg(result));
+                    self.dispatch_worker_msg(result)?;
 
                     // Some performance measurements and logging
                     let now = time::precise_time_s();
@@ -243,7 +243,7 @@ impl<'a> BlockchainParser<'a> {
             }
             _ => ()
         };
-        try!(self.save_chain_state());
+        self.save_chain_state()?;
         Ok(())
     }
 
@@ -252,10 +252,10 @@ impl<'a> BlockchainParser<'a> {
         info!(target: "dispatch", "Saving block headers as {} ...", self.options.chain_storage_path.display());
         // Update chain storage
         let headers = match self.mode {
-            ParseMode::Indexing => try!(chain::ChainBuilder::extract_blockchain(&self.unsorted_headers)),
+            ParseMode::Indexing => chain::ChainBuilder::extract_blockchain(&self.unsorted_headers)?,
             ParseMode::FullData => Vec::new()
         };
-        try!(self.chain_storage.extend(headers, &self.options.coin_type, self.stats.latest_blk_idx));
+        self.chain_storage.extend(headers, &self.options.coin_type, self.stats.latest_blk_idx)?;
         self.chain_storage.serialize(self.options.chain_storage_path.as_path())
     }
 }

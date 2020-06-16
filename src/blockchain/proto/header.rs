@@ -1,8 +1,8 @@
 use std::fmt;
 
-use blockchain::proto::ToRaw;
-use blockchain::utils::arr_to_hex_swapped;
-use blockchain::utils::le::u32_to_array;
+use crate::blockchain::proto::ToRaw;
+use crate::blockchain::utils::arr_to_hex_swapped;
+use crate::blockchain::utils::le::u32_to_array;
 
 
 /// Block Header definition. Exact 80 bytes long

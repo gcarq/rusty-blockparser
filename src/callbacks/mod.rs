@@ -4,9 +4,9 @@ pub mod unspentcsvdump;
 
 use clap::{ArgMatches, App};
 
-use errors::OpResult;
-use blockchain::proto::block::Block;
-use blockchain::parser::types::CoinType;
+use crate::errors::OpResult;
+use crate::blockchain::proto::block::Block;
+use crate::blockchain::parser::types::CoinType;
 
 /// Implement this trait for a custom Callback.
 /// The parser ensures that the blocks arrive in the correct order.

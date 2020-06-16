@@ -6,11 +6,11 @@ use std::collections::HashMap;
 
 use rustc_serialize::json;
 
-use errors::{OpError, OpErrorKind, OpResult};
-use blockchain::proto::Hashed;
-use blockchain::proto::header::BlockHeader;
-use blockchain::utils;
-use blockchain::parser::types::CoinType;
+use crate::errors::{OpError, OpErrorKind, OpResult};
+use crate::blockchain::proto::Hashed;
+use crate::blockchain::proto::header::BlockHeader;
+use crate::blockchain::utils;
+use crate::blockchain::parser::types::CoinType;
 
 
 /// Represents the Blockchain without stales or orphan blocks.
@@ -82,10 +82,10 @@ impl ChainStorage {
     pub fn load(path: &Path) -> OpResult<ChainStorage> {
         let mut encoded = String::new();
 
-        let mut file = try!(File::open(&path));
-        try!(file.read_to_string(&mut encoded));
+        let mut file = File::open(&path)?;
+        file.read_to_string(&mut encoded)?;
 
-        let storage = try!(json::decode::<ChainStorage>(&encoded));
+        let storage = json::decode::<ChainStorage>(&encoded)?;
         debug!(target: "chain", "Imported {} hashes from {}. Current block height: {} ... (latest blk.dat index: {})",
                        storage.hashes.len(), path.display(), storage.get_cur_height(), storage.latest_blk_idx);
         Ok(storage)
@@ -93,9 +93,9 @@ impl ChainStorage {
 
     /// Serializes the current instance to a file
     pub fn serialize(&self, path: &Path) -> OpResult<usize> {
-        let encoded = try!(json::encode(&self));
-        let mut file = try!(File::create(&path));
-        try!(file.write_all(encoded.as_bytes()));
+        let encoded = json::encode(&self)?;
+        let mut file = File::create(&path)?;
+        file.write_all(encoded.as_bytes())?;
         debug!(target: "chain", "Serialized {} hashes to {}. Latest processed block height: {} ... (latest blk.dat index: {})",
                        self.hashes.len(), path.display(), self.get_cur_height(), self.latest_blk_idx);
         Ok(encoded.len())
@@ -262,10 +262,10 @@ mod tests {
     use std::env;
     use std::fs;
     use super::*;
-    use blockchain::utils;
-    use blockchain::proto::Hashed;
-    use blockchain::proto::header::BlockHeader;
-    use blockchain::parser::types::{CoinType, Bitcoin};
+    use crate::blockchain::utils;
+    use crate::blockchain::proto::Hashed;
+    use crate::blockchain::proto::header::BlockHeader;
+    use crate::blockchain::parser::types::{CoinType, Bitcoin};
 
     #[test]
     fn chain_storage() {

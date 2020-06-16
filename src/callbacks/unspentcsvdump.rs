@@ -6,12 +6,12 @@ use std::collections::hash_map::Entry::{Occupied, Vacant};
 
 use clap::{Arg, ArgMatches, App, SubCommand};
 
-use callbacks::Callback;
-use errors::{OpError, OpResult};
+use crate::callbacks::Callback;
+use crate::errors::{OpError, OpResult};
 
-use blockchain::parser::types::CoinType;
-use blockchain::proto::block::Block;
-use blockchain::utils;
+use crate::blockchain::parser::types::CoinType;
+use crate::blockchain::proto::block::Block;
+use crate::blockchain::utils;
 
 
 /// Dumps the whole blockchain into csv files
@@ -66,7 +66,7 @@ impl Callback for UnspentCsvDump {
             let cap = 4000000;
             let cb = UnspentCsvDump {
                 dump_folder:    PathBuf::from(dump_folder),
-                unspent_writer:   try!(UnspentCsvDump::create_writer(cap, dump_folder.join("unspent.csv.tmp"))),
+                unspent_writer:   UnspentCsvDump::create_writer(cap, dump_folder.join("unspent.csv.tmp"))?,
 		transactions_unspent: HashMap::with_capacity(10000000), // Init hashmap for tracking the unspent transactions (with 10'000'000 mln preallocated entries)
                 start_height: 0, end_height: 0, tx_count: 0, in_count: 0, out_count: 0
             };
