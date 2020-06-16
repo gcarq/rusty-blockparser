@@ -1,11 +1,10 @@
 use std::fmt;
 
-use crate::blockchain::proto::Hashed;
-use crate::blockchain::proto::varuint::VarUint;
-use crate::blockchain::proto::tx::Tx;
 use crate::blockchain::proto::header::BlockHeader;
-use crate::blockchain::utils::{merkle_root, arr_to_hex_swapped};
-
+use crate::blockchain::proto::tx::Tx;
+use crate::blockchain::proto::varuint::VarUint;
+use crate::blockchain::proto::Hashed;
+use crate::blockchain::utils::{arr_to_hex_swapped, merkle_root};
 
 /// Basic block structure which holds all information
 pub struct Block {
@@ -20,9 +19,14 @@ pub struct Block {
 }
 
 impl Block {
-    pub fn new(blk_index: u32, blk_offset: usize,
-               blocksize: u32, header: BlockHeader,
-               tx_count: VarUint, txs: Vec<Tx>) -> Block {
+    pub fn new(
+        blk_index: u32,
+        blk_offset: usize,
+        blocksize: u32,
+        header: BlockHeader,
+        tx_count: VarUint,
+        txs: Vec<Tx>,
+    ) -> Block {
         Block {
             blk_index,
             blk_offset,
@@ -54,11 +58,11 @@ impl Block {
 impl fmt::Debug for Block {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("Block")
-           .field("blk_index", &self.blk_index)
-           .field("blk_offset", &self.blk_offset)
-           .field("header", &self.header)
-           .field("tx_count", &self.tx_count)
-           .finish()
+            .field("blk_index", &self.blk_index)
+            .field("blk_offset", &self.blk_offset)
+            .field("header", &self.header)
+            .field("tx_count", &self.tx_count)
+            .finish()
     }
 }
 
@@ -75,7 +79,7 @@ mod tests {
 
     #[test]
     fn test_get_base_reward() {
-        assert_eq!(get_base_reward(0),      5000000000);
+        assert_eq!(get_base_reward(0), 5000000000);
         assert_eq!(get_base_reward(209999), 5000000000);
         assert_eq!(get_base_reward(210000), 2500000000);
         assert_eq!(get_base_reward(419999), 2500000000);

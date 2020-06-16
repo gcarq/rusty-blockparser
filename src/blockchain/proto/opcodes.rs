@@ -22,7 +22,6 @@
 // Heavy stick to translate between opcode types
 use std::mem::transmute;
 
-
 // Note: I am deliberately not implementing PartialOrd or Ord on the
 //       opcode enum. If you want to check ranges of opcodes, etc.,
 //       write an #[inline] helper function which casts to u8s.
@@ -353,13 +352,13 @@ pub enum All {
     /// Pop the top two stack items and push 0 if both are numerically equal, else push 1
     OP_NUMNOTEQUAL = 0x9e,
     /// Pop the top two items; push 1 if the second is less than the top, 0 otherwise
-    OP_LESSTHAN  = 0x9f,
+    OP_LESSTHAN = 0x9f,
     /// Pop the top two items; push 1 if the second is greater than the top, 0 otherwise
-    OP_GREATERTHAN  = 0xa0,
+    OP_GREATERTHAN = 0xa0,
     /// Pop the top two items; push 1 if the second is <= the top, 0 otherwise
-    OP_LESSTHANOREQUAL  = 0xa1,
+    OP_LESSTHANOREQUAL = 0xa1,
     /// Pop the top two items; push 1 if the second is >= the top, 0 otherwise
-    OP_GREATERTHANOREQUAL  = 0xa2,
+    OP_GREATERTHANOREQUAL = 0xa2,
     /// Pop the top two items; push the smaller
     OP_MIN = 0xa3,
     /// Pop the top two items; push the larger
@@ -554,47 +553,61 @@ impl All {
     /// Classifies an Opcode into a broad class
     #[inline]
     pub fn classify(&self) -> Class {
-      // 17 opcodes
-      if *self == All::OP_VERIF || *self == All::OP_VERNOTIF ||
-         *self == All::OP_CAT || *self == All::OP_SUBSTR ||
-         *self == All::OP_LEFT || *self == All::OP_RIGHT ||
-         *self == All::OP_INVERT || *self == All::OP_AND ||
-         *self == All::OP_OR || *self == All::OP_XOR ||
-         *self == All::OP_2MUL || *self == All::OP_2DIV ||
-         *self == All::OP_MUL || *self == All::OP_DIV || *self == All::OP_MOD ||
-         *self == All::OP_LSHIFT || *self == All::OP_RSHIFT {
-        Class::IllegalOp
-      // 11 opcodes
-      } else if *self == All::OP_NOP ||
-                (All::OP_NOP1 as u8 <= *self as u8 &&
-                 *self as u8 <= All::OP_NOP10 as u8) {
-        Class::NoOp
-      // 75 opcodes
-      } else if *self == All::OP_RESERVED || *self == All::OP_VER || *self == All::OP_RETURN ||
-                *self == All::OP_RESERVED1 || *self == All::OP_RESERVED2 ||
-                *self as u8 >= All::OP_RETURN_186 as u8 {
-        Class::ReturnOp
-      // 1 opcode
-      } else if *self == All::OP_PUSHNUM_NEG1 {
-        Class::PushNum(-1)
-      // 16 opcodes
-      } else if All::OP_PUSHNUM_1 as u8 <= *self as u8 &&
-                *self as u8 <= All::OP_PUSHNUM_16 as u8 {
-        Class::PushNum(1 + *self as i32 - All::OP_PUSHNUM_1 as i32)
-      // 76 opcodes
-      } else if *self as u8 <= All::OP_PUSHBYTES_75 as u8 {
-        Class::PushBytes(*self as u32)
-      // 60 opcodes
-      } else {
-        Class::Ordinary(unsafe { transmute(*self) })
-      }
+        // 17 opcodes
+        if *self == All::OP_VERIF
+            || *self == All::OP_VERNOTIF
+            || *self == All::OP_CAT
+            || *self == All::OP_SUBSTR
+            || *self == All::OP_LEFT
+            || *self == All::OP_RIGHT
+            || *self == All::OP_INVERT
+            || *self == All::OP_AND
+            || *self == All::OP_OR
+            || *self == All::OP_XOR
+            || *self == All::OP_2MUL
+            || *self == All::OP_2DIV
+            || *self == All::OP_MUL
+            || *self == All::OP_DIV
+            || *self == All::OP_MOD
+            || *self == All::OP_LSHIFT
+            || *self == All::OP_RSHIFT
+        {
+            Class::IllegalOp
+        // 11 opcodes
+        } else if *self == All::OP_NOP
+            || (All::OP_NOP1 as u8 <= *self as u8 && *self as u8 <= All::OP_NOP10 as u8)
+        {
+            Class::NoOp
+        // 75 opcodes
+        } else if *self == All::OP_RESERVED
+            || *self == All::OP_VER
+            || *self == All::OP_RETURN
+            || *self == All::OP_RESERVED1
+            || *self == All::OP_RESERVED2
+            || *self as u8 >= All::OP_RETURN_186 as u8
+        {
+            Class::ReturnOp
+        // 1 opcode
+        } else if *self == All::OP_PUSHNUM_NEG1 {
+            Class::PushNum(-1)
+        // 16 opcodes
+        } else if All::OP_PUSHNUM_1 as u8 <= *self as u8 && *self as u8 <= All::OP_PUSHNUM_16 as u8
+        {
+            Class::PushNum(1 + *self as i32 - All::OP_PUSHNUM_1 as i32)
+        // 76 opcodes
+        } else if *self as u8 <= All::OP_PUSHBYTES_75 as u8 {
+            Class::PushBytes(*self as u32)
+        // 60 opcodes
+        } else {
+            Class::Ordinary(unsafe { transmute(*self) })
+        }
     }
 }
 
 impl From<u8> for All {
     #[inline]
     fn from(b: u8) -> All {
-      unsafe { transmute(b) }
+        unsafe { transmute(b) }
     }
 }
 
@@ -606,18 +619,18 @@ pub static OP_TRUE: All = All::OP_PUSHNUM_1;
 /// Broad categories of opcodes with similar behavior
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Class {
-  /// Pushes the given number onto the stack
-  PushNum(i32),
-  /// Pushes the given number of bytes onto the stack
-  PushBytes(u32),
-  /// Fails the script if executed
-  ReturnOp,
-  /// Fails the script even if not executed
-  IllegalOp,
-  /// Does nothing
-  NoOp,
-  /// Any opcode not covered above
-  Ordinary(Ordinary)
+    /// Pushes the given number onto the stack
+    PushNum(i32),
+    /// Pushes the given number of bytes onto the stack
+    PushBytes(u32),
+    /// Fails the script if executed
+    ReturnOp,
+    /// Fails the script even if not executed
+    IllegalOp,
+    /// Does nothing
+    NoOp,
+    /// Any opcode not covered above
+    Ordinary(Ordinary),
 }
 
 macro_rules! ordinary_opcode {

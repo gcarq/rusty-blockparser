@@ -1,10 +1,9 @@
 use std::fmt;
 
-use crate::blockchain::proto::ToRaw;
-use crate::blockchain::proto::varuint::VarUint;
 use crate::blockchain::proto::script;
-use crate::blockchain::utils::{self, le, arr_to_hex_swapped};
-
+use crate::blockchain::proto::varuint::VarUint;
+use crate::blockchain::proto::ToRaw;
+use crate::blockchain::utils::{self, arr_to_hex_swapped, le};
 
 /// Simple transaction struct
 /// Please note: The txid is not stored here. See Hashed.
@@ -19,11 +18,19 @@ pub struct Tx {
 }
 
 impl Tx {
-    pub fn new(tx_version: u32, in_count: VarUint, inputs: &[TxInput],
-               out_count: VarUint, outputs: &[TxOutput], tx_locktime: u32,
-               version_id: u8) -> Self {
+    pub fn new(
+        tx_version: u32,
+        in_count: VarUint,
+        inputs: &[TxInput],
+        out_count: VarUint,
+        outputs: &[TxOutput],
+        tx_locktime: u32,
+        version_id: u8,
+    ) -> Self {
         // Evaluate and wrap all outputs to process them later
-        let evaluated_out = outputs.iter().cloned()
+        let evaluated_out = outputs
+            .iter()
+            .cloned()
             .map(|o| EvaluatedTxOut::eval_script(o, version_id))
             .collect();
         Tx {
@@ -49,18 +56,18 @@ impl Tx {
 impl fmt::Debug for Tx {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("Tx")
-           .field("tx_version", &self.tx_version)
-           .field("in_count", &self.in_count)
-           .field("out_count", &self.out_count)
-           .field("tx_locktime", &self.tx_locktime)
-           .finish()
+            .field("tx_version", &self.tx_version)
+            .field("in_count", &self.in_count)
+            .field("out_count", &self.out_count)
+            .field("tx_locktime", &self.tx_locktime)
+            .finish()
     }
 }
 
 impl ToRaw for Tx {
     fn to_bytes(&self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(
-            (4 + self.in_count.value + self.out_count.value + 4) as usize);
+        let mut bytes =
+            Vec::with_capacity((4 + self.in_count.value + self.out_count.value + 4) as usize);
 
         // Serialize version
         bytes.extend_from_slice(&le::u32_to_array(self.tx_version));
@@ -84,7 +91,7 @@ impl ToRaw for Tx {
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct TxOutpoint {
     pub txid: [u8; 32],
-    pub index: u32      // 0-based offset within tx
+    pub index: u32, // 0-based offset within tx
 }
 
 impl ToRaw for TxOutpoint {
@@ -99,12 +106,11 @@ impl ToRaw for TxOutpoint {
 impl fmt::Debug for TxOutpoint {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("TxOutpoint")
-           .field("txid", &arr_to_hex_swapped(&self.txid))
-           .field("index", &self.index)
-           .finish()
+            .field("txid", &arr_to_hex_swapped(&self.txid))
+            .field("index", &self.index)
+            .finish()
     }
 }
-
 
 /// Holds TxInput informations
 #[derive(Clone)]
@@ -112,7 +118,7 @@ pub struct TxInput {
     pub outpoint: TxOutpoint,
     pub script_len: VarUint,
     pub script_sig: Vec<u8>,
-    pub seq_no: u32
+    pub seq_no: u32,
 }
 
 impl ToRaw for TxInput {
@@ -130,20 +136,19 @@ impl ToRaw for TxInput {
 impl fmt::Debug for TxInput {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("TxInput")
-           .field("outpoint", &self.outpoint)
-           .field("script_len", &self.script_len)
-           .field("script_sig", &self.script_sig)
-           .field("seq_no", &self.seq_no)
-           .finish()
+            .field("outpoint", &self.outpoint)
+            .field("script_len", &self.script_len)
+            .field("script_sig", &self.script_sig)
+            .field("seq_no", &self.seq_no)
+            .finish()
     }
 }
-
 
 /// Evaluates script_pubkey and wraps TxOutput
 #[derive(Clone)]
 pub struct EvaluatedTxOut {
     pub script: script::EvaluatedScript,
-    pub out: TxOutput
+    pub out: TxOutput,
 }
 
 impl EvaluatedTxOut {
@@ -151,7 +156,7 @@ impl EvaluatedTxOut {
     pub fn eval_script(out: TxOutput, version_id: u8) -> EvaluatedTxOut {
         EvaluatedTxOut {
             script: script::eval_from_bytes(&out.script_pubkey, version_id),
-            out
+            out,
         }
     }
 }
@@ -178,9 +183,9 @@ impl ToRaw for TxOutput {
 impl fmt::Debug for TxOutput {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("TxOutput")
-           .field("value", &self.value)
-           .field("script_len", &self.script_len)
-           .field("script_pubkey",&utils::arr_to_hex(&self.script_pubkey))
-           .finish()
+            .field("value", &self.value)
+            .field("script_len", &self.script_len)
+            .field("script_pubkey", &utils::arr_to_hex(&self.script_pubkey))
+            .finish()
     }
 }

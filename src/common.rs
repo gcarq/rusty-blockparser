@@ -1,9 +1,7 @@
-
-
 pub mod logger {
+    use log::{self, LogLevel, LogLevelFilter, LogMetadata, LogRecord, SetLoggerError};
     use std::io::{stderr, stdout, Write};
     use time::{self, strftime};
-    use log::{self, LogRecord, LogLevel, LogLevelFilter, LogMetadata, SetLoggerError};
 
     pub struct SimpleLogger {
         log_filter: LogLevelFilter,
@@ -18,11 +16,13 @@ pub mod logger {
         }
 
         fn create_log_line(&self, record: &LogRecord) -> String {
-            format!("[{}] {} - {}: {}\n",
-                     strftime("%X", &time::now()).unwrap(),
-                     record.level(),
-                     record.target(),
-                     record.args())
+            format!(
+                "[{}] {} - {}: {}\n",
+                strftime("%X", &time::now()).unwrap(),
+                record.level(),
+                record.target(),
+                record.args()
+            )
         }
     }
 

@@ -1,12 +1,12 @@
-pub mod stats;
 pub mod csvdump;
+pub mod stats;
 pub mod unspentcsvdump;
 
-use clap::{ArgMatches, App};
+use clap::{App, ArgMatches};
 
-use crate::errors::OpResult;
-use crate::blockchain::proto::block::Block;
 use crate::blockchain::parser::types::CoinType;
+use crate::blockchain::proto::block::Block;
+use crate::errors::OpResult;
 
 /// Implement this trait for a custom Callback.
 /// The parser ensures that the blocks arrive in the correct order.
@@ -14,13 +14,16 @@ use crate::blockchain::parser::types::CoinType;
 /// Note: These callbacks are only triggered with ParseMode::FullData.
 /// (The first run to determine longest chain is running in ParseMode::Indexing)
 pub trait Callback {
-
     /// Builds SubCommand to specify callback name and required args,
     /// exits if some required args are missing.
-    fn build_subcommand<'a, 'b>() -> App<'a, 'b> where Self: Sized;
+    fn build_subcommand<'a, 'b>() -> App<'a, 'b>
+    where
+        Self: Sized;
 
     /// Instantiates callback
-    fn new(matches: &ArgMatches) -> OpResult<Self> where Self: Sized;
+    fn new(matches: &ArgMatches) -> OpResult<Self>
+    where
+        Self: Sized;
 
     /// Gets called shortly before the threads are invoked.
     fn on_start(&mut self, coin_type: CoinType, block_height: usize);

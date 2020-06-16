@@ -1,36 +1,36 @@
-use std::sync::{Arc, Mutex, mpsc};
+use std::collections::{HashMap, VecDeque};
+use std::sync::{mpsc, Arc, Mutex};
 use std::thread::{self, JoinHandle};
-use std::collections::{VecDeque, HashMap};
 
 use time;
 
-use crate::blockchain::proto::Hashed;
-use crate::blockchain::utils::blkfile::BlkFile;
 use crate::blockchain::parser::worker::Worker;
 use crate::blockchain::proto::block::Block;
 use crate::blockchain::proto::header::BlockHeader;
+use crate::blockchain::proto::Hashed;
+use crate::blockchain::utils::blkfile::BlkFile;
 use crate::errors::{OpError, OpErrorKind, OpResult};
 
 use crate::ParserOptions;
 
-pub mod worker;
 pub mod chain;
 pub mod types;
+pub mod worker;
 
 /// Specifies ParseMode. The first time the blockchain needs to be indexed,
 /// because we just need the block hashes to determine the longest chain.
 #[derive(Clone, Debug, PartialEq)]
 pub enum ParseMode {
     FullData,
-    Indexing
+    Indexing,
 }
 
 /// Wrapper to pass different data between threads. Specified by ParseMode
 pub enum ParseResult {
     FullData(Block),
     Indexing(BlockHeader),
-    Complete(String),           // contains the name of the finished thread
-    Error(OpError)              // Indicates critical error
+    Complete(String), // contains the name of the finished thread
+    Error(OpError),   // Indicates critical error
 }
 
 /// Small struct to hold statistics together
@@ -38,31 +38,31 @@ pub enum ParseResult {
 struct WorkerStats {
     pub n_complete_msgs: usize, // Number of complete messages received from workers
     pub n_valid_blocks: u64,    // Number of received results from workers
-    pub latest_blk_idx: u32     // Latest processed blk file index
+    pub latest_blk_idx: u32,    // Latest processed blk file index
 }
 
 /// Implements simple thread pool pattern
 pub struct BlockchainParser<'a> {
     //TODO: make the collections for headers and blocks more generic
-    unsorted_headers: HashMap<[u8; 32], BlockHeader>,   /* holds all headers in parse mode HeadersOnly  */
-    unsorted_blocks:  HashMap<[u8; 32], Block>,         /* holds all blocks in parse mode FullData      */
-    remaining_files:  Arc<Mutex<VecDeque<BlkFile>>>,    /* Remaining files (shared between all threads) */
-    h_workers:        Vec<JoinHandle<()>>,              /* Worker job handles                           */
-    mode:             ParseMode,                        /* ParseMode (FullData or Indexing)           */
-    options:          &'a mut ParserOptions,            /* struct to hold cli arguments                 */
-    chain_storage:    chain::ChainStorage,              /* Hash storage with the longest chain          */
-    stats:            WorkerStats,                      /* struct for thread management & statistics    */
-    t_started:        f64                               /* Start timestamp                              */
+    unsorted_headers: HashMap<[u8; 32], BlockHeader>, /* holds all headers in parse mode HeadersOnly  */
+    unsorted_blocks: HashMap<[u8; 32], Block>, /* holds all blocks in parse mode FullData      */
+    remaining_files: Arc<Mutex<VecDeque<BlkFile>>>, /* Remaining files (shared between all threads) */
+    h_workers: Vec<JoinHandle<()>>, /* Worker job handles                           */
+    mode: ParseMode,                /* ParseMode (FullData or Indexing)           */
+    options: &'a mut ParserOptions, /* struct to hold cli arguments                 */
+    chain_storage: chain::ChainStorage, /* Hash storage with the longest chain          */
+    stats: WorkerStats,             /* struct for thread management & statistics    */
+    t_started: f64,                 /* Start timestamp                              */
 }
 
 impl<'a> BlockchainParser<'a> {
-
     /// Instantiates a new Parser but does not start the workers.
-    pub fn new(options: &'a mut ParserOptions,
-               parse_mode: ParseMode,
-               blk_files: VecDeque<BlkFile>,
-               chain_storage: chain::ChainStorage) -> Self {
-
+    pub fn new(
+        options: &'a mut ParserOptions,
+        parse_mode: ParseMode,
+        blk_files: VecDeque<BlkFile>,
+        chain_storage: chain::ChainStorage,
+    ) -> Self {
         info!(target: "parser", "Parsing {} blockchain ...", options.coin_type.name);
         match parse_mode {
             ParseMode::Indexing => {
@@ -73,30 +73,32 @@ impl<'a> BlockchainParser<'a> {
             }
         };
         BlockchainParser {
-            unsorted_headers:   Default::default(),
-            unsorted_blocks:    Default::default(),
-            remaining_files:    Arc::new(Mutex::new(blk_files)),
-            h_workers:          Vec::with_capacity(options.thread_count as usize),
-            mode:               parse_mode,
+            unsorted_headers: Default::default(),
+            unsorted_blocks: Default::default(),
+            remaining_files: Arc::new(Mutex::new(blk_files)),
+            h_workers: Vec::with_capacity(options.thread_count as usize),
+            mode: parse_mode,
             options,
             chain_storage,
-            stats:              Default::default(),
-            t_started:          0.0
+            stats: Default::default(),
+            t_started: 0.0,
         }
     }
 
     /// Starts all workers. Needs an active mpsc channel
     pub fn start_worker(&mut self, tx_channel: mpsc::SyncSender<ParseResult>) -> OpResult<()> {
-
         self.t_started = time::precise_time_s();
         if self.mode == ParseMode::FullData {
-            (*self.options.callback).on_start(self.options.coin_type.clone(), self.chain_storage.get_cur_height());
+            (*self.options.callback).on_start(
+                self.options.coin_type.clone(),
+                self.chain_storage.get_cur_height(),
+            );
         }
 
         // save latest blk file index for resume mode.
         self.stats.latest_blk_idx = match self.mode {
             ParseMode::Indexing => self.chain_storage.latest_blk_idx,
-            ParseMode::FullData => transform!((self.remaining_files.lock())?.back()).index
+            ParseMode::FullData => transform!((self.remaining_files.lock())?.back()).index,
         };
 
         debug!(target: "parser", "Starting {} threads. {:?}",
@@ -115,18 +117,22 @@ impl<'a> BlockchainParser<'a> {
             }
 
             // Spawn worker
-            let child = thread::Builder::new().name(format!("worker-{}", i)).spawn(move || {
-                match Worker::new(tx, remaining_files, coin_type, mode) {
-                    Ok(mut w) => w.process(),
-                    Err(OpError { kind: OpErrorKind::None, ..}) => {
-                        return;
-                    }
-                    Err(err) => {
-                        error!(target: thread::current().name().unwrap(), "{}", err);
-                        return;
-                    }
-                }
-            });
+            let child =
+                thread::Builder::new().name(format!("worker-{}", i)).spawn(
+                    move || match Worker::new(tx, remaining_files, coin_type, mode) {
+                        Ok(mut w) => w.process(),
+                        Err(OpError {
+                            kind: OpErrorKind::None,
+                            ..
+                        }) => {
+                            return;
+                        }
+                        Err(err) => {
+                            error!(target: thread::current().name().unwrap(), "{}", err);
+                            return;
+                        }
+                    },
+                );
             self.h_workers.push(child?);
         }
         Ok(())
@@ -135,7 +141,6 @@ impl<'a> BlockchainParser<'a> {
     /// Dispatches all received data from workers.
     /// Blocks are passed to the user defined callback
     pub fn dispatch(&mut self, rx_channel: mpsc::Receiver<ParseResult>) -> OpResult<()> {
-
         let rx = rx_channel;
         let mut t_last_log = time::precise_time_s();
         let t_measure_frame = 10.0;
@@ -149,7 +154,11 @@ impl<'a> BlockchainParser<'a> {
                     // Some performance measurements and logging
                     let now = time::precise_time_s();
                     if now - t_last_log > t_measure_frame {
-                        let blocks_sec = self.stats.n_valid_blocks.checked_div((now - self.t_started) as u64).unwrap_or(1);
+                        let blocks_sec = self
+                            .stats
+                            .n_valid_blocks
+                            .checked_div((now - self.t_started) as u64)
+                            .unwrap_or(1);
                         match self.mode {
                             ParseMode::Indexing => {
                                 info!(target:"dispatch", "Status: {:6} Blocks added to index. (avg: {:5.2} blocks/sec)",
@@ -163,8 +172,8 @@ impl<'a> BlockchainParser<'a> {
                         t_last_log = now;
                     }
                 }
-                Err(mpsc::TryRecvError::Empty) => { }
-                Err(mpsc::TryRecvError::Disconnected) => { }
+                Err(mpsc::TryRecvError::Empty) => {}
+                Err(mpsc::TryRecvError::Disconnected) => {}
             }
 
             // Check if the next block is in unsorted HashMap
@@ -173,8 +182,10 @@ impl<'a> BlockchainParser<'a> {
                     self.on_block(block);
                 }
             }
-                // Check if all threads are finished
-            if self.stats.n_complete_msgs == self.h_workers.len() && self.chain_storage.remaining() == 0 {
+            // Check if all threads are finished
+            if self.stats.n_complete_msgs == self.h_workers.len()
+                && self.chain_storage.remaining() == 0
+            {
                 info!(target: "dispatch", "All threads finished.");
                 return self.on_complete();
             }
@@ -250,9 +261,11 @@ impl<'a> BlockchainParser<'a> {
         // Update chain storage
         let headers = match self.mode {
             ParseMode::Indexing => chain::ChainBuilder::extract_blockchain(&self.unsorted_headers)?,
-            ParseMode::FullData => Vec::new()
+            ParseMode::FullData => Vec::new(),
         };
-        self.chain_storage.extend(headers, &self.options.coin_type, self.stats.latest_blk_idx)?;
-        self.chain_storage.serialize(self.options.chain_storage_path.as_path())
+        self.chain_storage
+            .extend(headers, &self.options.coin_type, self.stats.latest_blk_idx)?;
+        self.chain_storage
+            .serialize(self.options.chain_storage_path.as_path())
     }
 }
