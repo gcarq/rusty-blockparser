@@ -24,11 +24,11 @@ impl Block {
                blocksize: u32, header: BlockHeader,
                tx_count: VarUint, txs: Vec<Tx>) -> Block {
         Block {
-            blk_index: blk_index,
-            blk_offset: blk_offset,
-            blocksize: blocksize,
+            blk_index,
+            blk_offset,
+            blocksize,
             header: Hashed::double_sha256(header),
-            tx_count: tx_count,
+            tx_count,
             txs: txs.into_iter().map(|tx| Hashed::double_sha256(tx)).collect(),
         }
     }

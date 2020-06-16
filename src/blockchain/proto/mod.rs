@@ -29,12 +29,12 @@ impl<T: ToRaw> Hashed<T> {
     pub fn double_sha256(value: T) -> Hashed<T> {
         Hashed {
             hash: sha256(&sha256(&value.to_bytes())),
-            value: value
+            value
         }
     }
 
     pub fn from(hash: [u8; 32], value: T) -> Hashed<T> {
-        Hashed { hash: hash, value: value }
+        Hashed { hash, value }
     }
 }
 

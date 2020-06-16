@@ -19,9 +19,9 @@ pub struct BlkFile {
 impl BlkFile {
     pub fn new(path: PathBuf, index: u32, size: u64) -> BlkFile {
         BlkFile {
-            path: path,
-            index: index,
-            size: size,
+            path,
+            index,
+            size,
         }
     }
 

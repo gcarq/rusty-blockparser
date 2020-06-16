@@ -160,7 +160,7 @@ impl<'a> ChainBuilder<'a> {
     pub fn extract_blockchain(header_map: &HashMap<[u8; 32], BlockHeader>) -> OpResult<Vec<Hashed<BlockHeader>>> {
 
         // Call our own Iterator implementation for ChainBuilder to traverse over the blockchain
-        let builder = ChainBuilder { header_map: header_map };
+        let builder = ChainBuilder { header_map };
         let mut chain: Vec<Hashed<BlockHeader>> = builder.into_iter().collect();
         chain.reverse();
 

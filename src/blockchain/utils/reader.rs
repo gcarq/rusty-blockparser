@@ -106,10 +106,10 @@ pub trait BlockchainRead: io::Read {
             let seq_no = self.read_u32::<LittleEndian>()?;
 
             let input = TxInput {
-                outpoint: outpoint,
-                script_len: script_len,
-                script_sig: script_sig,
-                seq_no: seq_no,
+                outpoint,
+                script_len,
+                script_sig,
+                seq_no,
             };
             inputs.push(input);
         }

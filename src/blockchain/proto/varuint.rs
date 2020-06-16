@@ -18,7 +18,7 @@ pub struct VarUint {
 
 impl VarUint {
     fn new(value: u64, buf: Vec<u8>) -> VarUint {
-        VarUint { value: value as u64, buf: buf }
+        VarUint { value: value as u64, buf }
     }
 
     pub fn read_from<R: Read + ?Sized>(reader: &mut R) -> io::Result<VarUint> {

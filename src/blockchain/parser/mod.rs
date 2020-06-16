@@ -78,8 +78,8 @@ impl<'a> BlockchainParser<'a> {
             remaining_files:    Arc::new(Mutex::new(blk_files)),
             h_workers:          Vec::with_capacity(options.thread_count as usize),
             mode:               parse_mode,
-            options:            options,
-            chain_storage:      chain_storage,
+            options,
+            chain_storage,
             stats:              Default::default(),
             t_started:          0.0
         }

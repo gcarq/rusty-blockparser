@@ -43,12 +43,12 @@ impl Worker {
                     file.size as f64 / 1000000.0);
 
                 let w = Worker {
-                    tx_channel: tx_channel,
-                    remaining_files: remaining_files,
-                    coin_type: coin_type,
+                    tx_channel,
+                    remaining_files,
+                    coin_type,
                     blk_file: file,
-                    reader: reader,
-                    mode: mode,
+                    reader,
+                    mode,
                     name: worker_name.clone(),
                 };
                 Ok(w)

@@ -264,15 +264,15 @@ fn parse_args() -> OpResult<ParserOptions> {
     }
 
     Ok(ParserOptions {
-        coin_type: coin_type,
-        callback: callback,
-        verify_merkle_root: verify_merkle_root,
-        thread_count: thread_count,
-        resume: resume,
-        reindex: reindex,
+        coin_type,
+        callback,
+        verify_merkle_root,
+        thread_count,
+        resume,
+        reindex,
         blockchain_dir: blockchain_path,
         chain_storage_path: PathBuf::from(chain_storage_path),
-        worker_backlog: worker_backlog,
-        log_level_filter: log_level_filter
+        worker_backlog,
+        log_level_filter
     })
 }

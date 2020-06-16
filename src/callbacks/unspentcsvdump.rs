@@ -115,7 +115,7 @@ impl Callback for UnspentCsvDump {
             // serialize outputs
             for (i, output) in tx.value.outputs.iter().enumerate() {
 	    	let hash_val: HashMapVal = HashMapVal {
-			block_height: block_height,
+			block_height,
 			output_val: output.out.value,
 			address: output.script.address.clone(),
 			//script_pubkey: utils::arr_to_hex(&output.out.script_pubkey)

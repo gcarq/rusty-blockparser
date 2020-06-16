@@ -27,12 +27,12 @@ impl Tx {
             .map(|o| EvaluatedTxOut::eval_script(o, version_id))
             .collect();
         Tx {
-            tx_version: tx_version,
-            in_count: in_count,
+            tx_version,
+            in_count,
             inputs: Vec::from(inputs),
-            out_count: out_count,
+            out_count,
             outputs: evaluated_out,
-            tx_locktime: tx_locktime,
+            tx_locktime,
         }
     }
 
@@ -151,7 +151,7 @@ impl EvaluatedTxOut {
     pub fn eval_script(out: TxOutput, version_id: u8) -> EvaluatedTxOut {
         EvaluatedTxOut {
             script: script::eval_from_bytes(&out.script_pubkey, version_id),
-            out: out
+            out
         }
     }
 }

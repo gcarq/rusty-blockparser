@@ -13,7 +13,7 @@ pub mod logger {
         pub fn init(log_filter: LogLevelFilter) -> Result<(), SetLoggerError> {
             log::set_logger(|max_log_level| {
                 max_log_level.set(log_filter);
-                Box::new(SimpleLogger { log_filter: log_filter })
+                Box::new(SimpleLogger { log_filter })
             })
         }
 

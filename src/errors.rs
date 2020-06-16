@@ -42,7 +42,7 @@ pub struct OpError {
 
 impl OpError {
     pub fn new(kind: OpErrorKind) -> Self {
-        OpError{ kind: kind, message: String::new() }
+        OpError{ kind, message: String::new() }
     }
 
     /// Joins the Error with a new message and returns it

@@ -177,7 +177,7 @@ impl<'a> ScriptEvaluator<'a> {
 
     #[inline]
     pub fn new(bytes: &'a [u8]) -> ScriptEvaluator {
-        ScriptEvaluator { bytes: bytes, n_bytes: bytes.len(), ip: 0 }
+        ScriptEvaluator { bytes, n_bytes: bytes.len(), ip: 0 }
     }
 
     /// Evaluates script by loading all data into the stack
@@ -210,7 +210,7 @@ impl<'a> ScriptEvaluator<'a> {
         }
         //println!(")\n");
         let pattern = ScriptEvaluator::eval_script_pattern(&elements);
-        Ok(Stack { elements: elements, pattern: pattern })
+        Ok(Stack { elements, pattern })
     }
 
     /// Checks Opcode if should to push some bytes

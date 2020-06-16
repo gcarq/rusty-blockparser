@@ -21,12 +21,12 @@ impl BlockHeader {
                merkle_root: [u8; 32], timestamp: u32,
                bits: u32, nonce: u32) -> BlockHeader {
         BlockHeader {
-            version: version,
-            prev_hash: prev_hash,
-            merkle_root: merkle_root,
-            timestamp: timestamp,
-            bits: bits,
-            nonce: nonce
+            version,
+            prev_hash,
+            merkle_root,
+            timestamp,
+            bits,
+            nonce
         }
     }
 }
