@@ -17,7 +17,7 @@ pub fn ridemp160(data: &[u8]) -> [u8; 20]{
     let mut hasher = Ripemd160::new();
     hasher.input(data);
     hasher.result(&mut out);
-    return out;
+    out
 }
 
 #[inline]
@@ -26,7 +26,7 @@ pub fn sha256(data: &[u8]) -> [u8; 32] {
     let mut hasher = Sha256::new();
     hasher.input(data);
     hasher.result(&mut out);
-    return out;
+    out
 }
 
 /// Simple slice merge
@@ -58,7 +58,7 @@ pub fn merkle_root(hash_list: &[[u8; 32]]) -> [u8; 32] {
         let last_hash = hash_list.last().unwrap();
         hash_pairs.push(double_sha256(last_hash, last_hash));
     }
-    return merkle_root(&mut hash_pairs);
+    merkle_root(&hash_pairs)
 }
 
 /// Little endian helper functions
@@ -100,7 +100,7 @@ pub fn arr_to_hex_swapped(data: &[u8]) -> String {
     for i in (0..len).rev() {
         hex.push_str(&format!("{:02x}", &data[i]));
     }
-    return hex;
+    hex
 
 }
 
@@ -123,12 +123,12 @@ pub fn hex_to_arr32_swapped(hex_str: &str) -> [u8; 32] {
     for (place, element) in arr.iter_mut().zip(hex_to_vec(hex_str).iter().rev()) {
         *place = *element;
     }
-    return arr;
+    arr
 }
 
 /// Returns default directory. TODO: test on windows
 pub fn get_absolute_blockchain_dir(coin_type: &CoinType) -> PathBuf {
-    PathBuf::from(env::home_dir().expect("Unable to get home path from env!"))
+    env::home_dir().expect("Unable to get home path from env!")
         .join(coin_type.default_folder.clone())
 }
 
@@ -138,8 +138,7 @@ pub fn get_mean(slice: &[u32]) -> f64 {
     if slice.is_empty() {
         return 0.00;
     }
-    let sum = slice.iter()
-       .fold(0, |sum, &s| sum + s);
+    let sum = slice.iter().sum::<u32>();
     sum as f64 / slice.len() as f64
 }
 

@@ -61,7 +61,7 @@ impl Callback for UnspentCsvDump {
     }
 
     fn new(matches: &ArgMatches) -> OpResult<Self> where Self: Sized {
-        let ref dump_folder = PathBuf::from(matches.value_of("dump-folder").unwrap()); // Save to unwrap
+        let dump_folder = &PathBuf::from(matches.value_of("dump-folder").unwrap()); // Save to unwrap
         match (|| -> OpResult<Self> {
             let cap = 4000000;
             let cb = UnspentCsvDump {
@@ -72,8 +72,8 @@ impl Callback for UnspentCsvDump {
             };
             Ok(cb)
         })() {
-            Ok(s) => return Ok(s),
-            Err(e) => return Err(
+            Ok(s) => Ok(s),
+            Err(e) => Err(
                 tag_err!(e, "Couldn't initialize csvdump with folder: `{}`", dump_folder
                         .as_path()
                         .display()))
@@ -157,7 +157,7 @@ impl Callback for UnspentCsvDump {
 	}
 
         // Keep in sync with c'tor
-        for f in vec!["unspent"] {
+        for f in &["unspent"] {
             // Rename temp files
             fs::rename(self.dump_folder.as_path().join(format!("{}.csv.tmp", f)),
                        self.dump_folder.as_path().join(format!("{}-{}-{}.csv", f, self.start_height, self.end_height)))

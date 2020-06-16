@@ -40,7 +40,7 @@ impl ToRaw for BlockHeader {
         bytes.extend_from_slice(&u32_to_array(self.timestamp));
         bytes.extend_from_slice(&u32_to_array(self.bits));
         bytes.extend_from_slice(&u32_to_array(self.nonce));
-        return bytes;
+        bytes
     }
 }
 

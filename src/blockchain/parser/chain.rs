@@ -35,11 +35,9 @@ impl ChainStorage {
         let len = headers.len();
         let mut hashes: Vec<[u8; 32]> = Vec::with_capacity(len);
         for i in 0..len {
-            if i < len - 1 {
-                if headers[i].hash != headers[i + 1].value.prev_hash {
-                    return Err(OpError::new(OpErrorKind::ValidateError)
-                        .join_msg("Longest-chain consistency check failed!"));
-                }
+            if i < len - 1 && headers[i].hash != headers[i + 1].value.prev_hash {
+                return Err(OpError::new(OpErrorKind::ValidateError)
+                    .join_msg("Longest-chain consistency check failed!"));
             }
             hashes.push(headers[i].hash);
         }
@@ -48,7 +46,7 @@ impl ChainStorage {
             if self.hashes.is_empty() {
                 // Genesis block consistency check
                 let first_hash = transform!(hashes.first().cloned());
-                if &coin_type.genesis_hash != &first_hash {
+                if coin_type.genesis_hash != first_hash {
                     let errbuf = format!("Genesis hash for `{}` does not match:\n  Got: {}\n  Exp: {}",
                         coin_type.name,
                         utils::arr_to_hex_swapped(&first_hash),
@@ -64,7 +62,7 @@ impl ChainStorage {
                 let latest_known_idx = transform!(headers.iter().position(|h| h.hash == latest_hash));
 
                 let mut new_hashes = hashes.split_off(latest_known_idx + 1);
-                if new_hashes.len() > 0 {
+                if !new_hashes.is_empty() {
                     debug!(target: "chain", "\n  -> latest known block:  {}\n  -> first new block:     {}",
                            utils::arr_to_hex_swapped(transform!(self.hashes.last())),
                            utils::arr_to_hex_swapped(transform!(new_hashes.first())));
@@ -171,7 +169,7 @@ impl<'a> ChainBuilder<'a> {
                chain.len() - 1, // BlockHeight starts at 0
                utils::arr_to_hex_swapped(&transform!(chain.last()).hash),
                utils::arr_to_hex_swapped(&transform!(chain.first()).hash));
-        return Ok(chain);
+        Ok(chain)
     }
 
     /// finds all blocks with no successor blocks
@@ -185,13 +183,13 @@ impl<'a> ChainBuilder<'a> {
 
         // Find leafs
         let mut leafs: Vec<Hashed<BlockHeader>> = Vec::with_capacity(50);
-        for (_, header) in &ph_map {
+        for header in ph_map.values() {
             match ph_map.get(&header.hash) {
                 Some(_) => (),
                 None => leafs.push(header.clone()),
             }
         }
-        return leafs;
+        leafs
     }
 }
 

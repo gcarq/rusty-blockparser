@@ -29,7 +29,7 @@ impl Block {
             blocksize,
             header: Hashed::double_sha256(header),
             tx_count,
-            txs: txs.into_iter().map(|tx| Hashed::double_sha256(tx)).collect(),
+            txs: txs.into_iter().map(Hashed::double_sha256).collect(),
         }
     }
 
@@ -47,7 +47,7 @@ impl Block {
                      &arr_to_hex_swapped(&comp_merkle_root));
             return false;
         }
-        return true;
+        true
     }
 }
 
@@ -66,7 +66,7 @@ impl fmt::Debug for Block {
 pub fn get_base_reward(block_height: u64) -> u64 {
     let mut reward: u64 = 50 * 100000000;
     reward >>= block_height / 210000;
-    return reward;
+    reward
 }
 
 #[cfg(test)]

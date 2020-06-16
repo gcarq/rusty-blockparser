@@ -43,7 +43,7 @@ use crate::callbacks::unspentcsvdump::UnspentCsvDump;
 
 /// Holds all available user arguments
 pub struct ParserOptions {
-    callback: Box<dyn Callback>,         /* Name of the callback which gets executed for each block. (See callbacks/mod.rs)                      */
+    callback: Box<dyn Callback>,     /* Name of the callback which gets executed for each block. (See callbacks/mod.rs)                      */
     coin_type: CoinType,             /* Holds the name of the coin we want to parse                                                          */
     verify_merkle_root: bool,        /* Enable this if you want to check the merkle root of each block. Aborts if something is fishy.        */
     thread_count: u8,                /* Number of core threads. The callback gets sequentially called!                                       */
@@ -152,7 +152,7 @@ fn main() {
 
 /// Initializes all required data
 fn load_chain_file(path: &Path) -> OpResult<chain::ChainStorage> {
-    let err = match chain::ChainStorage::load(path.clone()) {
+    let err = match chain::ChainStorage::load(path) {
         Ok(storage) => return Ok(storage),
         Err(e) => e
     };
@@ -160,11 +160,11 @@ fn load_chain_file(path: &Path) -> OpResult<chain::ChainStorage> {
         // If there is no storage, create a new one
         OpErrorKind::IoError(err) => {
             match err.kind() {
-                ErrorKind::NotFound => return Ok(chain::ChainStorage::default()),
-                _ => return Err(OpError::from(err)),
+                ErrorKind::NotFound => Ok(chain::ChainStorage::default()),
+                _ => Err(OpError::from(err)),
             }
         }
-        kind @ _ => return Err(OpError::new(kind))
+        kind => Err(OpError::new(kind))
     }
 }
 
@@ -238,7 +238,7 @@ fn parse_args() -> OpResult<ParserOptions> {
     };
 
     // Set options
-    let coin_type = value_t!(matches, "coin", CoinType).unwrap_or(CoinType::from(Bitcoin));
+    let coin_type = value_t!(matches, "coin", CoinType).unwrap_or_else(|_| CoinType::from(Bitcoin));
     let mut blockchain_path = utils::get_absolute_blockchain_dir(&coin_type);
     if matches.value_of("blockchain-dir").is_some() {
         blockchain_path = PathBuf::from(matches.value_of("blockchain-dir").unwrap());

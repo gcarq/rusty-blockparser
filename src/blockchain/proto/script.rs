@@ -131,17 +131,13 @@ impl PartialEq for StackElement {
             }
         }
     }
-    #[inline]
-    fn ne(&self, other: &Self) -> bool {
-        !self.eq(other)
-    }
 }
 
 impl fmt::Debug for StackElement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            &StackElement::Op(ref op) => write!(f, "{:?}", &op),
-            &StackElement::Data(ref d) => write!(f, "{}", &utils::arr_to_hex(&d))
+        match *self {
+            StackElement::Op(ref op) => write!(f, "{:?}", &op),
+            StackElement::Data(ref d) => write!(f, "{}", &utils::arr_to_hex(&d))
         }
     }
 }
@@ -307,7 +303,7 @@ impl<'a> ScriptEvaluator<'a> {
 
          }*/
 
-        return ScriptPattern::NotRecognised;
+        ScriptPattern::NotRecognised
     }
 
     /// Read a script-encoded unsigned integer.
@@ -317,8 +313,8 @@ impl<'a> ScriptEvaluator<'a> {
             Err(ScriptError::UnexpectedEof)
         } else {
             let mut ret = 0;
-            for i in 0..size {
-                ret += (data[i] as usize) << (i * 8);
+            for (i, item) in data.iter().enumerate().take(size) {
+                ret += (*item as usize) << (i * 8);
             }
             Ok(ret)
         }
@@ -337,7 +333,7 @@ impl<'a> ScriptEvaluator<'a> {
                 return false;
             }
         }
-        return true;
+        true
     }
 }
 
@@ -396,7 +392,7 @@ pub fn eval_from_stack(stack: Stack, version_id: u8) -> EvaluatedScript {
                     pattern: p.clone()
                 }
             }
-            ref p @ _ => {
+            ref p=> {
                 EvaluatedScript {
                     address: String::new(),
                     pattern: p.clone()
@@ -429,7 +425,7 @@ fn hash_160_to_address(h160: &[u8], version: u8) -> String {
 
     let h3 = sha256(&sha256(&vh160));
 
-    let mut addr = Vec::from(vh160);
+    let mut addr = vh160;
     addr.extend_from_slice(&h3[0..4]);
     addr.to_base58()
 }

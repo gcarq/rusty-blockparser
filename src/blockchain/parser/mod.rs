@@ -237,11 +237,8 @@ impl<'a> BlockchainParser<'a> {
                 .checked_div((t_fin - self.t_started) as u64)
                 .unwrap_or(self.stats.n_valid_blocks));
 
-        match self.mode {
-            ParseMode::FullData => {
-                (*self.options.callback).on_complete(self.chain_storage.get_cur_height());
-            }
-            _ => ()
+        if let ParseMode::FullData = self.mode {
+            (*self.options.callback).on_complete(self.chain_storage.get_cur_height());
         };
         self.save_chain_state()?;
         Ok(())

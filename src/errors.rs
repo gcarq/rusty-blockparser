@@ -64,7 +64,7 @@ impl fmt::Display for OpError {
 
 impl error::Error for OpError {
     fn description(&self) -> &str { self.message.as_ref() }
-    fn cause(&self) -> Option<&dyn error::Error> { self.kind.cause() }
+    fn cause(&self) -> Option<&dyn error::Error> { self.kind.source() }
 }
 
 

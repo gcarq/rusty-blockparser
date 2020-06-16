@@ -42,7 +42,7 @@ impl Tx {
             let input = self.inputs.first().unwrap();
             return input.outpoint.txid == [0u8; 32] && input.outpoint.index == 0xFFFFFFFF;
         }
-        return false;
+        false
     }
 }
 
@@ -76,7 +76,7 @@ impl ToRaw for Tx {
         }
         // Serialize locktime
         bytes.extend_from_slice(&le::u32_to_array(self.tx_locktime));
-        return bytes;
+        bytes
     }
 }
 
@@ -92,7 +92,7 @@ impl ToRaw for TxOutpoint {
         let mut bytes = Vec::with_capacity(32 + 4);
         bytes.extend_from_slice(&self.txid);
         bytes.extend_from_slice(&le::u32_to_array(self.index));
-        return bytes;
+        bytes
     }
 }
 
@@ -123,7 +123,7 @@ impl ToRaw for TxInput {
         bytes.extend_from_slice(&self.script_len.to_bytes());
         bytes.extend_from_slice(&self.script_sig);
         bytes.extend_from_slice(&le::u32_to_array(self.seq_no));
-        return bytes;
+        bytes
     }
 }
 
@@ -171,7 +171,7 @@ impl ToRaw for TxOutput {
         bytes.extend_from_slice(&le::u64_to_array(self.value));
         bytes.extend_from_slice(&self.script_len.to_bytes());
         bytes.extend_from_slice(&self.script_pubkey);
-        return bytes;
+        bytes
     }
 }
 

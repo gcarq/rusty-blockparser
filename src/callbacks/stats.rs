@@ -46,7 +46,7 @@ impl SimpleStats {
         // Strip exact OP_RETURN bytes
         let pattern = match script_pattern {
             ScriptPattern::DataOutput(_) => ScriptPattern::DataOutput(String::new()),
-            p @ _ => p
+            p => p
         };
         if !self.n_tx_types.contains_key(&pattern) {
             self.n_tx_types.insert(pattern.clone(), 1);
@@ -91,12 +91,10 @@ impl Callback for SimpleStats {
             self.n_tx_inputs += tx.value.in_count.value;
             self.n_tx_outputs += tx.value.out_count.value;
 
-            let mut i = 0;
             let mut tx_value = 0;
-            for o in tx.value.outputs {
-                self.process_tx_pattern(o.script.pattern, block_height, tx.hash, i);
+            for (i, o) in tx.value.outputs.into_iter().enumerate() {
+                self.process_tx_pattern(o.script.pattern, block_height, tx.hash, i as u32);
                 tx_value += o.out.value;
-                i += 1;
             }
             if tx_value > self.tx_largest.0 {
                 self.tx_largest = (tx_value, block_height, tx.hash);
@@ -127,7 +125,7 @@ impl Callback for SimpleStats {
             writeln!(&mut buffer, "   -> total volume:\t\t{:.8} ({} units)",
                 self.n_tx_total_volume as f64 * 1E-8, self.n_tx_total_volume).unwrap();
         }
-        writeln!(&mut buffer, "").unwrap();
+        writeln!(&mut buffer).unwrap();
         {
             let (value, height, txid) = self.tx_largest;
             writeln!(&mut buffer, "   -> largest tx:\t\t{:.8} ({} units)", value as f64 * 1E-8, value).unwrap();
@@ -147,7 +145,7 @@ impl Callback for SimpleStats {
                 self.n_tx_outputs as f64 / self.n_tx as f64).unwrap();
             writeln!(&mut buffer, "   -> avg value per output:\t{:.2}",
                 self.n_tx_total_volume as f64 / self.n_tx_outputs as f64 * 1E-8).unwrap();
-            writeln!(&mut buffer, "").unwrap();
+            writeln!(&mut buffer).unwrap();
         }
         writeln!(&mut buffer, "Transaction Types:").unwrap();
         for (pattern, count) in &self.n_tx_types {

@@ -49,18 +49,18 @@ impl Worker {
                     blk_file: file,
                     reader,
                     mode,
-                    name: worker_name.clone(),
+                    name: worker_name,
                 };
                 Ok(w)
             }
             Err(OpError { kind: OpErrorKind::None, ..}) => {
                 tx_channel.send(ParseResult::Complete(worker_name.clone()))?;
                 debug!(target: "worker", "{} stopped early because there no files left.", worker_name);
-                return Err(OpError::new(OpErrorKind::None));
+                Err(OpError::new(OpErrorKind::None))
             }
             Err(err) => {
                 tx_channel.send(ParseResult::Error(err))?;
-                return Err(OpError::new(OpErrorKind::RuntimeError));
+                Err(OpError::new(OpErrorKind::RuntimeError))
             }
         }
     }
@@ -79,7 +79,7 @@ impl Worker {
                 Err(err) => {
                     error!(target: &self.name, "{}", &err);
                     self.tx_channel.send(ParseResult::Error(err))
-                        .expect(&format!("Unable to contact main thread!"));
+                        .expect("Unable to contact main thread!");
                     break;
                 }
             };
@@ -145,7 +145,7 @@ impl Worker {
         // Seek to next block position
         let n_bytes = blocksize as u64 - (self.reader.position() - block_offset);
         self.reader.seek(SeekFrom::Current(n_bytes as i64))?;
-        return result;
+        result
     }
 
     /// Checks workload status and fetches new a file if buffer is empty.
@@ -165,7 +165,7 @@ impl Worker {
                       self.blk_file.index,
                       self.blk_file.size as f64 / 1000000.0);
         }
-        return Ok(true);
+        Ok(true)
     }
 
     /// Returns next file from shared buffer or None
