@@ -1,25 +1,26 @@
+use crate::blockchain::proto::script;
+use std::convert::{self, From};
 use std::error::{self, Error};
 use std::fmt;
 use std::io;
-use std::convert::{self, From};
-use std::sync;
 use std::string;
-use blockchain::proto::script;
+use std::sync;
 
 use rustc_serialize::json;
 
-
 /// Returns a string with filename, current code line and column
 macro_rules! line_mark {
-    () => (format!("Marked line: {} @ {}:{}", file!(), line!(), column!()));
+    () => {
+        format!("Marked line: {} @ {}:{}", file!(), line!(), column!())
+    };
 }
 
 /// Transforms a Option to Result
 /// If the Option contains None, a line mark will be placed along with OpErrorKind::None
 macro_rules! transform {
-    ($e:expr) => ({
-        try!($e.ok_or(OpError::new(OpErrorKind::None).join_msg(&line_mark!())))
-    });
+    ($e:expr) => {{
+        $e.ok_or(OpError::new(OpErrorKind::None).join_msg(&line_mark!()))?
+    }};
 }
 
 /// Tags a OpError with a additional description
@@ -29,26 +30,30 @@ macro_rules! tag_err {
     );
 }
 
-
 pub type OpResult<T> = Result<T, OpError>;
-
 
 #[derive(Debug)]
 /// Custom error type
 pub struct OpError {
     pub kind: OpErrorKind,
-    pub message: String
+    pub message: String,
 }
 
 impl OpError {
     pub fn new(kind: OpErrorKind) -> Self {
-        OpError{ kind: kind, message: String::new() }
+        OpError {
+            kind,
+            message: String::new(),
+        }
     }
 
     /// Joins the Error with a new message and returns it
     pub fn join_msg(mut self, msg: &str) -> Self {
         self.message.push_str(msg);
-        OpError { kind: self.kind, message: self.message }
+        OpError {
+            kind: self.kind,
+            message: self.message,
+        }
     }
 }
 
@@ -63,10 +68,13 @@ impl fmt::Display for OpError {
 }
 
 impl error::Error for OpError {
-    fn description(&self) -> &str { self.message.as_ref() }
-    fn cause(&self) -> Option<&error::Error> { self.kind.cause() }
+    fn description(&self) -> &str {
+        self.message.as_ref()
+    }
+    fn cause(&self) -> Option<&dyn error::Error> {
+        self.kind.source()
+    }
 }
-
 
 #[derive(Debug)]
 pub enum OpErrorKind {
@@ -81,7 +89,7 @@ pub enum OpErrorKind {
     ValidateError,
     RuntimeError,
     PoisonError,
-    SendError
+    SendError,
 }
 
 impl fmt::Display for OpErrorKind {
@@ -98,13 +106,12 @@ impl fmt::Display for OpErrorKind {
             OpErrorKind::CallbackError => write!(f, "Callback Error"),
             OpErrorKind::ValidateError => write!(f, "Validation Error"),
             OpErrorKind::RuntimeError => write!(f, "Runtime Error"),
-            OpErrorKind::None => write!(f, "NoneValue")
+            OpErrorKind::None => write!(f, "NoneValue"),
         }
     }
 }
 
 impl error::Error for OpErrorKind {
-
     fn description(&self) -> &str {
         match *self {
             OpErrorKind::IoError(ref err) => err.description(),
@@ -118,11 +125,11 @@ impl error::Error for OpErrorKind {
             OpErrorKind::CallbackError => "",
             OpErrorKind::ValidateError => "",
             OpErrorKind::RuntimeError => "",
-            OpErrorKind::None => ""
+            OpErrorKind::None => "",
         }
     }
 
-    fn cause(&self) -> Option<&error::Error> {
+    fn cause(&self) -> Option<&dyn error::Error> {
         match *self {
             OpErrorKind::IoError(ref err) => Some(err),
             OpErrorKind::ByteOrderError(ref err) => Some(err),
@@ -130,7 +137,7 @@ impl error::Error for OpErrorKind {
             OpErrorKind::ScriptError(ref err) => Some(err),
             ref err @ OpErrorKind::PoisonError => Some(err),
             ref err @ OpErrorKind::SendError => Some(err),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -189,12 +196,11 @@ impl convert::From<json::DecoderError> for OpError {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io;
     use std::error::Error;
+    use std::io;
 
     #[test]
     fn test_op_error() {

@@ -1,10 +1,9 @@
 use std::fmt;
 
-use blockchain::proto::ToRaw;
-use blockchain::proto::varuint::VarUint;
-use blockchain::proto::script;
-use blockchain::utils::{self, le, arr_to_hex_swapped};
-
+use crate::blockchain::proto::script;
+use crate::blockchain::proto::varuint::VarUint;
+use crate::blockchain::proto::ToRaw;
+use crate::blockchain::utils::{self, arr_to_hex_swapped, le};
 
 /// Simple transaction struct
 /// Please note: The txid is not stored here. See Hashed.
@@ -19,20 +18,28 @@ pub struct Tx {
 }
 
 impl Tx {
-    pub fn new(tx_version: u32, in_count: VarUint, inputs: &[TxInput],
-               out_count: VarUint, outputs: &[TxOutput], tx_locktime: u32,
-               version_id: u8) -> Self {
+    pub fn new(
+        tx_version: u32,
+        in_count: VarUint,
+        inputs: &[TxInput],
+        out_count: VarUint,
+        outputs: &[TxOutput],
+        tx_locktime: u32,
+        version_id: u8,
+    ) -> Self {
         // Evaluate and wrap all outputs to process them later
-        let evaluated_out = outputs.iter().cloned()
+        let evaluated_out = outputs
+            .iter()
+            .cloned()
             .map(|o| EvaluatedTxOut::eval_script(o, version_id))
             .collect();
         Tx {
-            tx_version: tx_version,
-            in_count: in_count,
+            tx_version,
+            in_count,
             inputs: Vec::from(inputs),
-            out_count: out_count,
+            out_count,
             outputs: evaluated_out,
-            tx_locktime: tx_locktime,
+            tx_locktime,
         }
     }
 
@@ -42,25 +49,25 @@ impl Tx {
             let input = self.inputs.first().unwrap();
             return input.outpoint.txid == [0u8; 32] && input.outpoint.index == 0xFFFFFFFF;
         }
-        return false;
+        false
     }
 }
 
 impl fmt::Debug for Tx {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("Tx")
-           .field("tx_version", &self.tx_version)
-           .field("in_count", &self.in_count)
-           .field("out_count", &self.out_count)
-           .field("tx_locktime", &self.tx_locktime)
-           .finish()
+            .field("tx_version", &self.tx_version)
+            .field("in_count", &self.in_count)
+            .field("out_count", &self.out_count)
+            .field("tx_locktime", &self.tx_locktime)
+            .finish()
     }
 }
 
 impl ToRaw for Tx {
     fn to_bytes(&self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(
-            (4 + self.in_count.value + self.out_count.value + 4) as usize);
+        let mut bytes =
+            Vec::with_capacity((4 + self.in_count.value + self.out_count.value + 4) as usize);
 
         // Serialize version
         bytes.extend_from_slice(&le::u32_to_array(self.tx_version));
@@ -76,7 +83,7 @@ impl ToRaw for Tx {
         }
         // Serialize locktime
         bytes.extend_from_slice(&le::u32_to_array(self.tx_locktime));
-        return bytes;
+        bytes
     }
 }
 
@@ -84,7 +91,7 @@ impl ToRaw for Tx {
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct TxOutpoint {
     pub txid: [u8; 32],
-    pub index: u32      // 0-based offset within tx
+    pub index: u32, // 0-based offset within tx
 }
 
 impl ToRaw for TxOutpoint {
@@ -92,19 +99,18 @@ impl ToRaw for TxOutpoint {
         let mut bytes = Vec::with_capacity(32 + 4);
         bytes.extend_from_slice(&self.txid);
         bytes.extend_from_slice(&le::u32_to_array(self.index));
-        return bytes;
+        bytes
     }
 }
 
 impl fmt::Debug for TxOutpoint {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("TxOutpoint")
-           .field("txid", &arr_to_hex_swapped(&self.txid))
-           .field("index", &self.index)
-           .finish()
+            .field("txid", &arr_to_hex_swapped(&self.txid))
+            .field("index", &self.index)
+            .finish()
     }
 }
-
 
 /// Holds TxInput informations
 #[derive(Clone)]
@@ -112,7 +118,7 @@ pub struct TxInput {
     pub outpoint: TxOutpoint,
     pub script_len: VarUint,
     pub script_sig: Vec<u8>,
-    pub seq_no: u32
+    pub seq_no: u32,
 }
 
 impl ToRaw for TxInput {
@@ -123,27 +129,26 @@ impl ToRaw for TxInput {
         bytes.extend_from_slice(&self.script_len.to_bytes());
         bytes.extend_from_slice(&self.script_sig);
         bytes.extend_from_slice(&le::u32_to_array(self.seq_no));
-        return bytes;
+        bytes
     }
 }
 
 impl fmt::Debug for TxInput {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("TxInput")
-           .field("outpoint", &self.outpoint)
-           .field("script_len", &self.script_len)
-           .field("script_sig", &self.script_sig)
-           .field("seq_no", &self.seq_no)
-           .finish()
+            .field("outpoint", &self.outpoint)
+            .field("script_len", &self.script_len)
+            .field("script_sig", &self.script_sig)
+            .field("seq_no", &self.seq_no)
+            .finish()
     }
 }
-
 
 /// Evaluates script_pubkey and wraps TxOutput
 #[derive(Clone)]
 pub struct EvaluatedTxOut {
     pub script: script::EvaluatedScript,
-    pub out: TxOutput
+    pub out: TxOutput,
 }
 
 impl EvaluatedTxOut {
@@ -151,7 +156,7 @@ impl EvaluatedTxOut {
     pub fn eval_script(out: TxOutput, version_id: u8) -> EvaluatedTxOut {
         EvaluatedTxOut {
             script: script::eval_from_bytes(&out.script_pubkey, version_id),
-            out: out
+            out,
         }
     }
 }
@@ -171,16 +176,16 @@ impl ToRaw for TxOutput {
         bytes.extend_from_slice(&le::u64_to_array(self.value));
         bytes.extend_from_slice(&self.script_len.to_bytes());
         bytes.extend_from_slice(&self.script_pubkey);
-        return bytes;
+        bytes
     }
 }
 
 impl fmt::Debug for TxOutput {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("TxOutput")
-           .field("value", &self.value)
-           .field("script_len", &self.script_len)
-           .field("script_pubkey",&utils::arr_to_hex(&self.script_pubkey))
-           .finish()
+            .field("value", &self.value)
+            .field("script_len", &self.script_len)
+            .field("script_pubkey", &utils::arr_to_hex(&self.script_pubkey))
+            .finish()
     }
 }

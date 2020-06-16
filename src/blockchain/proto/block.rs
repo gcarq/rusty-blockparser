@@ -1,11 +1,10 @@
 use std::fmt;
 
-use blockchain::proto::Hashed;
-use blockchain::proto::varuint::VarUint;
-use blockchain::proto::tx::Tx;
-use blockchain::proto::header::BlockHeader;
-use blockchain::utils::{merkle_root, arr_to_hex_swapped};
-
+use crate::blockchain::proto::header::BlockHeader;
+use crate::blockchain::proto::tx::Tx;
+use crate::blockchain::proto::varuint::VarUint;
+use crate::blockchain::proto::Hashed;
+use crate::blockchain::utils::{arr_to_hex_swapped, merkle_root};
 
 /// Basic block structure which holds all information
 pub struct Block {
@@ -20,16 +19,21 @@ pub struct Block {
 }
 
 impl Block {
-    pub fn new(blk_index: u32, blk_offset: usize,
-               blocksize: u32, header: BlockHeader,
-               tx_count: VarUint, txs: Vec<Tx>) -> Block {
+    pub fn new(
+        blk_index: u32,
+        blk_offset: usize,
+        blocksize: u32,
+        header: BlockHeader,
+        tx_count: VarUint,
+        txs: Vec<Tx>,
+    ) -> Block {
         Block {
-            blk_index: blk_index,
-            blk_offset: blk_offset,
-            blocksize: blocksize,
+            blk_index,
+            blk_offset,
+            blocksize,
             header: Hashed::double_sha256(header),
-            tx_count: tx_count,
-            txs: txs.into_iter().map(|tx| Hashed::double_sha256(tx)).collect(),
+            tx_count,
+            txs: txs.into_iter().map(Hashed::double_sha256).collect(),
         }
     }
 
@@ -47,18 +51,18 @@ impl Block {
                      &arr_to_hex_swapped(&comp_merkle_root));
             return false;
         }
-        return true;
+        true
     }
 }
 
 impl fmt::Debug for Block {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("Block")
-           .field("blk_index", &self.blk_index)
-           .field("blk_offset", &self.blk_offset)
-           .field("header", &self.header)
-           .field("tx_count", &self.tx_count)
-           .finish()
+            .field("blk_index", &self.blk_index)
+            .field("blk_offset", &self.blk_offset)
+            .field("header", &self.header)
+            .field("tx_count", &self.tx_count)
+            .finish()
     }
 }
 
@@ -66,7 +70,7 @@ impl fmt::Debug for Block {
 pub fn get_base_reward(block_height: u64) -> u64 {
     let mut reward: u64 = 50 * 100000000;
     reward >>= block_height / 210000;
-    return reward;
+    reward
 }
 
 #[cfg(test)]
@@ -75,7 +79,7 @@ mod tests {
 
     #[test]
     fn test_get_base_reward() {
-        assert_eq!(get_base_reward(0),      5000000000);
+        assert_eq!(get_base_reward(0), 5000000000);
         assert_eq!(get_base_reward(209999), 5000000000);
         assert_eq!(get_base_reward(210000), 2500000000);
         assert_eq!(get_base_reward(419999), 2500000000);

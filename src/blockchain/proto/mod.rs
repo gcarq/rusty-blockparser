@@ -1,14 +1,12 @@
+use crate::blockchain::utils::{arr_to_hex_swapped, sha256};
 use std::fmt;
-use blockchain::utils::{arr_to_hex_swapped, sha256};
-
 
 pub mod block;
 pub mod header;
+pub mod opcodes;
+pub mod script;
 pub mod tx;
 pub mod varuint;
-pub mod script;
-pub mod opcodes;
-
 
 /// Trait to serialize defined structures
 pub trait ToRaw {
@@ -22,23 +20,20 @@ pub struct Hashed<T> {
     pub value: T,
 }
 
-
 impl<T: ToRaw> Hashed<T> {
     /// encapsulates T and creates double sha256 as hash
     #[inline]
     pub fn double_sha256(value: T) -> Hashed<T> {
         Hashed {
             hash: sha256(&sha256(&value.to_bytes())),
-            value: value
+            value,
         }
     }
 
     pub fn from(hash: [u8; 32], value: T) -> Hashed<T> {
-        Hashed { hash: hash, value: value }
+        Hashed { hash, value }
     }
 }
-
-
 
 impl<T: fmt::Debug> fmt::Debug for Hashed<T> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
