@@ -96,13 +96,7 @@ pub fn arr_to_hex(data: &[u8]) -> String {
 
 #[inline]
 pub fn arr_to_hex_swapped(data: &[u8]) -> String {
-    //Vec::from_iter(data.iter().rev().cloned().collect::<Vec<u8>>()).to_hex()
-    let len = data.len();
-    let mut hex = String::with_capacity(len * 2);
-    for i in (0..len).rev() {
-        hex.push_str(&format!("{:02x}", &data[i]));
-    }
-    hex
+    data.iter().rev().map(|b| format!("{:02x}", b)).collect::<String>()
 }
 
 #[inline]
