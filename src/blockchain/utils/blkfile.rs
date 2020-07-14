@@ -1,38 +1,40 @@
-use std::collections::VecDeque;
+use std::collections::HashMap;
 use std::convert::From;
 use std::fs::{self, File, Metadata};
-use std::iter::FromIterator;
-use std::path::PathBuf;
-
-use seek_bufread::BufReader;
+use std::path::{Path, PathBuf};
 
 use crate::errors::{OpError, OpErrorKind, OpResult};
+use blockchain::parser::types::{Bitcoin, Coin};
+use blockchain::proto::block::Block;
+use blockchain::utils::reader::BlockchainRead;
+use byteorder::{LittleEndian, ReadBytesExt};
+use std::io::{Seek, SeekFrom};
 
 /// Holds all necessary data about a raw blk file
 #[derive(Debug)]
 pub struct BlkFile {
-    pub path: PathBuf, // File path
-    pub index: u32,    // Holds Index of blk file. (E.g. blk00000.dat has index 0x00000)
-    pub size: u64,     // File size in bytes
+    pub path: PathBuf,
+    pub size: u64,
 }
 
 impl BlkFile {
-    pub fn new(path: PathBuf, index: u32, size: u64) -> BlkFile {
-        BlkFile { path, index, size }
+    fn new(path: PathBuf, size: u64) -> BlkFile {
+        BlkFile { path, size }
     }
 
-    /// Returns a BufferedMemoryReader to reduce io wait.
-    pub fn get_reader(&self) -> OpResult<BufReader<File>> {
-        let f = File::open(&self.path)?;
-        Ok(BufReader::with_capacity(100000000, f))
+    pub fn read_block(&self, offset: u64) -> OpResult<Block> {
+        let mut f = File::open(&self.path)?;
+        f.seek(SeekFrom::Start(offset))?;
+        let blocksize = f.read_u32::<LittleEndian>()?;
+        f.read_block(blocksize, Bitcoin.version_id())
     }
 
     /// Collects all blk*.dat paths in the given directory
-    pub fn from_path(path: PathBuf, min_blk_idx: u32) -> OpResult<VecDeque<BlkFile>> {
+    pub fn from_path(path: &Path) -> OpResult<HashMap<usize, BlkFile>> {
         info!(target: "blkfile", "Reading files from {} ...", path.display());
         let content = fs::read_dir(path)?;
 
-        let mut blk_files = Vec::new();
+        let mut blk_files = HashMap::new();
         let blk_prefix = String::from("blk");
         let blk_ext = String::from(".dat");
 
@@ -55,13 +57,10 @@ impl BlkFile {
                     // Check if it's a valid blk file
                     if let Some(index) = BlkFile::parse_blk_index(&file_name, &blk_prefix, &blk_ext)
                     {
-                        // Only process new blk files
-                        if index >= min_blk_idx {
-                            // Build BlkFile structures
-                            let file_len = metadata.len();
-                            trace!(target: "blkfile", "Adding {}... (index: {}, size: {})", path.display(), index, file_len);
-                            blk_files.push(BlkFile::new(path, index, file_len));
-                        }
+                        // Build BlkFile structures
+                        let file_len = metadata.len();
+                        trace!(target: "blkfile", "Adding {}... (index: {}, size: {})", path.display(), index, file_len);
+                        blk_files.insert(index, BlkFile::new(path, file_len));
                     }
                 }
             } else {
@@ -69,23 +68,20 @@ impl BlkFile {
             }
         }
 
-        blk_files.sort_by(|a, b| a.path.cmp(&b.path));
         trace!(target: "blkfile", "Found {} blk files", blk_files.len());
-        if blk_files.is_empty() {
-            Err(OpError::new(OpErrorKind::RuntimeError).join_msg("No blk files found!"))
-        } else {
-            //blk_files.split_off(2); //just for testing purposes
-            Ok(VecDeque::from_iter(blk_files.into_iter()))
+        match blk_files.is_empty() {
+            true => Err(OpError::new(OpErrorKind::RuntimeError).join_msg("No blk files found!")),
+            false => Ok(blk_files),
         }
     }
 
     /// Identifies blk file and parses index
     /// Returns None if this is no blk file
-    fn parse_blk_index(file_name: &str, prefix: &str, ext: &str) -> Option<u32> {
+    fn parse_blk_index(file_name: &str, prefix: &str, ext: &str) -> Option<usize> {
         if file_name.starts_with(prefix) && file_name.ends_with(ext) {
             // Parse blk_index, this means we extract 42 from blk000042.dat
             file_name[prefix.len()..(file_name.len() - ext.len())]
-                .parse::<u32>()
+                .parse::<usize>()
                 .ok()
         } else {
             None
