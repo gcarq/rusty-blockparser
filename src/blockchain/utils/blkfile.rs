@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::convert::From;
-use std::fs::{self, File, Metadata};
+use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 
 use crate::errors::{OpError, OpErrorKind, OpResult};
@@ -18,6 +18,7 @@ pub struct BlkFile {
 }
 
 impl BlkFile {
+    #[inline]
     fn new(path: PathBuf, size: u64) -> BlkFile {
         BlkFile { path, size }
     }
@@ -45,11 +46,12 @@ impl BlkFile {
                 let fl = file_type.is_file();
                 if sl || fl {
                     let mut path: PathBuf = de.path();
-                    let mut metadata: Metadata = de.metadata().unwrap();
-                    if sl {
+                    let metadata = if sl {
                         path = fs::read_link(path.clone()).unwrap();
-                        metadata = fs::metadata(path.clone()).unwrap();
-                    }
+                        fs::metadata(path.clone()).unwrap()
+                    } else {
+                        de.metadata().unwrap()
+                    };
 
                     let file_name =
                         String::from(transform!(path.as_path().file_name().unwrap().to_str()));

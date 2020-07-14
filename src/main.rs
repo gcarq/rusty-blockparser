@@ -77,9 +77,7 @@ fn main() {
     };
 
     let mut parser = BlockchainParser::new(&mut options, chain_storage);
-    if let Err(msg) = parser.start() {
-        error!(target: "parser", "{}", msg);
-    }
+    parser.start();
     info!(target: "main", "Fin.");
 }
 

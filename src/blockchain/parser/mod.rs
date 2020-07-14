@@ -1,7 +1,6 @@
 use time;
 
 use crate::blockchain::proto::block::Block;
-use crate::errors::OpResult;
 
 use crate::ParserOptions;
 
@@ -42,18 +41,15 @@ impl<'a> BlockchainParser<'a> {
         }
     }
 
-    pub fn start(&mut self) -> OpResult<()> {
+    pub fn start(&mut self) {
         self.on_start();
 
         debug!(target: "parser", "Starting worker ...");
-        loop {
-            match self.chain_storage.get_next() {
-                Some(block) => self.on_block(block),
-                None => break,
-            }
+        while let Some(block) = self.chain_storage.get_next() {
+            self.on_block(block);
         }
 
-        return self.on_complete();
+        self.on_complete();
     }
 
     /// Triggers the on_start() callback and initializes state.
@@ -90,7 +86,7 @@ impl<'a> BlockchainParser<'a> {
     }
 
     /// Triggers the on_complete() callback and updates statistics.
-    fn on_complete(&mut self) -> OpResult<()> {
+    fn on_complete(&mut self) {
         let t_fin = time::precise_time_s();
         info!(target: "dispatch", "Done. Processed {} blocks in {:.2} minutes. (avg: {:5.2} blocks/sec)",
               self.stats.n_valid_blocks, (t_fin - self.t_started) / 60.0,
@@ -99,6 +95,5 @@ impl<'a> BlockchainParser<'a> {
                 .unwrap_or(self.stats.n_valid_blocks));
 
         (*self.options.callback).on_complete(self.chain_storage.get_cur_height());
-        Ok(())
     }
 }

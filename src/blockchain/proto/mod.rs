@@ -30,6 +30,7 @@ impl<T: ToRaw> Hashed<T> {
         }
     }
 
+    #[inline]
     pub fn from(hash: [u8; 32], value: T) -> Hashed<T> {
         Hashed { hash, value }
     }

@@ -15,6 +15,7 @@ pub struct Block {
 }
 
 impl Block {
+    #[inline]
     pub fn new(blocksize: u32, header: BlockHeader, tx_count: VarUint, txs: Vec<Tx>) -> Block {
         Block {
             blocksize,
@@ -25,6 +26,7 @@ impl Block {
     }
 
     /// Computes merkle root for all containing transactions
+    #[inline]
     pub fn compute_merkle_root(&self) -> [u8; 32] {
         merkle_root(&self.txs.iter().map(|tx| tx.hash).collect::<Vec<[u8; 32]>>())
     }

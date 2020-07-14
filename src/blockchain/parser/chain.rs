@@ -13,6 +13,7 @@ pub struct ChainStorage {
 }
 
 impl ChainStorage {
+    #[inline]
     pub fn new(path: &Path) -> OpResult<Self> {
         Ok(Self {
             blocks: get_block_index(&path.join("index"))?,
@@ -40,11 +41,6 @@ impl ChainStorage {
     #[inline]
     pub fn get_cur_height(&self) -> usize {
         self.index
-    }
-
-    #[inline]
-    pub fn len(&self) -> usize {
-        self.blocks.len()
     }
 }
 
