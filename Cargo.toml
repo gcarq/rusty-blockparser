@@ -11,7 +11,7 @@ keywords = ["Cryptocurrency", "Bitcoin", "Litecoin", "Blockchain", "Parser"]
 license = "GPL-3.0"
 
 [dependencies]
-time            = "~0.1"
+time = { version = "^0.2", default-features = false, features = ["std"] }
 log             = "~0.3"
 clap            = "~2.26"
 rust-crypto     = "~0.2"
