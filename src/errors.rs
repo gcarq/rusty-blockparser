@@ -106,35 +106,17 @@ impl fmt::Display for OpErrorKind {
             OpErrorKind::LevelDBError(ref err) => write!(f, "LevelDB Error: {}", err),
             ref err @ OpErrorKind::PoisonError => write!(f, "Threading Error: {}", err),
             ref err @ OpErrorKind::SendError => write!(f, "Sync Error: {}", err),
-            OpErrorKind::InvalidArgsError => write!(f, "InvalidArgs Error"),
-            OpErrorKind::CallbackError => write!(f, "Callback Error"),
-            OpErrorKind::ValidateError => write!(f, "Validation Error"),
-            OpErrorKind::RuntimeError => write!(f, "Runtime Error"),
+            ref err @ OpErrorKind::InvalidArgsError => write!(f, "InvalidArgs Error: {}", err),
+            ref err @ OpErrorKind::CallbackError => write!(f, "Callback Error: {}", err),
+            ref err @ OpErrorKind::ValidateError => write!(f, "Validation Error: {}", err),
+            ref err @ OpErrorKind::RuntimeError => write!(f, "Runtime Error: {}", err),
             OpErrorKind::None => write!(f, "NoneValue"),
         }
     }
 }
 
 impl error::Error for OpErrorKind {
-    fn description(&self) -> &str {
-        match *self {
-            OpErrorKind::IoError(ref err) => err.description(),
-            OpErrorKind::ByteOrderError(ref err) => err.description(),
-            OpErrorKind::Utf8Error(ref err) => err.description(),
-            OpErrorKind::ScriptError(ref err) => err.description(),
-            ref err @ OpErrorKind::PoisonError => err.description(),
-            ref err @ OpErrorKind::SendError => err.description(),
-            OpErrorKind::JsonError(ref err) => err,
-            OpErrorKind::LevelDBError(ref err) => err,
-            OpErrorKind::InvalidArgsError => "",
-            OpErrorKind::CallbackError => "",
-            OpErrorKind::ValidateError => "",
-            OpErrorKind::RuntimeError => "",
-            OpErrorKind::None => "",
-        }
-    }
-
-    fn cause(&self) -> Option<&dyn error::Error> {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match *self {
             OpErrorKind::IoError(ref err) => Some(err),
             OpErrorKind::ByteOrderError(ref err) => Some(err),
@@ -146,12 +128,6 @@ impl error::Error for OpErrorKind {
         }
     }
 }
-
-/*impl From<error::Error> for OpError {
-    fn from(err: error::Error) -> Self {
-        Self { kind: OpErrorKind::IoError(err), message: String::from(err.description()) }
-    }
-}*/
 
 impl From<io::Error> for OpError {
     fn from(err: io::Error) -> Self {
@@ -210,20 +186,15 @@ impl convert::From<rusty_leveldb::Status> for OpError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::error::Error;
     use std::io;
 
     #[test]
     fn test_op_error() {
         let kind = io::Error::new(io::ErrorKind::BrokenPipe, "oh no!");
         let err = OpError::from(kind);
-
-        assert_eq!(err.description(), "");
         assert_eq!(format!("{}", err), "I/O Error: oh no!");
 
         let err = err.join_msg("Cannot proceed.");
-
-        assert_eq!(err.description(), "Cannot proceed.");
         assert_eq!(format!("{}", err), "Cannot proceed. I/O Error: oh no!");
     }
 }
