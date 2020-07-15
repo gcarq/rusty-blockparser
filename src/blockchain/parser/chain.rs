@@ -23,14 +23,19 @@ impl<'a> ChainStorage<'a> {
         Ok(Self {
             blocks: get_block_index(blockchain_dir.join("index").as_path())?,
             blk_files: BlkFile::from_path(blockchain_dir.as_path())?,
-            index: 0,
+            index: options.borrow().range.start,
             options,
         })
     }
 
     /// Returns the next hash without removing it
-    #[inline]
     pub fn get_next(&mut self) -> Option<Block> {
+        if let Some(end) = self.options.borrow().range.end {
+            if self.index == end {
+                return None;
+            }
+        }
+
         let meta = self.blocks.get(self.index)?;
         let block = self
             .blk_files
@@ -76,11 +81,5 @@ impl<'a> ChainStorage<'a> {
     #[inline]
     pub fn remaining(&self) -> usize {
         self.blocks.len().saturating_sub(self.index)
-    }
-
-    /// Returns current block height
-    #[inline]
-    pub fn get_cur_height(&self) -> usize {
-        self.index
     }
 }

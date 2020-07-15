@@ -21,8 +21,8 @@ pub struct CsvDump {
     txin_writer: BufWriter<File>,
     txout_writer: BufWriter<File>,
 
-    start_height: usize,
-    end_height: usize,
+    start_height: u64,
+    end_height: u64,
     tx_count: u64,
     in_count: u64,
     out_count: u64,
@@ -85,12 +85,12 @@ impl Callback for CsvDump {
         }
     }
 
-    fn on_start(&mut self, _: &CoinType, block_height: usize) {
+    fn on_start(&mut self, _: &CoinType, block_height: u64) {
         self.start_height = block_height;
         info!(target: "callback", "Using `csvdump` with dump folder: {} ...", &self.dump_folder.display());
     }
 
-    fn on_block(&mut self, block: &Block, block_height: usize) {
+    fn on_block(&mut self, block: &Block, block_height: u64) {
         // serialize block
         self.block_writer
             .write_all(block.as_csv(block_height).as_bytes())
@@ -123,7 +123,7 @@ impl Callback for CsvDump {
         self.tx_count += block.tx_count.value;
     }
 
-    fn on_complete(&mut self, block_height: usize) {
+    fn on_complete(&mut self, block_height: u64) {
         self.end_height = block_height;
 
         // Keep in sync with c'tor
@@ -149,7 +149,7 @@ impl Callback for CsvDump {
 
 impl Block {
     #[inline]
-    fn as_csv(&self, block_height: usize) -> String {
+    fn as_csv(&self, block_height: u64) -> String {
         // (@hash, height, version, blocksize, @hashPrev, @hashMerkleRoot, nTime, nBits, nNonce)
         format!(
             "{};{};{};{};{};{};{};{};{}\n",

@@ -97,17 +97,17 @@ impl fmt::Display for OpErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             OpErrorKind::IoError(ref err) => write!(f, "I/O Error: {}", err),
-            OpErrorKind::ByteOrderError(ref err) => write!(f, "ByteOrder Error: {}", err),
-            OpErrorKind::Utf8Error(ref err) => write!(f, "Utf8 Conversion Error: {}", err),
-            OpErrorKind::ScriptError(ref err) => write!(f, "Script Error: {}", err),
-            OpErrorKind::LevelDBError(ref err) => write!(f, "LevelDB Error: {}", err),
+            OpErrorKind::ByteOrderError(ref err) => write!(f, "ByteOrder: {}", err),
+            OpErrorKind::Utf8Error(ref err) => write!(f, "Utf8 Conversion: {}", err),
+            OpErrorKind::ScriptError(ref err) => write!(f, "Script: {}", err),
+            OpErrorKind::LevelDBError(ref err) => write!(f, "LevelDB: {}", err),
             ref err @ OpErrorKind::PoisonError => write!(f, "Threading Error: {}", err),
-            ref err @ OpErrorKind::SendError => write!(f, "Sync Error: {}", err),
-            ref err @ OpErrorKind::InvalidArgsError => write!(f, "InvalidArgs Error: {}", err),
-            ref err @ OpErrorKind::CallbackError => write!(f, "Callback Error: {}", err),
-            ref err @ OpErrorKind::ValidateError => write!(f, "Validation Error: {}", err),
-            ref err @ OpErrorKind::RuntimeError => write!(f, "Runtime Error: {}", err),
-            OpErrorKind::None => write!(f, "NoneValue"),
+            ref err @ OpErrorKind::SendError => write!(f, "Sync: {}", err),
+            ref err @ OpErrorKind::InvalidArgsError => write!(f, "InvalidArgs: {}", err),
+            ref err @ OpErrorKind::CallbackError => write!(f, "Callback: {}", err),
+            ref err @ OpErrorKind::ValidateError => write!(f, "Validation: {}", err),
+            ref err @ OpErrorKind::RuntimeError => write!(f, "RuntimeError: {}", err),
+            OpErrorKind::None => write!(f, ""),
         }
     }
 }

@@ -8,3 +8,4 @@ csvdump
 .idea
 
 ./test.sh
+dump/

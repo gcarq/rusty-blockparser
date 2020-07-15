@@ -14,14 +14,14 @@ use crate::errors::{OpError, OpResult};
 
 /// Dumps the whole blockchain into csv files
 pub struct UnspentCsvDump {
-    // Each structure gets stored in a seperate csv file
+    // Each structure gets stored in a separate csv file
     dump_folder: PathBuf,
     unspent_writer: BufWriter<File>,
 
     transactions_unspent: HashMap<String, HashMapVal>,
 
-    start_height: usize,
-    end_height: usize,
+    start_height: u64,
+    end_height: u64,
     tx_count: u64,
     in_count: u64,
     out_count: u64,
@@ -30,7 +30,7 @@ pub struct UnspentCsvDump {
 struct HashMapVal {
     /*	txid:	String,
     index:	usize,*/
-    block_height: usize,
+    block_height: u64,
     output_val: u64,
     address: String,
 }
@@ -93,12 +93,12 @@ impl Callback for UnspentCsvDump {
         }
     }
 
-    fn on_start(&mut self, _: &CoinType, block_height: usize) {
+    fn on_start(&mut self, _: &CoinType, block_height: u64) {
         self.start_height = block_height;
         info!(target: "callback", "Using `unspentcsvdump` with dump folder: {} ...", &self.dump_folder.display());
     }
 
-    fn on_block(&mut self, block: &Block, block_height: usize) {
+    fn on_block(&mut self, block: &Block, block_height: u64) {
         // serialize transaction
         for tx in &block.txs {
             // For each transaction in the block,
@@ -145,7 +145,7 @@ impl Callback for UnspentCsvDump {
         self.tx_count += block.tx_count.value;
     }
 
-    fn on_complete(&mut self, block_height: usize) {
+    fn on_complete(&mut self, block_height: u64) {
         self.end_height = block_height;
 
         self.unspent_writer

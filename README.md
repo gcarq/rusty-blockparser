@@ -168,11 +168,12 @@ FLAGS:
         --verify     Verifies the leveldb index integrity and verifies merkle roots
 
 OPTIONS:
-        --backlog <COUNT>                    Sets maximum worker backlog (default: 100)
-    -d, --blockchain-dir <blockchain-dir>    Sets blockchain directory which contains blk.dat files (default: ~/.bitcoin/blocks)
-        --chain-storage <FILE>               Specify path to chain storage. This is just a internal state file (default: chain.json)
-    -c, --coin <NAME>                        Specify blockchain coin (default: bitcoin) [values: bitcoin, testnet3, namecoin, litecoin, dogecoin, myriadcoin, unobtanium]
-    -t, --threads <COUNT>                    Thread count (default: 2)
+    -d, --blockchain-dir <blockchain-dir>    Sets blockchain directory which contains blk.dat files (default:
+                                             ~/.bitcoin/blocks)
+    -c, --coin <NAME>                        Specify blockchain coin (default: bitcoin) [possible values: bitcoin,
+                                             testnet3, namecoin, litecoin, dogecoin, myriadcoin, unobtanium]
+    -e, --end <NUMBER>                       Specify last block for parsing (inclusive) (default: all known blocks)
+    -s, --start <NUMBER>                     Specify starting block for parsing (inclusive)
 
 SUBCOMMANDS:
     csvdump           Dumps the whole blockchain into CSV files

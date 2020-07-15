@@ -10,7 +10,7 @@ pub mod types;
 
 /// Small struct to hold statistics together
 struct WorkerStats {
-    pub n_valid_blocks: u64,
+    pub n_height: u64,
     pub t_started: Instant,
     pub t_last_log: Instant,
     pub t_measure_frame: Duration,
@@ -19,7 +19,7 @@ struct WorkerStats {
 impl Default for WorkerStats {
     fn default() -> Self {
         Self {
-            n_valid_blocks: 0,
+            n_height: 0,
             t_started: Instant::now(),
             t_last_log: Instant::now(),
             t_measure_frame: Duration::from_secs(10),
@@ -39,7 +39,7 @@ impl<'a> BlockchainParser<'a> {
         options: &'a RefCell<ParserOptions>,
         chain_storage: chain::ChainStorage<'a>,
     ) -> Self {
-        info!(target: "parser", "Parsing {} blockchain ({} blocks) ...", options.borrow().coin_type.name, chain_storage.remaining());
+        info!(target: "parser", "Parsing {} blockchain (range={}) ...", options.borrow().coin_type.name, options.borrow().range);
         Self {
             options,
             chain_storage,
@@ -48,36 +48,35 @@ impl<'a> BlockchainParser<'a> {
     }
 
     pub fn start(&mut self) {
-        self.on_start();
-
         debug!(target: "parser", "Starting worker ...");
+
+        self.on_start();
         while let Some(block) = self.chain_storage.get_next() {
             self.on_block(&block);
         }
-
         self.on_complete();
     }
 
     /// Triggers the on_start() callback and initializes state.
     fn on_start(&mut self) {
         let coin_type = self.options.borrow().coin_type.clone();
-
         self.stats.t_started = Instant::now();
         self.stats.t_last_log = Instant::now();
-        (*self.options.borrow_mut().callback)
-            .on_start(&coin_type, self.chain_storage.get_cur_height());
+        (*self.options.borrow_mut().callback).on_start(&coin_type, self.stats.n_height);
+        trace!(target: "parser", "on_start() called");
     }
 
     /// Triggers the on_block() callback and updates statistics.
     fn on_block(&mut self, block: &Block) {
-        (*self.options.borrow_mut().callback).on_block(block, self.chain_storage.get_cur_height());
-        self.stats.n_valid_blocks += 1;
+        (*self.options.borrow_mut().callback).on_block(block, self.stats.n_height);
+        trace!(target: "parser", "on_block(height={}) called", self.stats.n_height);
+        self.stats.n_height += 1;
 
         // Some performance measurements and logging
         let now = Instant::now();
         if now - self.stats.t_last_log > self.stats.t_measure_frame {
-            info!(target:"parser", "Status: {:6} Blocks processed. (left: {:6}, avg: {:5.2} blocks/sec)",
-                                     self.stats.n_valid_blocks, self.chain_storage.remaining(), self.blocks_sec());
+            info!(target: "parser", "Status: {:6} Blocks processed. (left: {:6}, avg: {:5.2} blocks/sec)",
+                  self.stats.n_height, self.chain_storage.remaining(), self.blocks_sec());
             self.stats.t_last_log = now;
         }
     }
@@ -85,17 +84,18 @@ impl<'a> BlockchainParser<'a> {
     /// Triggers the on_complete() callback and updates statistics.
     fn on_complete(&mut self) {
         info!(target: "parser", "Done. Processed {} blocks in {:.2} minutes. (avg: {:5.2} blocks/sec)",
-              self.stats.n_valid_blocks, (Instant::now() - self.stats.t_started).as_secs_f32() / 60.0,
+              self.stats.n_height, (Instant::now() - self.stats.t_started).as_secs_f32() / 60.0,
               self.blocks_sec());
 
-        (*self.options.borrow_mut().callback).on_complete(self.chain_storage.get_cur_height());
+        (*self.options.borrow_mut().callback).on_complete(self.stats.n_height);
+        trace!(target: "parser", "on_complete() called");
     }
 
     /// Returns the number of avg processed blocks
     fn blocks_sec(&self) -> u64 {
         self.stats
-            .n_valid_blocks
+            .n_height
             .checked_div((Instant::now() - self.stats.t_started).as_secs())
-            .unwrap_or(1)
+            .unwrap_or(self.stats.n_height)
     }
 }

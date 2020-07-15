@@ -1,5 +1,6 @@
 use std::boxed::Box;
 use std::cell::RefCell;
+use std::fmt;
 use std::path::PathBuf;
 
 use clap::{App, Arg};
@@ -13,7 +14,7 @@ use crate::callbacks::stats::SimpleStats;
 use crate::callbacks::unspentcsvdump::UnspentCsvDump;
 use crate::callbacks::Callback;
 use crate::common::logger::SimpleLogger;
-use crate::errors::OpResult;
+use crate::errors::{OpError, OpResult};
 
 #[macro_use]
 extern crate log;
@@ -32,6 +33,32 @@ pub mod common;
 #[macro_use]
 pub mod callbacks;
 
+pub struct ParseRange {
+    start: usize,
+    end: Option<usize>,
+}
+
+impl ParseRange {
+    pub fn new(start: usize, end: Option<usize>) -> OpResult<Self> {
+        if end.is_some() && start >= end.unwrap() {
+            return Err(OpError::from(String::from(
+                "--start value must be lower than --end value",
+            )));
+        }
+        Ok(Self { start, end })
+    }
+}
+
+impl fmt::Display for ParseRange {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let end = match self.end {
+            Some(e) => e.to_string(),
+            None => String::from(""),
+        };
+        write!(f, "{}..{}", self.start, end)
+    }
+}
+
 /// Holds all available user arguments
 pub struct ParserOptions {
     // Name of the callback which gets executed for each block. (See callbacks/mod.rs)
@@ -44,6 +71,8 @@ pub struct ParserOptions {
     blockchain_dir: PathBuf,
     // Verbosity level, 0 = Error, 1 = Info, 2 = Debug, 3+ = Trace
     log_level_filter: log::LevelFilter,
+    // Range which is considered for parsing
+    range: ParseRange,
 }
 
 fn main() {
@@ -115,21 +144,17 @@ fn parse_args() -> OpResult<RefCell<ParserOptions>> {
             .long("blockchain-dir")
             .help("Sets blockchain directory which contains blk.dat files (default: ~/.bitcoin/blocks)")
             .takes_value(true))
-        .arg(Arg::with_name("threads")
-            .short("t")
-            .long("threads")
-            .value_name("COUNT")
-            .help("Thread count (default: 2)")
+        .arg(Arg::with_name("start")
+            .short("s")
+            .long("start")
+            .value_name("NUMBER")
+            .help("Specify starting block for parsing (inclusive)")
             .takes_value(true))
-        .arg(Arg::with_name("chain-storage")
-            .long("chain-storage")
-            .value_name("FILE")
-            .help("Specify path to chain storage. This is just a internal state file (default: chain.json)")
-            .takes_value(true))
-        .arg(Arg::with_name("backlog")
-            .long("backlog")
-            .value_name("COUNT")
-            .help("Sets maximum worker backlog (default: 100)")
+        .arg(Arg::with_name("end")
+            .short("e")
+            .long("end")
+            .value_name("NUMBER")
+            .help("Specify last block for parsing (inclusive) (default: all known blocks)")
             .takes_value(true))
         // Add callbacks
         .subcommand(UnspentCsvDump::build_subcommand())
@@ -137,7 +162,6 @@ fn parse_args() -> OpResult<RefCell<ParserOptions>> {
         .subcommand(SimpleStats::build_subcommand())
         .get_matches();
 
-    // Set flags
     let verify = matches.is_present("verify");
     let log_level_filter = match matches.occurrences_of("verbosity") {
         0 => log::LevelFilter::Info,
@@ -145,13 +169,14 @@ fn parse_args() -> OpResult<RefCell<ParserOptions>> {
         _ => log::LevelFilter::Trace,
     };
 
-    // Set options
     let coin_type = value_t!(matches, "coin", CoinType).unwrap_or_else(|_| CoinType::from(Bitcoin));
-
-    let blockchain_path = match matches.value_of("blockchain-dir") {
+    let blockchain_dir = match matches.value_of("blockchain-dir") {
         Some(p) => PathBuf::from(p),
         None => utils::get_absolute_blockchain_dir(&coin_type),
     };
+    let start = value_t!(matches, "start", usize).unwrap_or(0);
+    let end = value_t!(matches, "end", usize).ok();
+    let range = ParseRange::new(start, end)?;
 
     // Set callback
     let callback: Box<dyn Callback>;
@@ -174,8 +199,9 @@ fn parse_args() -> OpResult<RefCell<ParserOptions>> {
         coin_type,
         callback,
         verify,
-        blockchain_dir: blockchain_path,
+        blockchain_dir,
         log_level_filter,
+        range,
     };
     Ok(RefCell::new(options))
 }

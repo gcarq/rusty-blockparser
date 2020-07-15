@@ -23,12 +23,12 @@ pub struct SimpleStats {
     n_tx_total_volume: u64,
 
     /// Largest transaction (value, height, txid)
-    tx_largest: (u64, usize, [u8; 32]),
+    tx_largest: (u64, u64, [u8; 32]),
     /// Contains transaction type count
     n_tx_types: HashMap<ScriptPattern, u64>,
     /// First occurence of transaction type
     /// (block_height, txid)
-    tx_first_occs: HashMap<ScriptPattern, (usize, [u8; 32], u32)>,
+    tx_first_occs: HashMap<ScriptPattern, (u64, [u8; 32], u32)>,
 
     /// Time stats
     t_between_blocks: Vec<u32>,
@@ -41,7 +41,7 @@ impl SimpleStats {
     fn process_tx_pattern(
         &mut self,
         script_pattern: ScriptPattern,
-        block_height: usize,
+        block_height: u64,
         txid: [u8; 32],
         index: u32,
     ) {
@@ -79,11 +79,11 @@ impl Callback for SimpleStats {
         Ok(Default::default())
     }
 
-    fn on_start(&mut self, _: &CoinType, _: usize) {
+    fn on_start(&mut self, _: &CoinType, _: u64) {
         info!(target: "callback", "Executing SimpleStats ...");
     }
 
-    fn on_block(&mut self, block: &Block, block_height: usize) {
+    fn on_block(&mut self, block: &Block, block_height: u64) {
         self.n_valid_blocks += 1;
         self.n_tx += block.tx_count.value;
         self.block_sizes.push(block.size);
@@ -125,7 +125,7 @@ impl Callback for SimpleStats {
         self.last_timestamp = block.header.value.timestamp;
     }
 
-    fn on_complete(&mut self, _: usize) {
+    fn on_complete(&mut self, _: u64) {
         let mut buffer = Vec::with_capacity(4096);
         {
             writeln!(&mut buffer, "SimpleStats:").unwrap();
