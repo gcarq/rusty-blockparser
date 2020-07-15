@@ -1,10 +1,10 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
+use crate::blockchain::parser::blkfile::BlkFile;
 use crate::blockchain::parser::index::{get_block_index, BlockIndexRecord};
 use crate::blockchain::proto::block::Block;
-use crate::blockchain::utils::arr_to_hex_swapped;
-use crate::blockchain::utils::blkfile::BlkFile;
+use crate::common::utils;
 use crate::errors::OpResult;
 use crate::ParserOptions;
 
@@ -60,8 +60,8 @@ impl<'a> ChainStorage<'a> {
             if block.header.hash != genesis_hash {
                 panic!(
                     "Hash of genesis doesn't match!\n  -> expected: {}\n  -> got: {}\n",
-                    arr_to_hex_swapped(&genesis_hash),
-                    arr_to_hex_swapped(&block.header.hash),
+                    utils::arr_to_hex_swapped(&genesis_hash),
+                    utils::arr_to_hex_swapped(&block.header.hash),
                 );
             }
         } else {
@@ -69,9 +69,9 @@ impl<'a> ChainStorage<'a> {
             if block.header.value.prev_hash != prev_hash {
                 panic!(
                     "prev_hash for block {} doesn't match!\n  -> expected: {}\n  -> got: {}\n",
-                    arr_to_hex_swapped(&block.header.hash),
-                    arr_to_hex_swapped(&block.header.value.prev_hash),
-                    arr_to_hex_swapped(&prev_hash)
+                    utils::arr_to_hex_swapped(&block.header.hash),
+                    utils::arr_to_hex_swapped(&block.header.value.prev_hash),
+                    utils::arr_to_hex_swapped(&prev_hash)
                 );
             }
         }

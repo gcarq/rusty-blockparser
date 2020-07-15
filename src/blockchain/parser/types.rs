@@ -2,7 +2,7 @@ use std::convert::From;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
-use crate::blockchain::utils::hex_to_arr32_swapped;
+use crate::common::utils;
 use crate::errors::{OpError, OpErrorKind, OpResult};
 
 /// Trait to specify the underlying coin of a blockchain
@@ -38,7 +38,9 @@ impl Coin for Bitcoin {
         0x00
     }
     fn genesis(&self) -> [u8; 32] {
-        hex_to_arr32_swapped("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
+        utils::hex_to_arr32_swapped(
+            "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
+        )
     }
     fn default_folder(&self) -> PathBuf {
         Path::new(".bitcoin").join("blocks")
@@ -57,7 +59,9 @@ impl Coin for TestNet3 {
         0x6f
     }
     fn genesis(&self) -> [u8; 32] {
-        hex_to_arr32_swapped("000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943")
+        utils::hex_to_arr32_swapped(
+            "000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943",
+        )
     }
     fn default_folder(&self) -> PathBuf {
         Path::new(".bitcoin").join("testnet3")
@@ -75,7 +79,9 @@ impl Coin for Namecoin {
         0x34
     }
     fn genesis(&self) -> [u8; 32] {
-        hex_to_arr32_swapped("000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770")
+        utils::hex_to_arr32_swapped(
+            "000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770",
+        )
     }
     fn default_folder(&self) -> PathBuf {
         PathBuf::from(".namecoin")
@@ -93,7 +99,9 @@ impl Coin for Litecoin {
         0x30
     }
     fn genesis(&self) -> [u8; 32] {
-        hex_to_arr32_swapped("12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2")
+        utils::hex_to_arr32_swapped(
+            "12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2",
+        )
     }
     fn default_folder(&self) -> PathBuf {
         Path::new(".litecoin").join("blocks")
@@ -111,7 +119,9 @@ impl Coin for Dogecoin {
         0x1e
     }
     fn genesis(&self) -> [u8; 32] {
-        hex_to_arr32_swapped("1a91e3dace36e2be3bf030a65679fe821aa1d6ef92e7c9902eb318182c355691")
+        utils::hex_to_arr32_swapped(
+            "1a91e3dace36e2be3bf030a65679fe821aa1d6ef92e7c9902eb318182c355691",
+        )
     }
     fn default_folder(&self) -> PathBuf {
         Path::new(".dogecoin").join("blocks")
@@ -129,7 +139,9 @@ impl Coin for Myriadcoin {
         0x32
     }
     fn genesis(&self) -> [u8; 32] {
-        hex_to_arr32_swapped("00000ffde4c020b5938441a0ea3d314bf619eff0b38f32f78f7583cffa1ea485")
+        utils::hex_to_arr32_swapped(
+            "00000ffde4c020b5938441a0ea3d314bf619eff0b38f32f78f7583cffa1ea485",
+        )
     }
     fn default_folder(&self) -> PathBuf {
         Path::new(".myriadcoin").join("blocks")
@@ -147,7 +159,9 @@ impl Coin for Unobtanium {
         0x82
     }
     fn genesis(&self) -> [u8; 32] {
-        hex_to_arr32_swapped("000004c2fc5fffb810dccc197d603690099a68305232e552d96ccbe8e2c52b75")
+        utils::hex_to_arr32_swapped(
+            "000004c2fc5fffb810dccc197d603690099a68305232e552d96ccbe8e2c52b75",
+        )
     }
     fn default_folder(&self) -> PathBuf {
         Path::new(".unobtanium").join("blocks")

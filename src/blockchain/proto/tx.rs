@@ -3,7 +3,7 @@ use std::fmt;
 use crate::blockchain::proto::script;
 use crate::blockchain::proto::varuint::VarUint;
 use crate::blockchain::proto::ToRaw;
-use crate::blockchain::utils::{self, arr_to_hex_swapped, le};
+use crate::common::utils;
 
 /// Simple transaction struct
 /// Please note: The txid is not stored here. See Hashed.
@@ -70,7 +70,7 @@ impl ToRaw for Tx {
             Vec::with_capacity((4 + self.in_count.value + self.out_count.value + 4) as usize);
 
         // Serialize version
-        bytes.extend_from_slice(&le::u32_to_array(self.tx_version));
+        bytes.extend_from_slice(&utils::le::u32_to_array(self.tx_version));
         // Serialize all TxInputs
         bytes.extend_from_slice(&self.in_count.to_bytes());
         for i in &self.inputs {
@@ -82,7 +82,7 @@ impl ToRaw for Tx {
             bytes.extend_from_slice(&o.out.to_bytes());
         }
         // Serialize locktime
-        bytes.extend_from_slice(&le::u32_to_array(self.tx_locktime));
+        bytes.extend_from_slice(&utils::le::u32_to_array(self.tx_locktime));
         bytes
     }
 }
@@ -98,7 +98,7 @@ impl ToRaw for TxOutpoint {
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(32 + 4);
         bytes.extend_from_slice(&self.txid);
-        bytes.extend_from_slice(&le::u32_to_array(self.index));
+        bytes.extend_from_slice(&utils::le::u32_to_array(self.index));
         bytes
     }
 }
@@ -106,7 +106,7 @@ impl ToRaw for TxOutpoint {
 impl fmt::Debug for TxOutpoint {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("TxOutpoint")
-            .field("txid", &arr_to_hex_swapped(&self.txid))
+            .field("txid", &utils::arr_to_hex_swapped(&self.txid))
             .field("index", &self.index)
             .finish()
     }
@@ -128,7 +128,7 @@ impl ToRaw for TxInput {
         bytes.extend_from_slice(&self.outpoint.to_bytes());
         bytes.extend_from_slice(&self.script_len.to_bytes());
         bytes.extend_from_slice(&self.script_sig);
-        bytes.extend_from_slice(&le::u32_to_array(self.seq_no));
+        bytes.extend_from_slice(&utils::le::u32_to_array(self.seq_no));
         bytes
     }
 }
@@ -173,7 +173,7 @@ impl ToRaw for TxOutput {
     #[inline]
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(8 + 5 + self.script_len.value as usize);
-        bytes.extend_from_slice(&le::u64_to_array(self.value));
+        bytes.extend_from_slice(&utils::le::u64_to_array(self.value));
         bytes.extend_from_slice(&self.script_len.to_bytes());
         bytes.extend_from_slice(&self.script_pubkey);
         bytes

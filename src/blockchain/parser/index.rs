@@ -1,9 +1,10 @@
-use byteorder::ReadBytesExt;
-use rusty_leveldb::{LdbIterator, Options, DB};
 use std::convert::TryInto;
 use std::fmt;
 use std::io::Cursor;
 use std::path::Path;
+
+use byteorder::ReadBytesExt;
+use rusty_leveldb::{LdbIterator, Options, DB};
 
 use crate::errors::OpResult;
 

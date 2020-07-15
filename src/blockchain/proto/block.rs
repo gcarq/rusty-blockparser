@@ -4,7 +4,7 @@ use crate::blockchain::proto::header::BlockHeader;
 use crate::blockchain::proto::tx::Tx;
 use crate::blockchain::proto::varuint::VarUint;
 use crate::blockchain::proto::Hashed;
-use crate::blockchain::utils::{arr_to_hex_swapped, merkle_root};
+use crate::common::utils;
 
 /// Basic block structure which holds all information
 pub struct Block {
@@ -28,7 +28,7 @@ impl Block {
     /// Computes merkle root for all containing transactions
     #[inline]
     pub fn compute_merkle_root(&self) -> [u8; 32] {
-        merkle_root(&self.txs.iter().map(|tx| tx.hash).collect::<Vec<[u8; 32]>>())
+        utils::merkle_root(&self.txs.iter().map(|tx| tx.hash).collect::<Vec<[u8; 32]>>())
     }
 
     /// Calculates merkle root and verifies it against the field in BlockHeader.
@@ -38,8 +38,8 @@ impl Block {
         if merkle_root != self.header.value.merkle_root {
             panic!(
                 "Invalid merkle_root!\n  -> expected: {}\n  -> got: {}\n",
-                &arr_to_hex_swapped(&self.header.value.merkle_root),
-                &arr_to_hex_swapped(&merkle_root)
+                &utils::arr_to_hex_swapped(&self.header.value.merkle_root),
+                &utils::arr_to_hex_swapped(&merkle_root)
             );
         }
     }

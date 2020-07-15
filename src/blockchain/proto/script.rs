@@ -5,7 +5,7 @@ use std::fmt;
 use rust_base58::ToBase58;
 
 use crate::blockchain::proto::opcodes;
-use crate::blockchain::utils::{self, ridemp160, sha256};
+use crate::common::utils;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ScriptError {
@@ -420,7 +420,7 @@ pub fn eval_from_stack(stack: Stack, version_id: u8) -> EvaluatedScript {
 
 /// Takes full ECDSA public key (65 bytes) and a version id
 fn public_key_to_addr(pub_key: &[u8], version: u8) -> String {
-    let h160 = ridemp160(&sha256(pub_key));
+    let h160 = utils::ridemp160(&utils::sha256(pub_key));
     hash_160_to_address(&h160, version)
 }
 
@@ -430,7 +430,7 @@ fn hash_160_to_address(h160: &[u8], version: u8) -> String {
     vh160.push(version);
     vh160.extend_from_slice(&h160);
 
-    let h3 = sha256(&sha256(&vh160));
+    let h3 = utils::sha256(&utils::sha256(&vh160));
 
     let mut addr = vh160;
     addr.extend_from_slice(&h3[0..4]);

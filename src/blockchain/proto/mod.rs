@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::blockchain::utils::{arr_to_hex_swapped, sha256};
+use crate::common::utils;
 
 pub mod block;
 pub mod header;
@@ -26,7 +26,7 @@ impl<T: ToRaw> Hashed<T> {
     #[inline]
     pub fn double_sha256(value: T) -> Hashed<T> {
         Hashed {
-            hash: sha256(&sha256(&value.to_bytes())),
+            hash: utils::sha256(&utils::sha256(&value.to_bytes())),
             value,
         }
     }
@@ -40,7 +40,7 @@ impl<T: ToRaw> Hashed<T> {
 impl<T: fmt::Debug> fmt::Debug for Hashed<T> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("Hashed")
-            .field("hash", &arr_to_hex_swapped(&self.hash))
+            .field("hash", &utils::arr_to_hex_swapped(&self.hash))
             .field("value", &self.value)
             .finish()
     }

@@ -8,12 +8,12 @@ use clap::{App, Arg};
 use crate::blockchain::parser::chain::ChainStorage;
 use crate::blockchain::parser::types::{Bitcoin, CoinType};
 use crate::blockchain::parser::BlockchainParser;
-use crate::blockchain::utils;
 use crate::callbacks::csvdump::CsvDump;
 use crate::callbacks::stats::SimpleStats;
 use crate::callbacks::unspentcsvdump::UnspentCsvDump;
 use crate::callbacks::Callback;
 use crate::common::logger::SimpleLogger;
+use crate::common::utils;
 use crate::errors::{OpError, OpResult};
 
 #[macro_use]

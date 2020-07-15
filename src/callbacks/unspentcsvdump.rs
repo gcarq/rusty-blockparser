@@ -8,8 +8,8 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 
 use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::Block;
-use crate::blockchain::utils;
 use crate::callbacks::Callback;
+use crate::common::utils;
 use crate::errors::{OpError, OpResult};
 
 /// Dumps the whole blockchain into csv files

@@ -6,8 +6,8 @@ use std::path::{Path, PathBuf};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
+use crate::blockchain::parser::reader::BlockchainRead;
 use crate::blockchain::proto::block::Block;
-use crate::blockchain::utils::reader::BlockchainRead;
 use crate::errors::{OpError, OpErrorKind, OpResult};
 
 /// Holds all necessary data about a raw blk file

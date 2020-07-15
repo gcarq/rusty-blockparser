@@ -1,8 +1,7 @@
 use std::fmt;
 
 use crate::blockchain::proto::ToRaw;
-use crate::blockchain::utils::arr_to_hex_swapped;
-use crate::blockchain::utils::le::u32_to_array;
+use crate::common::utils;
 
 /// Block Header definition. Exact 80 bytes long
 #[derive(Clone)]
@@ -38,12 +37,12 @@ impl BlockHeader {
 impl ToRaw for BlockHeader {
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(80);
-        bytes.extend_from_slice(&u32_to_array(self.version));
+        bytes.extend_from_slice(&utils::le::u32_to_array(self.version));
         bytes.extend_from_slice(&self.prev_hash);
         bytes.extend_from_slice(&self.merkle_root);
-        bytes.extend_from_slice(&u32_to_array(self.timestamp));
-        bytes.extend_from_slice(&u32_to_array(self.bits));
-        bytes.extend_from_slice(&u32_to_array(self.nonce));
+        bytes.extend_from_slice(&utils::le::u32_to_array(self.timestamp));
+        bytes.extend_from_slice(&utils::le::u32_to_array(self.bits));
+        bytes.extend_from_slice(&utils::le::u32_to_array(self.nonce));
         bytes
     }
 }
@@ -52,8 +51,8 @@ impl fmt::Debug for BlockHeader {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("BlockHeader")
             .field("version", &self.version)
-            .field("prev_hash", &arr_to_hex_swapped(&self.prev_hash))
-            .field("merkle_root", &arr_to_hex_swapped(&self.merkle_root))
+            .field("prev_hash", &utils::arr_to_hex_swapped(&self.prev_hash))
+            .field("merkle_root", &utils::arr_to_hex_swapped(&self.merkle_root))
             .field("timestamp", &self.timestamp)
             .field("bits", &self.bits)
             .field("nonce", &self.nonce)

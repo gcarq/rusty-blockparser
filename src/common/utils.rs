@@ -5,9 +5,6 @@ use crate::crypto::digest::Digest;
 use crate::crypto::ripemd160::Ripemd160;
 use crate::crypto::sha2::Sha256;
 
-pub mod blkfile;
-pub mod reader;
-
 #[inline]
 pub fn ridemp160(data: &[u8]) -> [u8; 20] {
     let mut out = [0u8; 20];

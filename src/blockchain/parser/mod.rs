@@ -4,8 +4,10 @@ use std::time::{Duration, Instant};
 use crate::blockchain::proto::block::Block;
 use crate::ParserOptions;
 
+mod blkfile;
 pub mod chain;
 mod index;
+mod reader;
 pub mod types;
 
 /// Small struct to hold statistics together
