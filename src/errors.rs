@@ -7,6 +7,7 @@ use std::string;
 use std::sync;
 
 use rustc_serialize::json;
+use rusty_leveldb::Status;
 
 /// Returns a string with filename, current code line and column
 macro_rules! line_mark {
@@ -90,6 +91,7 @@ pub enum OpErrorKind {
     RuntimeError,
     PoisonError,
     SendError,
+    LevelDBError(String),
 }
 
 impl fmt::Display for OpErrorKind {
@@ -100,6 +102,7 @@ impl fmt::Display for OpErrorKind {
             OpErrorKind::Utf8Error(ref err) => write!(f, "Utf8 Conversion Error: {}", err),
             OpErrorKind::ScriptError(ref err) => write!(f, "Script Error: {}", err),
             OpErrorKind::JsonError(ref err) => write!(f, "Json Error: {}", err),
+            OpErrorKind::LevelDBError(ref err) => write!(f, "LevelDB Error: {}", err),
             ref err @ OpErrorKind::PoisonError => write!(f, "Threading Error: {}", err),
             ref err @ OpErrorKind::SendError => write!(f, "Sync Error: {}", err),
             OpErrorKind::InvalidArgsError => write!(f, "InvalidArgs Error"),
@@ -121,6 +124,7 @@ impl error::Error for OpErrorKind {
             ref err @ OpErrorKind::PoisonError => err.description(),
             ref err @ OpErrorKind::SendError => err.description(),
             OpErrorKind::JsonError(ref err) => err,
+            OpErrorKind::LevelDBError(ref err) => err,
             OpErrorKind::InvalidArgsError => "",
             OpErrorKind::CallbackError => "",
             OpErrorKind::ValidateError => "",
@@ -144,55 +148,61 @@ impl error::Error for OpErrorKind {
 
 /*impl From<error::Error> for OpError {
     fn from(err: error::Error) -> Self {
-        OpError { kind: OpErrorKind::IoError(err), message: String::from(err.description()) }
+        Self { kind: OpErrorKind::IoError(err), message: String::from(err.description()) }
     }
 }*/
 
 impl From<io::Error> for OpError {
     fn from(err: io::Error) -> Self {
-        OpError::new(OpErrorKind::IoError(err))
+        Self::new(OpErrorKind::IoError(err))
     }
 }
 
 impl convert::From<i32> for OpError {
-    fn from(err_code: i32) -> OpError {
-        OpError::from(io::Error::from_raw_os_error(err_code))
+    fn from(err_code: i32) -> Self {
+        Self::from(io::Error::from_raw_os_error(err_code))
     }
 }
 
 impl convert::From<String> for OpError {
-    fn from(err: String) -> OpError {
-        OpError::new(OpErrorKind::None).join_msg(&err)
+    fn from(err: String) -> Self {
+        Self::new(OpErrorKind::None).join_msg(&err)
     }
 }
 
 impl<T> convert::From<sync::PoisonError<T>> for OpError {
     fn from(_: sync::PoisonError<T>) -> Self {
-        OpError::new(OpErrorKind::PoisonError)
+        Self::new(OpErrorKind::PoisonError)
     }
 }
 
 impl<T> convert::From<sync::mpsc::SendError<T>> for OpError {
-    fn from(_: sync::mpsc::SendError<T>) -> OpError {
-        OpError::new(OpErrorKind::SendError)
+    fn from(_: sync::mpsc::SendError<T>) -> Self {
+        Self::new(OpErrorKind::SendError)
     }
 }
 
 impl convert::From<string::FromUtf8Error> for OpError {
-    fn from(err: string::FromUtf8Error) -> OpError {
-        OpError::new(OpErrorKind::Utf8Error(err))
+    fn from(err: string::FromUtf8Error) -> Self {
+        Self::new(OpErrorKind::Utf8Error(err))
     }
 }
 
 impl convert::From<json::EncoderError> for OpError {
-    fn from(err: json::EncoderError) -> OpError {
-        OpError::new(OpErrorKind::JsonError(err.to_string()))
+    fn from(err: json::EncoderError) -> Self {
+        Self::new(OpErrorKind::JsonError(err.to_string()))
     }
 }
 
 impl convert::From<json::DecoderError> for OpError {
-    fn from(err: json::DecoderError) -> OpError {
-        OpError::new(OpErrorKind::JsonError(err.to_string()))
+    fn from(err: json::DecoderError) -> Self {
+        Self::new(OpErrorKind::JsonError(err.to_string()))
+    }
+}
+
+impl convert::From<rusty_leveldb::Status> for OpError {
+    fn from(status: Status) -> Self {
+        Self::new(OpErrorKind::LevelDBError(status.err))
     }
 }
 

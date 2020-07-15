@@ -24,15 +24,14 @@ impl BlockIndexRecord {
     fn from(key: &[u8], values: &[u8]) -> OpResult<Self> {
         let mut reader = Cursor::new(values);
 
-        // TODO: handle result
-        let mut block_hash: [u8; 32] = key.try_into().unwrap();
+        let mut block_hash: [u8; 32] = key.try_into().expect("leveldb: malformed blockhash");
         block_hash.reverse();
-        let version = read_varint(&mut reader);
-        let height = read_varint(&mut reader);
-        let status = read_varint(&mut reader);
-        let n_tx = read_varint(&mut reader);
-        let n_file = read_varint(&mut reader);
-        let n_data_pos = read_varint(&mut reader) as u64;
+        let version = read_varint(&mut reader)?;
+        let height = read_varint(&mut reader)?;
+        let status = read_varint(&mut reader)?;
+        let n_tx = read_varint(&mut reader)?;
+        let n_file = read_varint(&mut reader)?;
+        let n_data_pos = read_varint(&mut reader)? as u64;
 
         Ok(BlockIndexRecord {
             block_hash,
@@ -64,9 +63,8 @@ pub fn get_block_index(path: &Path) -> OpResult<Vec<BlockIndexRecord>> {
     info!(target: "index", "Reading index from {} ...", path.display());
 
     let mut block_index = Vec::new();
-    // TODO: handle result
-    let mut db = DB::open(path, Options::default()).unwrap();
-    let mut iter = db.new_iter().unwrap();
+    let mut db = DB::open(path, Options::default())?;
+    let mut iter = db.new_iter()?;
     let (mut k, mut v) = (vec![], vec![]);
 
     while iter.advance() {
@@ -90,10 +88,10 @@ fn is_block_index_record(data: &[u8]) -> bool {
 
 /// TODO: this is a wonky 1:1 translation from https://github.com/bitcoin/bitcoin
 /// It is NOT the same as CompactSize.
-fn read_varint(reader: &mut Cursor<&[u8]>) -> usize {
+fn read_varint(reader: &mut Cursor<&[u8]>) -> OpResult<usize> {
     let mut n = 0;
     loop {
-        let ch_data = reader.read_u8().unwrap();
+        let ch_data = reader.read_u8()?;
         if n > usize::max_value() >> 7 {
             panic!("size too large");
         }
@@ -107,5 +105,5 @@ fn read_varint(reader: &mut Cursor<&[u8]>) -> usize {
             break;
         }
     }
-    n
+    Ok(n)
 }

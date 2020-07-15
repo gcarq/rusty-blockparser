@@ -49,7 +49,7 @@ pub trait BlockchainRead: io::Read {
             let marker = self.read_u8()?;
             let in_count: VarUint;
             if marker == 0x00 {
-                // SegWit hack
+                // FIXME: SegWit hack
                 /*let flag = */
                 self.read_u8()?;
                 in_count = VarUint::read_from(self)?;
@@ -152,8 +152,7 @@ mod tests {
     use seek_bufread::BufReader;
     use std::io::Cursor;
 
-    // TODO: fixme
-    /*#[test]
+    #[test]
     fn test_bitcoin_parse_genesis_block() {
         // bitcoin genesis block as raw bytes
         let raw_data = vec![
@@ -198,19 +197,15 @@ mod tests {
         let inner = Cursor::new(raw_data);
         let mut reader = BufReader::with_capacity(200, inner);
 
-        let blk_id = 0;
-        let blk_offset = 9;
         let magic: u32 = reader.read_u32::<LittleEndian>().unwrap();
-        let blocksize: u32 = reader.read_u32::<LittleEndian>().unwrap();
+        let block_size: u32 = reader.read_u32::<LittleEndian>().unwrap();
 
         // Parse block
-        let block = reader
-            .read_block(blk_id, blk_offset, blocksize, Bitcoin.version_id())
-            .unwrap();
+        let block = reader.read_block(block_size, Bitcoin.version_id()).unwrap();
 
         // Block Metadata
         assert_eq!(0xd9b4bef9, magic);
-        assert_eq!(285, block.blocksize);
+        assert_eq!(285, block.size);
 
         // Block Header
         assert_eq!(0x00000001, block.header.value.version);
@@ -288,5 +283,5 @@ mod tests {
         tx.out.script_pubkey      0x4104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac
         tx.lock_time       0x00000000
                            *********************************************************************************************************/
-    }*/
+    }
 }
