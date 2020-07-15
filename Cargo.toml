@@ -12,7 +12,7 @@ license = "GPL-3.0"
 
 [dependencies]
 time = { version = "^0.2", default-features = false, features = ["std"] }
-log             = "~0.3"
+log = { version = "^0.4", default-features = false, features = ["std"] }
 clap = "^2.26"
 rust-crypto = "^0.2"
 rustc-serialize = "^0.3"

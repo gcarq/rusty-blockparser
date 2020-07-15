@@ -3,7 +3,6 @@ use std::cell::RefCell;
 use std::path::PathBuf;
 
 use clap::{App, Arg};
-use log::LogLevelFilter;
 
 use crate::blockchain::parser::chain::ChainStorage;
 use crate::blockchain::parser::types::{Bitcoin, CoinType};
@@ -45,7 +44,7 @@ pub struct ParserOptions {
     // Path to directory where blk.dat files are stored
     blockchain_dir: PathBuf,
     // Verbosity level, 0 = Error, 1 = Info, 2 = Debug, 3+ = Trace
-    log_level_filter: LogLevelFilter,
+    log_level_filter: log::LevelFilter,
 }
 
 fn main() {
@@ -53,7 +52,7 @@ fn main() {
         Ok(o) => o,
         Err(desc) => {
             // Init logger to print outstanding error message
-            SimpleLogger::init(LogLevelFilter::Debug).unwrap();
+            SimpleLogger::init(log::LevelFilter::Debug).unwrap();
             error!(target: "main", "{}", desc);
             return;
         }
@@ -142,9 +141,9 @@ fn parse_args() -> OpResult<RefCell<ParserOptions>> {
     // Set flags
     let verify = matches.is_present("verify");
     let log_level_filter = match matches.occurrences_of("verbosity") {
-        0 => LogLevelFilter::Info,
-        1 => LogLevelFilter::Debug,
-        _ => LogLevelFilter::Trace,
+        0 => log::LevelFilter::Info,
+        1 => log::LevelFilter::Debug,
+        _ => log::LevelFilter::Trace,
     };
 
     // Set options
