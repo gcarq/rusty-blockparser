@@ -25,8 +25,7 @@ impl BlockIndexRecord {
     fn from(key: &[u8], values: &[u8]) -> OpResult<Self> {
         let mut reader = Cursor::new(values);
 
-        let mut block_hash: [u8; 32] = key.try_into().expect("leveldb: malformed blockhash");
-        block_hash.reverse();
+        let block_hash: [u8; 32] = key.try_into().expect("leveldb: malformed blockhash");
         let version = read_varint(&mut reader)?;
         let height = read_varint(&mut reader)?;
         let status = read_varint(&mut reader)?;

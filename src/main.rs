@@ -1,4 +1,20 @@
-//#![feature(hashmap_hasher)] // requires rust-nightly
+use std::boxed::Box;
+use std::cell::RefCell;
+use std::path::PathBuf;
+
+use clap::{App, Arg};
+use log::LogLevelFilter;
+
+use crate::blockchain::parser::chain::ChainStorage;
+use crate::blockchain::parser::types::{Bitcoin, CoinType};
+use crate::blockchain::parser::BlockchainParser;
+use crate::blockchain::utils;
+use crate::callbacks::csvdump::CsvDump;
+use crate::callbacks::stats::SimpleStats;
+use crate::callbacks::unspentcsvdump::UnspentCsvDump;
+use crate::callbacks::Callback;
+use crate::common::logger::SimpleLogger;
+use crate::errors::OpResult;
 
 #[macro_use]
 extern crate log;
@@ -18,36 +34,21 @@ pub mod common;
 #[macro_use]
 pub mod callbacks;
 
-use std::boxed::Box;
-use std::path::PathBuf;
-
-use clap::{App, Arg};
-use log::LogLevelFilter;
-
-use crate::blockchain::parser::chain::ChainStorage;
-use crate::blockchain::parser::types::{Bitcoin, CoinType};
-use crate::blockchain::parser::BlockchainParser;
-use crate::blockchain::utils;
-use crate::callbacks::csvdump::CsvDump;
-use crate::callbacks::stats::SimpleStats;
-use crate::callbacks::unspentcsvdump::UnspentCsvDump;
-use crate::callbacks::Callback;
-use crate::common::logger::SimpleLogger;
-use crate::errors::OpResult;
-
 /// Holds all available user arguments
 pub struct ParserOptions {
-    callback: Box<dyn Callback>, // Name of the callback which gets executed for each block. (See callbacks/mod.rs)
-    coin_type: CoinType,         // Holds the name of the coin we want to parse
-    verify_merkle_root: bool, // Enable this if you want to check the merkle root of each block. Aborts if something is unsound.
-    blockchain_dir: PathBuf,  // Path to directory where blk.dat files are stored
-    // Usually this happens if the callback implementation is too slow or if we reached the I/O capabilites
+    // Name of the callback which gets executed for each block. (See callbacks/mod.rs)
+    callback: Box<dyn Callback>,
+    // Holds the name of the coin we want to parse
+    coin_type: CoinType,
+    // Enable this if you want to check the chain index integrity and merkle root for each block.
+    verify: bool,
+    // Path to directory where blk.dat files are stored
+    blockchain_dir: PathBuf,
     log_level_filter: LogLevelFilter, // Verbosity level, 0 = Error, 1 = Info, 2 = Debug, 3+ = Trace
 }
 
 fn main() {
-    // Init user args
-    let mut options = match parse_args() {
+    let options = match parse_args() {
         Ok(o) => o,
         Err(desc) => {
             // Init logger to print outstanding error message
@@ -58,30 +59,30 @@ fn main() {
     };
 
     // Apply log filter based on verbosity
-    SimpleLogger::init(options.log_level_filter).expect("Unable to initialize logger!");
+    let log_level = options.borrow().log_level_filter;
+    SimpleLogger::init(log_level).expect("Unable to initialize logger!");
     info!(target: "main", "Starting rusty-blockparser v{} ...", env!("CARGO_PKG_VERSION"));
-    debug!(target: "main", "Using LogLevel {}", options.log_level_filter);
+    debug!(target: "main", "Using LogLevel {}", log_level);
 
-    let chain_storage = match ChainStorage::new(&options.blockchain_dir, options.coin_type.clone())
-    {
+    let chain_storage = match ChainStorage::new(&options) {
         Ok(storage) => storage,
         Err(e) => {
             error!(
                 "Cannot load blockchain from: '{}'. {}",
-                &options.blockchain_dir.display(),
+                options.borrow().blockchain_dir.display(),
                 e
             );
             return;
         }
     };
 
-    let mut parser = BlockchainParser::new(&mut options, chain_storage);
+    let mut parser = BlockchainParser::new(&options, chain_storage);
     parser.start();
     info!(target: "main", "Fin.");
 }
 
 /// Parses args or panics if some requirements are not met.
-fn parse_args() -> OpResult<ParserOptions> {
+fn parse_args() -> OpResult<RefCell<ParserOptions>> {
     let coins = &[
         "bitcoin",
         "testnet3",
@@ -95,9 +96,9 @@ fn parse_args() -> OpResult<ParserOptions> {
         .version(crate_version!())
         .author("gcarq <michael.egger@tsn.at>")
         // Add flags
-        .arg(Arg::with_name("verify-merkle-root")
-            .long("verify-merkle-root")
-            .help("Verifies the merkle root of each block"))
+        .arg(Arg::with_name("verify")
+            .long("verify")
+            .help("Verifies the leveldb index integrity and verifies merkle roots"))
         .arg(Arg::with_name("verbosity")
             .short("v")
             .multiple(true)
@@ -138,7 +139,7 @@ fn parse_args() -> OpResult<ParserOptions> {
         .get_matches();
 
     // Set flags
-    let verify_merkle_root = matches.is_present("verify-merkle-root");
+    let verify = matches.is_present("verify");
     let log_level_filter = match matches.occurrences_of("verbosity") {
         0 => LogLevelFilter::Info,
         1 => LogLevelFilter::Debug,
@@ -170,11 +171,12 @@ fn parse_args() -> OpResult<ParserOptions> {
         .exit();
     }
 
-    Ok(ParserOptions {
+    let options = ParserOptions {
         coin_type,
         callback,
-        verify_merkle_root,
+        verify,
         blockchain_dir: blockchain_path,
         log_level_filter,
-    })
+    };
+    Ok(RefCell::new(options))
 }

@@ -37,7 +37,7 @@ impl Block {
         let merkle_root = self.compute_merkle_root();
         if merkle_root != self.header.value.merkle_root {
             panic!(
-                "Invalid merkle_root!\n  -> expected: {}\n  -> computed: {}\n",
+                "Invalid merkle_root!\n  -> expected: {}\n  -> got: {}\n",
                 &arr_to_hex_swapped(&self.header.value.merkle_root),
                 &arr_to_hex_swapped(&merkle_root)
             );
