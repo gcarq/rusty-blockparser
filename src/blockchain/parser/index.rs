@@ -83,6 +83,7 @@ pub fn get_block_index(path: &Path) -> OpResult<Vec<BlockIndexRecord>> {
     Ok(block_index)
 }
 
+#[inline]
 fn is_block_index_record(data: &[u8]) -> bool {
     *data.get(0).unwrap() == b'b'
 }

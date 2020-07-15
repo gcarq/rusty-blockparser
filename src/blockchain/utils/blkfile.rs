@@ -4,7 +4,6 @@ use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 
 use crate::errors::{OpError, OpErrorKind, OpResult};
-use blockchain::parser::types::{Bitcoin, Coin, CoinType};
 use blockchain::proto::block::Block;
 use blockchain::utils::reader::BlockchainRead;
 use byteorder::{LittleEndian, ReadBytesExt};

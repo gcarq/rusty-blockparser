@@ -5,7 +5,6 @@ use blockchain::utils::blkfile::BlkFile;
 use errors::OpResult;
 use std::collections::HashMap;
 use std::path::Path;
-use ParserOptions;
 
 /// Holds the index of longest valid chain
 pub struct ChainStorage {

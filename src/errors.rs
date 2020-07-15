@@ -1,6 +1,6 @@
 use crate::blockchain::proto::script;
 use std::convert::{self, From};
-use std::error::{self, Error};
+use std::error;
 use std::fmt;
 use std::io;
 use std::string;
@@ -186,13 +186,13 @@ impl convert::From<string::FromUtf8Error> for OpError {
 
 impl convert::From<json::EncoderError> for OpError {
     fn from(err: json::EncoderError) -> OpError {
-        OpError::new(OpErrorKind::JsonError(String::from(err.description())))
+        OpError::new(OpErrorKind::JsonError(err.to_string()))
     }
 }
 
 impl convert::From<json::DecoderError> for OpError {
     fn from(err: json::DecoderError) -> OpError {
-        OpError::new(OpErrorKind::JsonError(String::from(err.description())))
+        OpError::new(OpErrorKind::JsonError(err.to_string()))
     }
 }
 
