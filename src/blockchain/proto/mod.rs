@@ -1,5 +1,6 @@
-use crate::blockchain::utils::{arr_to_hex_swapped, sha256};
 use std::fmt;
+
+use crate::blockchain::utils::{arr_to_hex_swapped, sha256};
 
 pub mod block;
 pub mod header;
@@ -30,6 +31,7 @@ impl<T: ToRaw> Hashed<T> {
         }
     }
 
+    #[inline]
     pub fn from(hash: [u8; 32], value: T) -> Hashed<T> {
         Hashed { hash, value }
     }

@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/gcarq/rusty-blockparser.svg?branch=master)](https://travis-ci.org/gcarq/rusty-blockparser) [![Coverage Status](https://coveralls.io/repos/github/gcarq/rusty-blockparser/badge.svg?branch=master)](https://coveralls.io/github/gcarq/rusty-blockparser?branch=master) [![Crates.io](https://img.shields.io/crates/v/rusty-blockparser.svg)](https://crates.io/crates/rusty-blockparser/)
 
-rusty-blockparser is a multi-threaded Bitcoin Blockchain Parser written in **Rust language**.
+rusty-blockparser is a Bitcoin Blockchain Parser written in **Rust language**.
 
 It allows extraction of various data types (blocks, transactions, scripts, public keys/hashes, balances, ...) from Bitcoin based blockchains.
 
@@ -10,24 +10,7 @@ It allows extraction of various data types (blocks, transactions, scripts, publi
 
  `Bitcoin`, `Namecoin`, `Litecoin`, `Dogecoin`, `Myriadcoin` and `Unobtanium`.
 
-The parser is implemented with a thread pool pattern to ensure maximum performance.
-It assumes a local copy of the blockchain, typically downloaded by Bitcoin core. If you are not sure whether your local copy is valid you can apply `--verify-merkle-root true` to validate the merkle tree. If something doesn't match the parser prints it as warning.
-The program flow is split up in two parts.
-Lets call it ParseModes:
-
-* **Indexing**
-
-    If the parser is started the first time, it iterates over all blk.dat files and seeks from header to header. It doesn't evaluates the whole block it just calculates the block hashes to determine the main chain. So we only need to keep ~50 Mb in RAM instead of the whole Blockchain. This process is very fast and takes only **7-8 minutes with 2-3 threads and a average HDD (bottleneck here is I/O)***.
-    The main chain is saved as a JSON file, lets call it ChainStorage. (The path can be specified with `--chain-storage`)
-
-
-* **FullData**
-
-    Once the main chain is determined, the parser starts a FullData scan.
-    At startup the ChainStorage gets loaded and the Parser delegates each blk.dat file to a worker in the thread pool. Each worker evaluates all data types (block hash, txid, script, public key/hash, merkle root, ...). The data is then sent back to the parser and passed to the callback. The parser ensures the callback get the blocks in the correct order.
-    A FullData scan with the `csvdump` callback takes about **70 minutes with 3 threads on a Intel i5-3550 @ 3.90GHz (bottleneck here is computation power)***.
-
-    (\*) *tested with 393489 blocks, Jan 2016.*
+It assumes a local copy of the blockchain with intact block index, downloaded with [Bitcoin Core](https://github.com/bitcoin/bitcoin). If you are not sure whether your local copy is valid you can apply `--verify` to validate the chain and block merkle trees. If something doesn't match the parser exits.
 
 ## Features
 
@@ -103,13 +86,9 @@ Transaction Types:
 
 You can also define custom callbacks. A callback gets called at startup, on each block and at the end. See [src/callbacks/mod.rs](src/callbacks/mod.rs) for more information.
 
-* **Multithreaded**
-
-    Supports multiple threads for optimal resource usage. Configurable with `--threads`.
-
 * **Low memory usage**
 
-    It runs with ~1.3GiB memory. Specify a low value for `--backlog` to further reduce memory footprint (default=100). Minimum required memory: ~500MiB.
+    It runs with ~100MiB memory.
 
 * **Script evaluation**
 
@@ -117,7 +96,7 @@ You can also define custom callbacks. A callback gets called at startup, on each
 
 * **Resume scans**
 
-    If you sync the blockchain at some point later, you don't need to make a FullData rescan. Just use `--resume` to force a Reindexing followed by a FullData scan which parses only new blocks. If you want a complete FullData rescan delete the ChainStorage json file.
+    TODO
 
 ## Installing
 
@@ -146,7 +125,7 @@ cargo test --release
 
 It is important to build with `--release` and `opt-level = 3 (specified in Cargo.toml)`, otherwise you will get a horrible performance!
 
-*Tested on Arch Linux with rust-stable 1.6.0 and rust-nightly 1.7.0_2016.01.19*
+*Tested on Gentoo Linux with rust-stable 1.44.1
 
 #### Tweaks
 
@@ -183,31 +162,29 @@ USAGE:
     rusty-blockparser [FLAGS] [OPTIONS] [SUBCOMMAND]
 
 FLAGS:
-    -h, --help                  Prints help information
-    -n, --reindex               Force complete reindexing
-    -r, --resume                Resume from latest known block
-    -V, --version               Prints version information
-    -v                          Increases verbosity level. Info=0, Debug=1, Trace=2 (default: 0)
-        --verify-merkle-root    Verifies the merkle root of each block
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+    -v               Increases verbosity level. Info=0, Debug=1, Trace=2 (default: 0)
+        --verify     Verifies the leveldb index integrity and verifies merkle roots
 
 OPTIONS:
         --backlog <COUNT>                    Sets maximum worker backlog (default: 100)
     -d, --blockchain-dir <blockchain-dir>    Sets blockchain directory which contains blk.dat files (default: ~/.bitcoin/blocks)
         --chain-storage <FILE>               Specify path to chain storage. This is just a internal state file (default: chain.json)
-    -c, --coin <NAME>                        Specify blockchain coin (default: bitcoin) [values: bitcoin, testnet3, namecoin, litecoin, dogecoin, myriadcoin,
-                                             unobtanium]
+    -c, --coin <NAME>                        Specify blockchain coin (default: bitcoin) [values: bitcoin, testnet3, namecoin, litecoin, dogecoin, myriadcoin, unobtanium]
     -t, --threads <COUNT>                    Thread count (default: 2)
 
 SUBCOMMANDS:
-    csvdump        Dumps the whole blockchain into CSV files
-    help           Prints this message or the help of the given subcommand(s)
-    simplestats    Shows various Blockchain stats
+    csvdump           Dumps the whole blockchain into CSV files
+    help              Prints this message or the help of the given subcommand(s)
+    simplestats       Shows various Blockchain stats
+    unspentcsvdump    Dumps the unspent outputs to CSV file
 ```
 ### Example
 
 To make a `csvdump` of the Bitcoin blockchain your command would look like this:
 ```
-# ./blockparser -t 3 csvdump /path/to/dump/
+# ./blockparser csvdump /path/to/dump/
 [00:42:19] INFO - main: Starting rusty-blockparser v0.6.0 ...
 [00:42:19] INFO - blkfile: Reading files from folder: ~/.bitcoin/blocks
 [00:42:19] INFO - parser: Building blockchain index ...
@@ -238,4 +215,5 @@ If you find this project helpful, please consider making a donation:
 
 ## TODO
 
+* Implement correct SegWit handling
 * Implement Pay2MultiSig script evaluation

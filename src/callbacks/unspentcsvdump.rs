@@ -6,12 +6,11 @@ use std::path::PathBuf;
 
 use clap::{App, Arg, ArgMatches, SubCommand};
 
-use crate::callbacks::Callback;
-use crate::errors::{OpError, OpResult};
-
 use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::Block;
 use crate::blockchain::utils;
+use crate::callbacks::Callback;
+use crate::errors::{OpError, OpResult};
 
 /// Dumps the whole blockchain into csv files
 pub struct UnspentCsvDump {
@@ -94,14 +93,14 @@ impl Callback for UnspentCsvDump {
         }
     }
 
-    fn on_start(&mut self, _: CoinType, block_height: usize) {
+    fn on_start(&mut self, _: &CoinType, block_height: usize) {
         self.start_height = block_height;
         info!(target: "callback", "Using `unspentcsvdump` with dump folder: {} ...", &self.dump_folder.display());
     }
 
-    fn on_block(&mut self, block: Block, block_height: usize) {
+    fn on_block(&mut self, block: &Block, block_height: usize) {
         // serialize transaction
-        for tx in block.txs {
+        for tx in &block.txs {
             // For each transaction in the block,
             // 1. apply input transactions (remove (TxID == prevTxIDOut and prevOutID == spentOutID))
             // 2. apply output transactions (add (TxID + curOutID -> HashMapVal))

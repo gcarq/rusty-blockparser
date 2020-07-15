@@ -7,7 +7,6 @@ use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::{self, Block};
 use crate::blockchain::proto::script::ScriptPattern;
 use crate::blockchain::utils;
-
 use crate::callbacks::Callback;
 use crate::errors::OpResult;
 
@@ -80,16 +79,16 @@ impl Callback for SimpleStats {
         Ok(Default::default())
     }
 
-    fn on_start(&mut self, _: CoinType, _: usize) {
+    fn on_start(&mut self, _: &CoinType, _: usize) {
         info!(target: "callback", "Executing SimpleStats ...");
     }
 
-    fn on_block(&mut self, block: Block, block_height: usize) {
+    fn on_block(&mut self, block: &Block, block_height: usize) {
         self.n_valid_blocks += 1;
         self.n_tx += block.tx_count.value;
-        self.block_sizes.push(block.blocksize);
+        self.block_sizes.push(block.size);
 
-        for tx in block.txs {
+        for tx in &block.txs {
             // Collect fee rewards
             if tx.value.is_coinbase() {
                 self.n_tx_total_fee += tx.value.outputs[0]
@@ -103,8 +102,8 @@ impl Callback for SimpleStats {
             self.n_tx_outputs += tx.value.out_count.value;
 
             let mut tx_value = 0;
-            for (i, o) in tx.value.outputs.into_iter().enumerate() {
-                self.process_tx_pattern(o.script.pattern, block_height, tx.hash, i as u32);
+            for (i, o) in tx.value.outputs.iter().enumerate() {
+                self.process_tx_pattern(o.script.pattern.clone(), block_height, tx.hash, i as u32);
                 tx_value += o.out.value;
             }
             if tx_value > self.tx_largest.0 {

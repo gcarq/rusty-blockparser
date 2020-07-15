@@ -1,5 +1,5 @@
 use std::convert::From;
-use std::error::{self, Error};
+use std::error::{self};
 use std::fmt;
 
 use rust_base58::ToBase58;
@@ -15,7 +15,7 @@ pub enum ScriptError {
 
 impl fmt::Display for ScriptError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Script error: {}", self.description())
+        write!(f, "Script error: {}", self.to_string())
     }
 }
 

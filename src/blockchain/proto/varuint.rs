@@ -16,6 +16,7 @@ pub struct VarUint {
 }
 
 impl VarUint {
+    #[inline]
     fn new(value: u64, buf: Vec<u8>) -> VarUint {
         VarUint {
             value: value as u64,
@@ -36,6 +37,7 @@ impl VarUint {
 }
 
 impl From<u8> for VarUint {
+    #[inline]
     fn from(value: u8) -> Self {
         VarUint::new(value as u64, vec![value])
     }
@@ -69,6 +71,7 @@ impl From<u64> for VarUint {
 }
 
 impl ToRaw for VarUint {
+    #[inline]
     fn to_bytes(&self) -> Vec<u8> {
         self.buf.clone()
     }

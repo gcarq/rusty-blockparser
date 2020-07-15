@@ -1,12 +1,12 @@
-pub mod csvdump;
-pub mod stats;
-pub mod unspentcsvdump;
-
 use clap::{App, ArgMatches};
 
 use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::Block;
 use crate::errors::OpResult;
+
+pub mod csvdump;
+pub mod stats;
+pub mod unspentcsvdump;
 
 /// Implement this trait for a custom Callback.
 /// The parser ensures that the blocks arrive in the correct order.
@@ -25,12 +25,12 @@ pub trait Callback {
     where
         Self: Sized;
 
-    /// Gets called shortly before the threads are invoked.
-    fn on_start(&mut self, coin_type: CoinType, block_height: usize);
+    /// Gets called shortly before the blocks are parsed.
+    fn on_start(&mut self, coin_type: &CoinType, block_height: usize);
 
     /// Gets called if a new block is available.
-    fn on_block(&mut self, block: Block, block_height: usize);
+    fn on_block(&mut self, block: &Block, block_height: usize);
 
-    /// Gets called if the dispatcher has finished and all blocks are handled
+    /// Gets called if the parser has finished and all blocks are handled
     fn on_complete(&mut self, block_height: usize);
 }

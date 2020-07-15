@@ -1,12 +1,11 @@
-use std::env;
 use std::path::PathBuf;
 
-use crypto::digest::Digest;
-use crypto::ripemd160::Ripemd160;
-use crypto::sha2::Sha256;
 use rustc_serialize::hex::{FromHex, ToHex};
 
 use crate::blockchain::parser::types::CoinType;
+use crate::crypto::digest::Digest;
+use crate::crypto::ripemd160::Ripemd160;
+use crate::crypto::sha2::Sha256;
 
 pub mod blkfile;
 pub mod reader;
@@ -29,6 +28,11 @@ pub fn sha256(data: &[u8]) -> [u8; 32] {
     out
 }
 
+#[inline]
+fn double_sha256(a: &[u8], b: &[u8]) -> [u8; 32] {
+    sha256(&sha256(&merge_slices(a, b)))
+}
+
 /// Simple slice merge
 #[inline]
 pub fn merge_slices(a: &[u8], b: &[u8]) -> Vec<u8> {
@@ -40,27 +44,25 @@ pub fn merge_slices(a: &[u8], b: &[u8]) -> Vec<u8> {
 
 /// Calculates merkle root for the whole block
 /// See: https://en.bitcoin.it/wiki/Protocol_documentation#Merkle_Trees
-pub fn merkle_root(hash_list: &[[u8; 32]]) -> [u8; 32] {
-    let n_hashes = hash_list.len();
-    if n_hashes == 1 {
-        return *hash_list.first().unwrap();
+pub fn merkle_root(hashes: &[[u8; 32]]) -> [u8; 32] {
+    let mut hashes = Vec::from(hashes);
+
+    while hashes.len() > 1 {
+        // Calculates double sha hash for each pair. If len is odd, last value is ignored.
+        let mut new_hashes = hashes
+            .chunks(2)
+            .filter(|c| c.len() == 2)
+            .map(|c| double_sha256(&c[0], &c[1]))
+            .collect::<Vec<[u8; 32]>>();
+
+        // If the length is odd, take the last hash twice
+        if hashes.len() % 2 == 1 {
+            let last_hash = hashes.last().unwrap();
+            new_hashes.push(double_sha256(last_hash, last_hash));
+        }
+        hashes = new_hashes;
     }
-
-    let double_sha256 = |a, b| sha256(&sha256(&merge_slices(a, b)));
-
-    // Calculates double sha hash for each pair. If len is odd, last value is ignored.
-    let mut hash_pairs = hash_list
-        .chunks(2)
-        .filter(|c| c.len() == 2)
-        .map(|c| double_sha256(&c[0], &c[1]))
-        .collect::<Vec<[u8; 32]>>();
-
-    // If the length is odd, take the last hash twice
-    if n_hashes % 2 == 1 {
-        let last_hash = hash_list.last().unwrap();
-        hash_pairs.push(double_sha256(last_hash, last_hash));
-    }
-    merkle_root(&hash_pairs)
+    *hashes.first().unwrap()
 }
 
 /// Little endian helper functions
@@ -96,7 +98,10 @@ pub fn arr_to_hex(data: &[u8]) -> String {
 
 #[inline]
 pub fn arr_to_hex_swapped(data: &[u8]) -> String {
-    data.iter().rev().map(|b| format!("{:02x}", b)).collect::<String>()
+    data.iter()
+        .rev()
+        .map(|b| format!("{:02x}", b))
+        .collect::<String>()
 }
 
 #[inline]
@@ -123,7 +128,7 @@ pub fn hex_to_arr32_swapped(hex_str: &str) -> [u8; 32] {
 
 /// Returns default directory. TODO: test on windows
 pub fn get_absolute_blockchain_dir(coin_type: &CoinType) -> PathBuf {
-    env::home_dir()
+    dirs::home_dir()
         .expect("Unable to get home path from env!")
         .join(coin_type.default_folder.clone())
 }

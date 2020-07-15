@@ -24,19 +24,11 @@ pub trait BlockchainRead: io::Read {
     }
 
     // Note: does not pop magic nor blocksize
-    fn read_block(
-        &mut self,
-        blk_index: u32,
-        blk_offset: usize,
-        blocksize: u32,
-        version_id: u8,
-    ) -> OpResult<Block> {
+    fn read_block(&mut self, size: u32, version_id: u8) -> OpResult<Block> {
         let header = self.read_block_header()?;
         let tx_count = VarUint::read_from(self)?;
         let txs = self.read_txs(tx_count.value, version_id)?;
-        Ok(Block::new(
-            blk_index, blk_offset, blocksize, header, tx_count, txs,
-        ))
+        Ok(Block::new(size, header, tx_count, txs))
     }
 
     fn read_block_header(&mut self) -> OpResult<BlockHeader> {
@@ -57,7 +49,7 @@ pub trait BlockchainRead: io::Read {
             let marker = self.read_u8()?;
             let in_count: VarUint;
             if marker == 0x00 {
-                // SegWit hack
+                // FIXME: SegWit hack
                 /*let flag = */
                 self.read_u8()?;
                 in_count = VarUint::read_from(self)?;
@@ -102,11 +94,10 @@ pub trait BlockchainRead: io::Read {
     }
 
     fn read_tx_outpoint(&mut self) -> OpResult<TxOutpoint> {
-        let outpoint = TxOutpoint {
+        Ok(TxOutpoint {
             txid: self.read_256hash()?,
             index: self.read_u32::<LittleEndian>()?,
-        };
-        Ok(outpoint)
+        })
     }
 
     fn read_tx_inputs(&mut self, input_count: u64) -> OpResult<Vec<TxInput>> {
@@ -116,14 +107,12 @@ pub trait BlockchainRead: io::Read {
             let script_len = VarUint::read_from(self)?;
             let script_sig = self.read_u8_vec(script_len.value as u32)?;
             let seq_no = self.read_u32::<LittleEndian>()?;
-
-            let input = TxInput {
+            inputs.push(TxInput {
                 outpoint,
                 script_len,
                 script_sig,
                 seq_no,
-            };
-            inputs.push(input);
+            });
         }
         Ok(inputs)
     }
@@ -134,13 +123,11 @@ pub trait BlockchainRead: io::Read {
             let value = self.read_u64::<LittleEndian>()?;
             let script_len = VarUint::read_from(self)?;
             let script_pubkey = self.read_u8_vec(script_len.value as u32)?;
-
-            let output = TxOutput {
+            outputs.push(TxOutput {
                 value,
                 script_len,
                 script_pubkey,
-            };
-            outputs.push(output);
+            });
         }
         Ok(outputs)
     }
@@ -157,8 +144,7 @@ mod tests {
     use crate::blockchain::proto::script;
     use crate::blockchain::utils::{arr_to_hex, arr_to_hex_swapped};
     use byteorder::{LittleEndian, ReadBytesExt};
-    use seek_bufread::BufReader;
-    use std::io::Cursor;
+    use std::io::{BufReader, Cursor};
 
     #[test]
     fn test_bitcoin_parse_genesis_block() {
@@ -205,19 +191,15 @@ mod tests {
         let inner = Cursor::new(raw_data);
         let mut reader = BufReader::with_capacity(200, inner);
 
-        let blk_id = 0;
-        let blk_offset = 9;
         let magic: u32 = reader.read_u32::<LittleEndian>().unwrap();
-        let blocksize: u32 = reader.read_u32::<LittleEndian>().unwrap();
+        let block_size: u32 = reader.read_u32::<LittleEndian>().unwrap();
 
         // Parse block
-        let block = reader
-            .read_block(blk_id, blk_offset, blocksize, Bitcoin.version_id())
-            .unwrap();
+        let block = reader.read_block(block_size, Bitcoin.version_id()).unwrap();
 
         // Block Metadata
         assert_eq!(0xd9b4bef9, magic);
-        assert_eq!(285, block.blocksize);
+        assert_eq!(285, block.size);
 
         // Block Header
         assert_eq!(0x00000001, block.header.value.version);

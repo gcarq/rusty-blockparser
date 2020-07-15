@@ -1,6 +1,6 @@
 [package]
 name = "rusty-blockparser"
-version = "0.6.1"
+version = "0.7.0"
 authors = ["gcarq <michael.egger@tsn.at>"]
 include = ["src/*", "sql/*", "LICENSE", "README.md", "Cargo.toml"]
 description = "Multithreaded Blockchain Parser for most common Cryptocurrencies based on Bitcoin"
@@ -18,7 +18,8 @@ rust-crypto     = "~0.2"
 rustc-serialize = "~0.3"
 byteorder       = "~1.1"
 rust-base58     = "~0.0"
-seek_bufread    = "~1.2"
+rusty-leveldb   = "~0.3"
+dirs            = "~3.0"
 
 # The development profile, used for `cargo build`
 [profile.dev]
@@ -55,13 +56,4 @@ debug = false
 rpath = false
 lto = true
 debug-assertions = false
-codegen-units = 1
-
-# The documentation profile, used for `cargo doc`
-[profile.doc]
-opt-level = 0
-debug = true
-rpath = false
-lto = false
-debug-assertions = true
 codegen-units = 1

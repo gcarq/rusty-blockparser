@@ -4,14 +4,13 @@ use std::path::PathBuf;
 
 use clap::{App, Arg, ArgMatches, SubCommand};
 
-use crate::callbacks::Callback;
-use crate::errors::{OpError, OpResult};
-
 use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::Block;
 use crate::blockchain::proto::tx::{EvaluatedTxOut, Tx, TxInput};
 use crate::blockchain::proto::Hashed;
 use crate::blockchain::utils;
+use crate::callbacks::Callback;
+use crate::errors::{OpError, OpResult};
 
 /// Dumps the whole blockchain into csv files
 pub struct CsvDump {
@@ -86,12 +85,12 @@ impl Callback for CsvDump {
         }
     }
 
-    fn on_start(&mut self, _: CoinType, block_height: usize) {
+    fn on_start(&mut self, _: &CoinType, block_height: usize) {
         self.start_height = block_height;
         info!(target: "callback", "Using `csvdump` with dump folder: {} ...", &self.dump_folder.display());
     }
 
-    fn on_block(&mut self, block: Block, block_height: usize) {
+    fn on_block(&mut self, block: &Block, block_height: usize) {
         // serialize block
         self.block_writer
             .write_all(block.as_csv(block_height).as_bytes())
@@ -99,7 +98,7 @@ impl Callback for CsvDump {
 
         // serialize transaction
         let block_hash = utils::arr_to_hex_swapped(&block.header.hash);
-        for tx in block.txs {
+        for tx in &block.txs {
             self.tx_writer
                 .write_all(tx.as_csv(&block_hash).as_bytes())
                 .unwrap();
@@ -157,7 +156,7 @@ impl Block {
             &utils::arr_to_hex_swapped(&self.header.hash),
             &block_height,
             &self.header.value.version,
-            &self.blocksize,
+            &self.size,
             &utils::arr_to_hex_swapped(&self.header.value.prev_hash),
             &utils::arr_to_hex_swapped(&self.header.value.merkle_root),
             &self.header.value.timestamp,
