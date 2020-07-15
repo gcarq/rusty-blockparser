@@ -524,7 +524,6 @@ dependencies = [
  "log",
  "rust-base58",
  "rust-crypto",
- "rustc-serialize",
  "rusty-leveldb",
  "time 0.2.16",
 ]

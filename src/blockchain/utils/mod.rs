@@ -1,7 +1,5 @@
 use std::path::PathBuf;
 
-use rustc_serialize::hex::{FromHex, ToHex};
-
 use crate::blockchain::parser::types::CoinType;
 use crate::crypto::digest::Digest;
 use crate::crypto::ripemd160::Ripemd160;
@@ -91,9 +89,10 @@ pub mod le {
     }
 }
 
-#[inline]
 pub fn arr_to_hex(data: &[u8]) -> String {
-    data.to_hex()
+    data.iter()
+        .map(|b| format!("{:02x?}", b))
+        .collect::<String>()
 }
 
 #[inline]
@@ -104,9 +103,15 @@ pub fn arr_to_hex_swapped(data: &[u8]) -> String {
         .collect::<String>()
 }
 
-#[inline]
 pub fn hex_to_vec(hex_str: &str) -> Vec<u8> {
-    hex_str.from_hex().unwrap()
+    if hex_str.len() % 2 != 0 {
+        panic!("string length is not even");
+    }
+
+    (0..hex_str.len())
+        .step_by(2)
+        .map(|i| u8::from_str_radix(&hex_str[i..i + 2], 16).unwrap())
+        .collect()
 }
 
 #[inline]

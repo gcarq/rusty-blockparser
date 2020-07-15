@@ -23,7 +23,6 @@ extern crate time;
 extern crate clap;
 extern crate byteorder;
 extern crate rust_base58;
-extern crate rustc_serialize;
 extern crate rusty_leveldb;
 
 #[macro_use]
