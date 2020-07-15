@@ -1,10 +1,11 @@
-use blockchain::parser::index::{get_block_index, BlockIndexRecord};
-use blockchain::parser::types::CoinType;
-use blockchain::proto::block::Block;
-use blockchain::utils::blkfile::BlkFile;
-use errors::OpResult;
 use std::collections::HashMap;
 use std::path::Path;
+
+use crate::blockchain::parser::index::{get_block_index, BlockIndexRecord};
+use crate::blockchain::parser::types::CoinType;
+use crate::blockchain::proto::block::Block;
+use crate::blockchain::utils::blkfile::BlkFile;
+use crate::errors::OpResult;
 
 /// Holds the index of longest valid chain
 pub struct ChainStorage {

@@ -1,12 +1,12 @@
-pub mod csvdump;
-pub mod stats;
-pub mod unspentcsvdump;
-
 use clap::{App, ArgMatches};
 
 use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::Block;
 use crate::errors::OpResult;
+
+pub mod csvdump;
+pub mod stats;
+pub mod unspentcsvdump;
 
 /// Implement this trait for a custom Callback.
 /// The parser ensures that the blocks arrive in the correct order.

@@ -1,13 +1,14 @@
 use std::collections::HashMap;
 use std::convert::From;
 use std::fs::{self, File};
+use std::io::{BufReader, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
-use crate::errors::{OpError, OpErrorKind, OpResult};
-use blockchain::proto::block::Block;
-use blockchain::utils::reader::BlockchainRead;
 use byteorder::{LittleEndian, ReadBytesExt};
-use std::io::{Seek, SeekFrom};
+
+use crate::blockchain::proto::block::Block;
+use crate::blockchain::utils::reader::BlockchainRead;
+use crate::errors::{OpError, OpErrorKind, OpResult};
 
 /// Holds all necessary data about a raw blk file
 #[derive(Debug)]
@@ -24,7 +25,7 @@ impl BlkFile {
 
     #[inline]
     pub fn read_block(&self, offset: u64, version_id: u8) -> OpResult<Block> {
-        let mut f = File::open(&self.path)?;
+        let mut f = BufReader::new(File::open(&self.path)?);
         f.seek(SeekFrom::Start(offset - 4))?;
         let block_size = f.read_u32::<LittleEndian>()?;
         f.read_block(block_size, version_id)

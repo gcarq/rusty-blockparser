@@ -7,7 +7,6 @@ use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::{self, Block};
 use crate::blockchain::proto::script::ScriptPattern;
 use crate::blockchain::utils;
-
 use crate::callbacks::Callback;
 use crate::errors::OpResult;
 

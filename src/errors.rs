@@ -1,4 +1,3 @@
-use crate::blockchain::proto::script;
 use std::convert::{self, From};
 use std::error;
 use std::fmt;
@@ -8,6 +7,8 @@ use std::sync;
 
 use rustc_serialize::json;
 use rusty_leveldb::Status;
+
+use crate::blockchain::proto::script;
 
 /// Returns a string with filename, current code line and column
 macro_rules! line_mark {

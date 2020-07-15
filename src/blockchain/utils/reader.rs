@@ -149,8 +149,7 @@ mod tests {
     use crate::blockchain::proto::script;
     use crate::blockchain::utils::{arr_to_hex, arr_to_hex_swapped};
     use byteorder::{LittleEndian, ReadBytesExt};
-    use seek_bufread::BufReader;
-    use std::io::Cursor;
+    use std::io::{BufReader, Cursor};
 
     #[test]
     fn test_bitcoin_parse_genesis_block() {

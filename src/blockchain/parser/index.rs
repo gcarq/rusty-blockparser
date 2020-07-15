@@ -1,10 +1,11 @@
 use byteorder::ReadBytesExt;
-use errors::OpResult;
 use rusty_leveldb::{LdbIterator, Options, DB};
 use std::convert::TryInto;
 use std::fmt;
 use std::io::Cursor;
 use std::path::Path;
+
+use crate::errors::OpResult;
 
 const BLOCK_VALID_CHAIN: usize = 4;
 const BLOCK_HAVE_DATA: usize = 8;

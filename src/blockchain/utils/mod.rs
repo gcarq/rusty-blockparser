@@ -1,12 +1,12 @@
 use std::env;
 use std::path::PathBuf;
 
-use crypto::digest::Digest;
-use crypto::ripemd160::Ripemd160;
-use crypto::sha2::Sha256;
 use rustc_serialize::hex::{FromHex, ToHex};
 
 use crate::blockchain::parser::types::CoinType;
+use crate::crypto::digest::Digest;
+use crate::crypto::ripemd160::Ripemd160;
+use crate::crypto::sha2::Sha256;
 
 pub mod blkfile;
 pub mod reader;

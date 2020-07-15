@@ -6,12 +6,10 @@ extern crate crypto;
 extern crate time;
 #[macro_use]
 extern crate clap;
-extern crate rustc_serialize;
-//extern crate twox_hash; // requires rust-nightly
 extern crate byteorder;
 extern crate rust_base58;
+extern crate rustc_serialize;
 extern crate rusty_leveldb;
-extern crate seek_bufread;
 
 #[macro_use]
 pub mod errors;
@@ -26,6 +24,7 @@ use std::path::PathBuf;
 use clap::{App, Arg};
 use log::LogLevelFilter;
 
+use crate::blockchain::parser::chain::ChainStorage;
 use crate::blockchain::parser::types::{Bitcoin, CoinType};
 use crate::blockchain::parser::BlockchainParser;
 use crate::blockchain::utils;
@@ -35,7 +34,6 @@ use crate::callbacks::unspentcsvdump::UnspentCsvDump;
 use crate::callbacks::Callback;
 use crate::common::logger::SimpleLogger;
 use crate::errors::OpResult;
-use blockchain::parser::chain::ChainStorage;
 
 /// Holds all available user arguments
 pub struct ParserOptions {

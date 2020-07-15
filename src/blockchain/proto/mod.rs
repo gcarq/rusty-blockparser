@@ -1,5 +1,6 @@
-use crate::blockchain::utils::{arr_to_hex_swapped, sha256};
 use std::fmt;
+
+use crate::blockchain::utils::{arr_to_hex_swapped, sha256};
 
 pub mod block;
 pub mod header;

@@ -18,7 +18,6 @@ rust-crypto     = "~0.2"
 rustc-serialize = "~0.3"
 byteorder       = "~1.1"
 rust-base58     = "~0.0"
-seek_bufread    = "~1.2"
 rusty-leveldb   = "0.3.5"
 
 # The development profile, used for `cargo build`
