@@ -3,7 +3,7 @@ name = "rusty-blockparser"
 version = "0.7.0"
 authors = ["gcarq <michael.egger@tsn.at>"]
 include = ["src/*", "sql/*", "LICENSE", "README.md", "Cargo.toml"]
-description = "Multithreaded Blockchain Parser for most common Cryptocurrencies based on Bitcoin"
+description = "Blockchain Parser for most common Cryptocurrencies based on Bitcoin"
 documentation = "https://github.com/gcarq/rusty-blockparser/blob/master/README.md"
 homepage = "https://github.com/gcarq/rusty-blockparser/"
 readme = "README.md"
@@ -13,7 +13,7 @@ license = "GPL-3.0"
 [dependencies]
 time = { version = "^0.2", default-features = false, features = ["std"] }
 log             = "~0.3"
-clap            = "~2.26"
+clap = "^2.26"
 rust-crypto     = "~0.2"
 rustc-serialize = "~0.3"
 byteorder       = "~1.1"
