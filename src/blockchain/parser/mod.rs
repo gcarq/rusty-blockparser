@@ -44,7 +44,7 @@ impl<'a> BlockchainParser<'a> {
         Self {
             options,
             chain_storage,
-            stats: Default::default(),
+            stats: WorkerStats::default(),
         }
     }
 
