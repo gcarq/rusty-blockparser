@@ -123,38 +123,9 @@ cargo test --release
 ./target/release/rusty-blockparser --help
 ```
 
-It is important to build with `--release` and `opt-level = 3 (specified in Cargo.toml)`, otherwise you will get a horrible performance!
+It is important to build with `--release`, otherwise you will get a horrible performance!
 
 *Tested on Gentoo Linux with rust-stable 1.44.1
-
-#### Tweaks
-
-**Only proceed if you know what you are doing, because this could go horribly wrong and lead to arbitrary runtime failures!**
-
-If you want more performance you can tweak it further with [llvm passes](http://llvm.org/docs/Passes.html).
-In order to make this possible we need a rustc wapper. Create a file called `rustc-wrapper.sh`. Your wrapper could look like this:
-```bash
-#!/bin/bash
-
-llvm_args=" -pre-RA-sched=fast \
-            -regalloc=greedy \
-            -enable-local-reassign \
-            -enable-andcmp-sinking \
-            -machine-sink-bfi  \
-            -machine-sink-split \
-            -slp-vectorize-hor"
-
-passes="scalar-evolution scev-aa \
-        mergereturn  \
-        sink adce tailcallelim"
-
-rustc   -C opt-level=3 \
-        -C target-cpu=native \
-        -C link-args='' \
-        -C passes="$passes" \
-        -C llvm-args="$llvm_args" "$@"
-```
-Now export this wrappper with: `export RUSTC="./rustc-wrapper.sh"` and execute `cargo build --release` as usual.
 
 ## Usage
 ```
