@@ -40,7 +40,7 @@ impl<'a> BlockchainParser<'a> {
         options: &'a RefCell<ParserOptions>,
         chain_storage: chain::ChainStorage<'a>,
     ) -> Self {
-        info!(target: "parser", "Parsing {} blockchain (found {} blocks) ...", options.borrow().coin_type.name, chain_storage.remaining());
+        info!(target: "parser", "Parsing {} blockchain ({} blocks) ...", options.borrow().coin_type.name, chain_storage.remaining());
         Self {
             options,
             chain_storage,

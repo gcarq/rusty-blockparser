@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::convert::From;
-use std::fs::{self, File};
-use std::io::{BufReader, Seek, SeekFrom};
+use std::fs::{self, DirEntry, File};
+use std::io::{self, BufReader, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -34,48 +34,47 @@ impl BlkFile {
     /// Collects all blk*.dat paths in the given directory
     pub fn from_path(path: &Path) -> OpResult<HashMap<usize, BlkFile>> {
         info!(target: "blkfile", "Reading files from {} ...", path.display());
-        let content = fs::read_dir(path)?;
+        let mut collected = HashMap::new();
 
-        let mut blk_files = HashMap::new();
-        let blk_prefix = String::from("blk");
-        let blk_ext = String::from(".dat");
-
-        for entry in content {
-            if let Ok(de) = entry {
-                let file_type = de.file_type().unwrap();
-                let sl = file_type.is_symlink();
-                let fl = file_type.is_file();
-                if sl || fl {
-                    let mut path: PathBuf = de.path();
-                    let metadata = if sl {
-                        path = fs::read_link(path.clone()).unwrap();
-                        fs::metadata(path.clone()).unwrap()
-                    } else {
-                        de.metadata().unwrap()
-                    };
+        for entry in fs::read_dir(path)? {
+            match entry {
+                Ok(de) => {
+                    let path = BlkFile::resolve_path(&de)?;
+                    if !path.is_file() {
+                        continue;
+                    }
 
                     let file_name =
                         String::from(transform!(path.as_path().file_name().unwrap().to_str()));
-
                     // Check if it's a valid blk file
-                    if let Some(index) = BlkFile::parse_blk_index(&file_name, &blk_prefix, &blk_ext)
-                    {
+                    if let Some(index) = BlkFile::parse_blk_index(&file_name, "blk", ".dat") {
                         // Build BlkFile structures
-                        let file_len = metadata.len();
-                        trace!(target: "blkfile", "Adding {}... (index: {}, size: {})", path.display(), index, file_len);
-                        blk_files.insert(index, BlkFile::new(path, file_len));
+                        let size = fs::metadata(path.as_path())?.len();
+                        trace!(target: "blkfile", "Adding {}... (index: {}, size: {})", path.display(), index, size);
+                        collected.insert(index, BlkFile::new(path, size));
                     }
                 }
-            } else {
-                warn!(target: "blkfile", "Unable to read blk file!");
+                Err(msg) => {
+                    warn!(target: "blkfile", "Unable to read blk file!: {}", msg);
+                }
             }
         }
 
-        trace!(target: "blkfile", "Found {} blk files", blk_files.len());
-        if blk_files.is_empty() {
+        trace!(target: "blkfile", "Found {} blk files", collected.len());
+        if collected.is_empty() {
             Err(OpError::new(OpErrorKind::RuntimeError).join_msg("No blk files found!"))
         } else {
-            Ok(blk_files)
+            Ok(collected)
+        }
+    }
+
+    /// Resolves a PathBuf for the given entry.
+    /// Also resolves symlinks if present.
+    fn resolve_path(entry: &DirEntry) -> io::Result<PathBuf> {
+        if entry.file_type()?.is_symlink() {
+            fs::read_link(entry.path())
+        } else {
+            Ok(entry.path())
         }
     }
 
@@ -99,32 +98,32 @@ mod tests {
 
     #[test]
     fn test_parse_blk_index() {
-        let blk_prefix = "blk";
-        let blk_ext = ".dat";
+        let prefix = "blk";
+        let ext = ".dat";
 
         assert_eq!(
             0,
-            BlkFile::parse_blk_index("blk00000.dat", blk_prefix, blk_ext).unwrap()
+            BlkFile::parse_blk_index("blk00000.dat", prefix, ext).unwrap()
         );
         assert_eq!(
             6,
-            BlkFile::parse_blk_index("blk6.dat", blk_prefix, blk_ext).unwrap()
+            BlkFile::parse_blk_index("blk6.dat", prefix, ext).unwrap()
         );
         assert_eq!(
             1202,
-            BlkFile::parse_blk_index("blk1202.dat", blk_prefix, blk_ext).unwrap()
+            BlkFile::parse_blk_index("blk1202.dat", prefix, ext).unwrap()
         );
         assert_eq!(
             13412451,
-            BlkFile::parse_blk_index("blk13412451.dat", blk_prefix, blk_ext).unwrap()
+            BlkFile::parse_blk_index("blk13412451.dat", prefix, ext).unwrap()
         );
         assert_eq!(
             true,
-            BlkFile::parse_blk_index("blkindex.dat", blk_prefix, blk_ext).is_none()
+            BlkFile::parse_blk_index("blkindex.dat", prefix, ext).is_none()
         );
         assert_eq!(
             true,
-            BlkFile::parse_blk_index("invalid.dat", blk_prefix, blk_ext).is_none()
+            BlkFile::parse_blk_index("invalid.dat", prefix, ext).is_none()
         );
     }
 }

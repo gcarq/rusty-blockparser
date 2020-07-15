@@ -44,7 +44,8 @@ pub struct ParserOptions {
     verify: bool,
     // Path to directory where blk.dat files are stored
     blockchain_dir: PathBuf,
-    log_level_filter: LogLevelFilter, // Verbosity level, 0 = Error, 1 = Info, 2 = Debug, 3+ = Trace
+    // Verbosity level, 0 = Error, 1 = Info, 2 = Debug, 3+ = Trace
+    log_level_filter: LogLevelFilter,
 }
 
 fn main() {

@@ -94,11 +94,10 @@ pub trait BlockchainRead: io::Read {
     }
 
     fn read_tx_outpoint(&mut self) -> OpResult<TxOutpoint> {
-        let outpoint = TxOutpoint {
+        Ok(TxOutpoint {
             txid: self.read_256hash()?,
             index: self.read_u32::<LittleEndian>()?,
-        };
-        Ok(outpoint)
+        })
     }
 
     fn read_tx_inputs(&mut self, input_count: u64) -> OpResult<Vec<TxInput>> {
@@ -108,14 +107,12 @@ pub trait BlockchainRead: io::Read {
             let script_len = VarUint::read_from(self)?;
             let script_sig = self.read_u8_vec(script_len.value as u32)?;
             let seq_no = self.read_u32::<LittleEndian>()?;
-
-            let input = TxInput {
+            inputs.push(TxInput {
                 outpoint,
                 script_len,
                 script_sig,
                 seq_no,
-            };
-            inputs.push(input);
+            });
         }
         Ok(inputs)
     }
@@ -126,13 +123,11 @@ pub trait BlockchainRead: io::Read {
             let value = self.read_u64::<LittleEndian>()?;
             let script_len = VarUint::read_from(self)?;
             let script_pubkey = self.read_u8_vec(script_len.value as u32)?;
-
-            let output = TxOutput {
+            outputs.push(TxOutput {
                 value,
                 script_len,
                 script_pubkey,
-            };
-            outputs.push(output);
+            });
         }
         Ok(outputs)
     }
