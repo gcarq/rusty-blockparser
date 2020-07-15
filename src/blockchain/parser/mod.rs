@@ -1,6 +1,5 @@
 use std::cell::RefCell;
-
-use time;
+use std::time::{Duration, Instant};
 
 use crate::blockchain::proto::block::Block;
 use crate::ParserOptions;
@@ -12,18 +11,18 @@ pub mod types;
 /// Small struct to hold statistics together
 struct WorkerStats {
     pub n_valid_blocks: u64,
-    pub t_started: f64,
-    pub t_last_log: f64,
-    pub t_measure_frame: f64,
+    pub t_started: Instant,
+    pub t_last_log: Instant,
+    pub t_measure_frame: Duration,
 }
 
 impl Default for WorkerStats {
     fn default() -> Self {
         Self {
             n_valid_blocks: 0,
-            t_started: time::precise_time_s(),
-            t_last_log: time::precise_time_s(),
-            t_measure_frame: 10.0,
+            t_started: Instant::now(),
+            t_last_log: Instant::now(),
+            t_measure_frame: Duration::from_secs(10),
         }
     }
 }
@@ -62,7 +61,9 @@ impl<'a> BlockchainParser<'a> {
     /// Triggers the on_start() callback and initializes state.
     fn on_start(&mut self) {
         let coin_type = self.options.borrow().coin_type.clone();
-        self.stats.t_started = time::precise_time_s();
+
+        self.stats.t_started = Instant::now();
+        self.stats.t_last_log = Instant::now();
         (*self.options.borrow_mut().callback)
             .on_start(&coin_type, self.chain_storage.get_cur_height());
     }
@@ -73,29 +74,28 @@ impl<'a> BlockchainParser<'a> {
         self.stats.n_valid_blocks += 1;
 
         // Some performance measurements and logging
-        let now = time::precise_time_s();
+        let now = Instant::now();
         if now - self.stats.t_last_log > self.stats.t_measure_frame {
-            let blocks_sec = self
-                .stats
-                .n_valid_blocks
-                .checked_div((now - self.stats.t_started) as u64)
-                .unwrap_or(1);
-
             info!(target:"parser", "Status: {:6} Blocks processed. (left: {:6}, avg: {:5.2} blocks/sec)",
-                                     self.stats.n_valid_blocks, self.chain_storage.remaining(), blocks_sec);
+                                     self.stats.n_valid_blocks, self.chain_storage.remaining(), self.blocks_sec());
             self.stats.t_last_log = now;
         }
     }
 
     /// Triggers the on_complete() callback and updates statistics.
     fn on_complete(&mut self) {
-        let t_fin = time::precise_time_s();
         info!(target: "parser", "Done. Processed {} blocks in {:.2} minutes. (avg: {:5.2} blocks/sec)",
-              self.stats.n_valid_blocks, (t_fin - self.stats.t_started) / 60.0,
-              (self.stats.n_valid_blocks)
-                .checked_div((t_fin - self.stats.t_started) as u64)
-                .unwrap_or(self.stats.n_valid_blocks));
+              self.stats.n_valid_blocks, (Instant::now() - self.stats.t_started).as_secs_f32() / 60.0,
+              self.blocks_sec());
 
         (*self.options.borrow_mut().callback).on_complete(self.chain_storage.get_cur_height());
+    }
+
+    /// Returns the number of avg processed blocks
+    fn blocks_sec(&self) -> u64 {
+        self.stats
+            .n_valid_blocks
+            .checked_div((Instant::now() - self.stats.t_started).as_secs())
+            .unwrap_or(1)
     }
 }
