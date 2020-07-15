@@ -1,4 +1,3 @@
-use std::env;
 use std::path::PathBuf;
 
 use rustc_serialize::hex::{FromHex, ToHex};
@@ -99,7 +98,10 @@ pub fn arr_to_hex(data: &[u8]) -> String {
 
 #[inline]
 pub fn arr_to_hex_swapped(data: &[u8]) -> String {
-    data.iter().rev().map(|b| format!("{:02x}", b)).collect::<String>()
+    data.iter()
+        .rev()
+        .map(|b| format!("{:02x}", b))
+        .collect::<String>()
 }
 
 #[inline]
@@ -126,7 +128,7 @@ pub fn hex_to_arr32_swapped(hex_str: &str) -> [u8; 32] {
 
 /// Returns default directory. TODO: test on windows
 pub fn get_absolute_blockchain_dir(coin_type: &CoinType) -> PathBuf {
-    env::home_dir()
+    dirs::home_dir()
         .expect("Unable to get home path from env!")
         .join(coin_type.default_folder.clone())
 }
