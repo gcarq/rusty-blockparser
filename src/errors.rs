@@ -5,7 +5,6 @@ use std::io;
 use std::string;
 use std::sync;
 
-use rustc_serialize::json;
 use rusty_leveldb::Status;
 
 use crate::blockchain::proto::script;
@@ -85,7 +84,6 @@ pub enum OpErrorKind {
     ByteOrderError(io::Error),
     Utf8Error(string::FromUtf8Error),
     ScriptError(script::ScriptError),
-    JsonError(String),
     InvalidArgsError,
     CallbackError,
     ValidateError,
@@ -102,7 +100,6 @@ impl fmt::Display for OpErrorKind {
             OpErrorKind::ByteOrderError(ref err) => write!(f, "ByteOrder Error: {}", err),
             OpErrorKind::Utf8Error(ref err) => write!(f, "Utf8 Conversion Error: {}", err),
             OpErrorKind::ScriptError(ref err) => write!(f, "Script Error: {}", err),
-            OpErrorKind::JsonError(ref err) => write!(f, "Json Error: {}", err),
             OpErrorKind::LevelDBError(ref err) => write!(f, "LevelDB Error: {}", err),
             ref err @ OpErrorKind::PoisonError => write!(f, "Threading Error: {}", err),
             ref err @ OpErrorKind::SendError => write!(f, "Sync Error: {}", err),
@@ -162,18 +159,6 @@ impl<T> convert::From<sync::mpsc::SendError<T>> for OpError {
 impl convert::From<string::FromUtf8Error> for OpError {
     fn from(err: string::FromUtf8Error) -> Self {
         Self::new(OpErrorKind::Utf8Error(err))
-    }
-}
-
-impl convert::From<json::EncoderError> for OpError {
-    fn from(err: json::EncoderError) -> Self {
-        Self::new(OpErrorKind::JsonError(err.to_string()))
-    }
-}
-
-impl convert::From<json::DecoderError> for OpError {
-    fn from(err: json::DecoderError) -> Self {
-        Self::new(OpErrorKind::JsonError(err.to_string()))
     }
 }
 
