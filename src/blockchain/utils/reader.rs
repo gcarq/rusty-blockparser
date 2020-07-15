@@ -24,11 +24,11 @@ pub trait BlockchainRead: io::Read {
     }
 
     // Note: does not pop magic nor blocksize
-    fn read_block(&mut self, blocksize: u32, version_id: u8) -> OpResult<Block> {
+    fn read_block(&mut self, size: u32, version_id: u8) -> OpResult<Block> {
         let header = self.read_block_header()?;
         let tx_count = VarUint::read_from(self)?;
         let txs = self.read_txs(tx_count.value, version_id)?;
-        Ok(Block::new(blocksize, header, tx_count, txs))
+        Ok(Block::new(size, header, tx_count, txs))
     }
 
     fn read_block_header(&mut self) -> OpResult<BlockHeader> {

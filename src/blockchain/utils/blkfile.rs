@@ -4,7 +4,7 @@ use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 
 use crate::errors::{OpError, OpErrorKind, OpResult};
-use blockchain::parser::types::{Bitcoin, Coin};
+use blockchain::parser::types::{Bitcoin, Coin, CoinType};
 use blockchain::proto::block::Block;
 use blockchain::utils::reader::BlockchainRead;
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -23,11 +23,12 @@ impl BlkFile {
         BlkFile { path, size }
     }
 
-    pub fn read_block(&self, offset: u64) -> OpResult<Block> {
+    #[inline]
+    pub fn read_block(&self, offset: u64, version_id: u8) -> OpResult<Block> {
         let mut f = File::open(&self.path)?;
-        f.seek(SeekFrom::Start(offset))?;
-        let blocksize = f.read_u32::<LittleEndian>()?;
-        f.read_block(blocksize, Bitcoin.version_id())
+        f.seek(SeekFrom::Start(offset - 4))?;
+        let block_size = f.read_u32::<LittleEndian>()?;
+        f.read_block(block_size, version_id)
     }
 
     /// Collects all blk*.dat paths in the given directory

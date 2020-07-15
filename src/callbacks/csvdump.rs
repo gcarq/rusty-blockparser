@@ -157,7 +157,7 @@ impl Block {
             &utils::arr_to_hex_swapped(&self.header.hash),
             &block_height,
             &self.header.value.version,
-            &self.blocksize,
+            &self.size,
             &utils::arr_to_hex_swapped(&self.header.value.prev_hash),
             &utils::arr_to_hex_swapped(&self.header.value.merkle_root),
             &self.header.value.timestamp,

@@ -1,24 +1,28 @@
 use blockchain::parser::index::{get_block_index, BlockIndexRecord};
+use blockchain::parser::types::CoinType;
 use blockchain::proto::block::Block;
 use blockchain::utils::blkfile::BlkFile;
 use errors::OpResult;
 use std::collections::HashMap;
 use std::path::Path;
+use ParserOptions;
 
 /// Holds the index of longest valid chain
 pub struct ChainStorage {
     blocks: Vec<BlockIndexRecord>,
     index: usize,
     blk_files: HashMap<usize, BlkFile>,
+    coin_type: CoinType,
 }
 
 impl ChainStorage {
     #[inline]
-    pub fn new(path: &Path) -> OpResult<Self> {
+    pub fn new(path: &Path, coin_type: CoinType) -> OpResult<Self> {
         Ok(Self {
             blocks: get_block_index(&path.join("index"))?,
             blk_files: BlkFile::from_path(&path)?,
             index: 0,
+            coin_type,
         })
     }
 
@@ -28,7 +32,9 @@ impl ChainStorage {
         let meta = self.blocks.get(self.index)?;
         let blk_file = self.blk_files.get(&meta.n_file)?;
         self.index += 1;
-        blk_file.read_block(meta.n_data_pos).ok()
+        blk_file
+            .read_block(meta.n_data_pos, self.coin_type.version_id)
+            .ok()
     }
 
     /// Returns number of remaining blocks

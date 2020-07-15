@@ -8,7 +8,7 @@ use crate::blockchain::utils::{arr_to_hex_swapped, merkle_root};
 
 /// Basic block structure which holds all information
 pub struct Block {
-    pub blocksize: u32,
+    pub size: u32,
     pub header: Hashed<BlockHeader>,
     pub tx_count: VarUint,
     pub txs: Vec<Hashed<Tx>>,
@@ -16,9 +16,9 @@ pub struct Block {
 
 impl Block {
     #[inline]
-    pub fn new(blocksize: u32, header: BlockHeader, tx_count: VarUint, txs: Vec<Tx>) -> Block {
+    pub fn new(size: u32, header: BlockHeader, tx_count: VarUint, txs: Vec<Tx>) -> Block {
         Block {
-            blocksize,
+            size,
             header: Hashed::double_sha256(header),
             tx_count,
             txs: txs.into_iter().map(Hashed::double_sha256).collect(),

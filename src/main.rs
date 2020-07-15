@@ -64,7 +64,8 @@ fn main() {
     info!(target: "main", "Starting rusty-blockparser v{} ...", env!("CARGO_PKG_VERSION"));
     debug!(target: "main", "Using LogLevel {}", options.log_level_filter);
 
-    let chain_storage = match ChainStorage::new(&options.blockchain_dir) {
+    let chain_storage = match ChainStorage::new(&options.blockchain_dir, options.coin_type.clone())
+    {
         Ok(storage) => storage,
         Err(e) => {
             error!(

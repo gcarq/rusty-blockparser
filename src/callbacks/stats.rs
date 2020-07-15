@@ -87,7 +87,7 @@ impl Callback for SimpleStats {
     fn on_block(&mut self, block: Block, block_height: usize) {
         self.n_valid_blocks += 1;
         self.n_tx += block.tx_count.value;
-        self.block_sizes.push(block.blocksize);
+        self.block_sizes.push(block.size);
 
         for tx in block.txs {
             // Collect fee rewards
