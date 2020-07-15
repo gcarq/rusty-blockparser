@@ -149,10 +149,11 @@ fn parse_args() -> OpResult<ParserOptions> {
 
     // Set options
     let coin_type = value_t!(matches, "coin", CoinType).unwrap_or_else(|_| CoinType::from(Bitcoin));
-    let mut blockchain_path = utils::get_absolute_blockchain_dir(&coin_type);
-    if matches.value_of("blockchain-dir").is_some() {
-        blockchain_path = PathBuf::from(matches.value_of("blockchain-dir").unwrap());
-    }
+
+    let blockchain_path = match matches.value_of("blockchain-dir") {
+        Some(p) => PathBuf::from(p),
+        None => utils::get_absolute_blockchain_dir(&coin_type),
+    };
 
     // Set callback
     let callback: Box<dyn Callback>;

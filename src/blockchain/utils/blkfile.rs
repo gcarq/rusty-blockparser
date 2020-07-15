@@ -71,9 +71,10 @@ impl BlkFile {
         }
 
         trace!(target: "blkfile", "Found {} blk files", blk_files.len());
-        match blk_files.is_empty() {
-            true => Err(OpError::new(OpErrorKind::RuntimeError).join_msg("No blk files found!")),
-            false => Ok(blk_files),
+        if blk_files.is_empty() {
+            Err(OpError::new(OpErrorKind::RuntimeError).join_msg("No blk files found!"))
+        } else {
+            Ok(blk_files)
         }
     }
 

@@ -86,12 +86,12 @@ impl Callback for CsvDump {
         }
     }
 
-    fn on_start(&mut self, _: CoinType, block_height: usize) {
+    fn on_start(&mut self, _: &CoinType, block_height: usize) {
         self.start_height = block_height;
         info!(target: "callback", "Using `csvdump` with dump folder: {} ...", &self.dump_folder.display());
     }
 
-    fn on_block(&mut self, block: Block, block_height: usize) {
+    fn on_block(&mut self, block: &Block, block_height: usize) {
         // serialize block
         self.block_writer
             .write_all(block.as_csv(block_height).as_bytes())
@@ -99,7 +99,7 @@ impl Callback for CsvDump {
 
         // serialize transaction
         let block_hash = utils::arr_to_hex_swapped(&block.header.hash);
-        for tx in block.txs {
+        for tx in &block.txs {
             self.tx_writer
                 .write_all(tx.as_csv(&block_hash).as_bytes())
                 .unwrap();
