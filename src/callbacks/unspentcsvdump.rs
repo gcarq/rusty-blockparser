@@ -84,15 +84,15 @@ impl Callback for UnspentCsvDump {
         info!(target: "callback", "Using `unspentcsvdump` with dump folder: {} ...", &self.dump_folder.display());
     }
 
+    /// For each transaction in the block
+    ///   1. apply input transactions (remove (TxID == prevTxIDOut and prevOutID == spentOutID))
+    ///   2. apply output transactions (add (TxID + curOutID -> HashMapVal))
+    /// For each address, retain:
+    ///   * block height as "last modified"
+    ///   * output_val
+    ///   * address
     fn on_block(&mut self, block: &Block, block_height: u64) {
         for tx in &block.txs {
-            // For each transaction in the block,
-            // 1. apply input transactions (remove (TxID == prevTxIDOut and prevOutID == spentOutID))
-            // 2. apply output transactions (add (TxID + curOutID -> HashMapVal))
-            // For each address, retain:
-            // * block height as "last modified"
-            // * output_val
-            // * address
             for input in &tx.value.inputs {
                 let TxOutpoint { txid, index } = input.outpoint;
                 let key = [&txid[..], &index.to_le_bytes()[..]].concat();
@@ -163,6 +163,6 @@ impl Callback for UnspentCsvDump {
                                    \t-> transactions: {:9}\n\
                                    \t-> inputs:       {:9}\n\
                                    \t-> outputs:      {:9}",
-             self.end_height + 1, self.tx_count, self.in_count, self.out_count);
+             self.end_height, self.tx_count, self.in_count, self.out_count);
     }
 }

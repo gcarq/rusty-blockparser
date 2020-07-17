@@ -130,7 +130,7 @@ impl Callback for CsvDump {
                                    \t-> transactions: {:9}\n\
                                    \t-> inputs:       {:9}\n\
                                    \t-> outputs:      {:9}",
-             self.end_height + 1, self.tx_count, self.in_count, self.out_count);
+             self.end_height, self.tx_count, self.in_count, self.out_count);
     }
 }
 
