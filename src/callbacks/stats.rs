@@ -181,7 +181,7 @@ impl Callback for SimpleStats {
     where
         Self: Sized,
     {
-        Ok(Default::default())
+        Ok(SimpleStats::default())
     }
 
     fn on_start(&mut self, _: &CoinType, _: u64) {

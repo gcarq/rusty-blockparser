@@ -62,30 +62,21 @@ impl Callback for UnspentCsvDump {
         Self: Sized,
     {
         let dump_folder = &PathBuf::from(matches.value_of("dump-folder").unwrap()); // Save to unwrap
-        match (|| -> OpResult<Self> {
-            let cap = 4000000;
-            let cb = UnspentCsvDump {
-                dump_folder: PathBuf::from(dump_folder),
-                unspent_writer: UnspentCsvDump::create_writer(
-                    cap,
-                    dump_folder.join("unspent.csv.tmp"),
-                )?,
-                unspents: HashMap::with_capacity(10000000), // Init hashmap for tracking the unspent transactions (with 10'000'000 mln preallocated entries)
-                start_height: 0,
-                end_height: 0,
-                tx_count: 0,
-                in_count: 0,
-                out_count: 0,
-            };
-            Ok(cb)
-        })() {
-            Ok(s) => Ok(s),
-            Err(e) => Err(tag_err!(
-                e,
-                "Couldn't initialize csvdump with folder: `{}`",
-                dump_folder.as_path().display()
-            )),
-        }
+        let cb = UnspentCsvDump {
+            dump_folder: PathBuf::from(dump_folder),
+            unspent_writer: UnspentCsvDump::create_writer(
+                4000000,
+                dump_folder.join("unspent.csv.tmp"),
+            )?,
+            // Init hashmap for tracking the unspent transactions (with 10'000'000 mln preallocated entries)
+            unspents: HashMap::with_capacity(10000000),
+            start_height: 0,
+            end_height: 0,
+            tx_count: 0,
+            in_count: 0,
+            out_count: 0,
+        };
+        Ok(cb)
     }
 
     fn on_start(&mut self, _: &CoinType, block_height: u64) {

@@ -14,7 +14,7 @@ use crate::errors::OpResult;
 
 /// Dumps the whole blockchain into csv files
 pub struct CsvDump {
-    // Each structure gets stored in a seperate csv file
+    // Each structure gets stored in a separate csv file
     dump_folder: PathBuf,
     block_writer: BufWriter<File>,
     tx_writer: BufWriter<File>,
@@ -56,29 +56,20 @@ impl Callback for CsvDump {
         Self: Sized,
     {
         let dump_folder = &PathBuf::from(matches.value_of("dump-folder").unwrap()); // Save to unwrap
-        match (|| -> OpResult<Self> {
-            let cap = 4000000;
-            let cb = CsvDump {
-                dump_folder: PathBuf::from(dump_folder),
-                block_writer: CsvDump::create_writer(cap, dump_folder.join("blocks.csv.tmp"))?,
-                tx_writer: CsvDump::create_writer(cap, dump_folder.join("transactions.csv.tmp"))?,
-                txin_writer: CsvDump::create_writer(cap, dump_folder.join("tx_in.csv.tmp"))?,
-                txout_writer: CsvDump::create_writer(cap, dump_folder.join("tx_out.csv.tmp"))?,
-                start_height: 0,
-                end_height: 0,
-                tx_count: 0,
-                in_count: 0,
-                out_count: 0,
-            };
-            Ok(cb)
-        })() {
-            Ok(s) => Ok(s),
-            Err(e) => Err(tag_err!(
-                e,
-                "Couldn't initialize csvdump with folder: `{}`",
-                dump_folder.as_path().display()
-            )),
-        }
+        let cap = 4000000;
+        let cb = CsvDump {
+            dump_folder: PathBuf::from(dump_folder),
+            block_writer: CsvDump::create_writer(cap, dump_folder.join("blocks.csv.tmp"))?,
+            tx_writer: CsvDump::create_writer(cap, dump_folder.join("transactions.csv.tmp"))?,
+            txin_writer: CsvDump::create_writer(cap, dump_folder.join("tx_in.csv.tmp"))?,
+            txout_writer: CsvDump::create_writer(cap, dump_folder.join("tx_out.csv.tmp"))?,
+            start_height: 0,
+            end_height: 0,
+            tx_count: 0,
+            in_count: 0,
+            out_count: 0,
+        };
+        Ok(cb)
     }
 
     fn on_start(&mut self, _: &CoinType, block_height: u64) {

@@ -24,13 +24,6 @@ macro_rules! transform {
     }};
 }
 
-/// Tags a OpError with a additional description
-macro_rules! tag_err {
-    ($e:expr, $($arg:tt)*) => (
-        $e.join_msg(&format!( $($arg)* ))
-    );
-}
-
 pub type OpResult<T> = Result<T, OpError>;
 
 #[derive(Debug)]
