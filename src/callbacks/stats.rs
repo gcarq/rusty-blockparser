@@ -1,6 +1,7 @@
-use clap::{App, ArgMatches, SubCommand};
 use std::collections::HashMap;
 use std::io::{self, Write};
+
+use clap::{App, ArgMatches, SubCommand};
 
 use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::{self, Block};
@@ -173,7 +174,7 @@ impl Callback for SimpleStats {
         SubCommand::with_name("simplestats")
             .about("Shows various Blockchain stats")
             .version("0.1")
-            .author("gcarq <michael.egger@tsn.at>")
+            .author("gcarq <egger.m@protonmail.com>")
     }
 
     fn new(_: &ArgMatches) -> OpResult<Self>

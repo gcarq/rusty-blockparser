@@ -10,7 +10,7 @@ use crate::blockchain::proto::tx::{EvaluatedTxOut, Tx, TxInput};
 use crate::blockchain::proto::Hashed;
 use crate::callbacks::Callback;
 use crate::common::utils;
-use crate::errors::{OpError, OpResult};
+use crate::errors::OpResult;
 
 /// Dumps the whole blockchain into csv files
 pub struct CsvDump {
@@ -30,11 +30,7 @@ pub struct CsvDump {
 
 impl CsvDump {
     fn create_writer(cap: usize, path: PathBuf) -> OpResult<BufWriter<File>> {
-        let file = match File::create(&path) {
-            Ok(f) => f,
-            Err(err) => return Err(OpError::from(err)),
-        };
-        Ok(BufWriter::with_capacity(cap, file))
+        Ok(BufWriter::with_capacity(cap, File::create(&path)?))
     }
 }
 
@@ -46,7 +42,7 @@ impl Callback for CsvDump {
         SubCommand::with_name("csvdump")
             .about("Dumps the whole blockchain into CSV files")
             .version("0.1")
-            .author("gcarq <michael.egger@tsn.at>")
+            .author("gcarq <egger.m@protonmail.com>")
             .arg(
                 Arg::with_name("dump-folder")
                     .help("Folder to store csv files")
