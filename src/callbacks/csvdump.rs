@@ -10,11 +10,11 @@ use crate::blockchain::proto::tx::{EvaluatedTxOut, Tx, TxInput};
 use crate::blockchain::proto::Hashed;
 use crate::callbacks::Callback;
 use crate::common::utils;
-use crate::errors::{OpError, OpResult};
+use crate::errors::OpResult;
 
 /// Dumps the whole blockchain into csv files
 pub struct CsvDump {
-    // Each structure gets stored in a seperate csv file
+    // Each structure gets stored in a separate csv file
     dump_folder: PathBuf,
     block_writer: BufWriter<File>,
     tx_writer: BufWriter<File>,
@@ -30,11 +30,7 @@ pub struct CsvDump {
 
 impl CsvDump {
     fn create_writer(cap: usize, path: PathBuf) -> OpResult<BufWriter<File>> {
-        let file = match File::create(&path) {
-            Ok(f) => f,
-            Err(err) => return Err(OpError::from(err)),
-        };
-        Ok(BufWriter::with_capacity(cap, file))
+        Ok(BufWriter::with_capacity(cap, File::create(&path)?))
     }
 }
 
@@ -46,7 +42,7 @@ impl Callback for CsvDump {
         SubCommand::with_name("csvdump")
             .about("Dumps the whole blockchain into CSV files")
             .version("0.1")
-            .author("gcarq <michael.egger@tsn.at>")
+            .author("gcarq <egger.m@protonmail.com>")
             .arg(
                 Arg::with_name("dump-folder")
                     .help("Folder to store csv files")
@@ -60,29 +56,20 @@ impl Callback for CsvDump {
         Self: Sized,
     {
         let dump_folder = &PathBuf::from(matches.value_of("dump-folder").unwrap()); // Save to unwrap
-        match (|| -> OpResult<Self> {
-            let cap = 4000000;
-            let cb = CsvDump {
-                dump_folder: PathBuf::from(dump_folder),
-                block_writer: CsvDump::create_writer(cap, dump_folder.join("blocks.csv.tmp"))?,
-                tx_writer: CsvDump::create_writer(cap, dump_folder.join("transactions.csv.tmp"))?,
-                txin_writer: CsvDump::create_writer(cap, dump_folder.join("tx_in.csv.tmp"))?,
-                txout_writer: CsvDump::create_writer(cap, dump_folder.join("tx_out.csv.tmp"))?,
-                start_height: 0,
-                end_height: 0,
-                tx_count: 0,
-                in_count: 0,
-                out_count: 0,
-            };
-            Ok(cb)
-        })() {
-            Ok(s) => Ok(s),
-            Err(e) => Err(tag_err!(
-                e,
-                "Couldn't initialize csvdump with folder: `{}`",
-                dump_folder.as_path().display()
-            )),
-        }
+        let cap = 4000000;
+        let cb = CsvDump {
+            dump_folder: PathBuf::from(dump_folder),
+            block_writer: CsvDump::create_writer(cap, dump_folder.join("blocks.csv.tmp"))?,
+            tx_writer: CsvDump::create_writer(cap, dump_folder.join("transactions.csv.tmp"))?,
+            txin_writer: CsvDump::create_writer(cap, dump_folder.join("tx_in.csv.tmp"))?,
+            txout_writer: CsvDump::create_writer(cap, dump_folder.join("tx_out.csv.tmp"))?,
+            start_height: 0,
+            end_height: 0,
+            tx_count: 0,
+            in_count: 0,
+            out_count: 0,
+        };
+        Ok(cb)
     }
 
     fn on_start(&mut self, _: &CoinType, block_height: u64) {
@@ -143,7 +130,7 @@ impl Callback for CsvDump {
                                    \t-> transactions: {:9}\n\
                                    \t-> inputs:       {:9}\n\
                                    \t-> outputs:      {:9}",
-             self.end_height + 1, self.tx_count, self.in_count, self.out_count);
+             self.end_height, self.tx_count, self.in_count, self.out_count);
     }
 }
 

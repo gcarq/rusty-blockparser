@@ -122,7 +122,7 @@ fn parse_args() -> OpResult<RefCell<ParserOptions>> {
     ];
     let matches = App::new("Multithreaded Blockchain Parser written in Rust")
         .version(crate_version!())
-        .author("gcarq <michael.egger@tsn.at>")
+        .author("gcarq <egger.m@protonmail.com>")
         // Add flags
         .arg(Arg::with_name("verify")
             .long("verify")
