@@ -2,10 +2,10 @@ target
 .cargo
 chain.json
 bench.txt
-test.sh
 csvdump
 .project
 .idea
 
-./test.sh
+test.sh
+debug.sh
 dump/

@@ -1,5 +1,5 @@
 use std::convert::From;
-use std::error::{self};
+use std::error::{self, Error};
 use std::fmt;
 
 use rust_base58::ToBase58;
@@ -15,14 +15,12 @@ pub enum ScriptError {
 
 impl fmt::Display for ScriptError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Script error: {}", self.to_string())
+        write!(f, "{}", self.description())
     }
 }
 
 impl error::Error for ScriptError {
     fn description(&self) -> &str {
-        // Both underlying errors already impl `Error`, so we defer to their
-        // implementations.
         match *self {
             ScriptError::UnexpectedEof => "Unexpected EOF",
             ScriptError::InvalidFormat => "Invalid Script format",
@@ -456,7 +454,10 @@ mod tests {
         );
 
         let script = eval_from_stack(stack, 0x00);
-        assert_eq!(script.address, "12higDjoCCNXSA95xZMWUdPvXNmkAduhWv");
+        assert_eq!(
+            script.address,
+            Some(String::from("12higDjoCCNXSA95xZMWUdPvXNmkAduhWv"))
+        );
         assert_eq!(script.pattern, ScriptPattern::Pay2PublicKeyHash);
     }
 
@@ -479,7 +480,10 @@ mod tests {
             format!("{:?}", stack));
 
         let script = eval_from_stack(stack, 0x00);
-        assert_eq!(script.address, "1LEWwJkDj8xriE87ALzQYcHjTmD8aqDj1f");
+        assert_eq!(
+            script.address,
+            Some(String::from("1LEWwJkDj8xriE87ALzQYcHjTmD8aqDj1f"))
+        );
         assert_eq!(script.pattern, ScriptPattern::Pay2PublicKey);
     }
 
@@ -528,7 +532,10 @@ mod tests {
         );
 
         let script = eval_from_stack(stack, 0x00);
-        assert_eq!(script.address, "3P14159f73E4gFr7JterCCQh9QjiTjiZrG");
+        assert_eq!(
+            script.address,
+            Some(String::from("3P14159f73E4gFr7JterCCQh9QjiTjiZrG"))
+        );
         assert_eq!(script.pattern, ScriptPattern::Pay2ScriptHash);
     }
 
@@ -548,7 +555,7 @@ mod tests {
         );
 
         let script = eval_from_stack(stack, 0x00);
-        assert_eq!(script.address, "");
+        assert_eq!(script.address, None);
         assert_eq!(
             script.pattern,
             ScriptPattern::DataOutput(String::from("charley loves heidi"))
@@ -568,7 +575,7 @@ mod tests {
         );
 
         let script = eval_from_stack(stack, 0x00);
-        assert_eq!(script.address, "");
+        assert_eq!(script.address, None);
         assert_eq!(script.pattern, ScriptPattern::NotRecognised);
     }
 
@@ -576,7 +583,7 @@ mod tests {
     fn test_bitcoin_bogus_script() {
         let bytes = [0x4c, 0xFF, 0x00];
         let script = eval_from_bytes(&bytes, 0x00);
-        assert_eq!(script.address, "");
+        assert_eq!(script.address, None);
         assert_eq!(
             script.pattern,
             ScriptPattern::Error(ScriptError::UnexpectedEof)

@@ -252,7 +252,7 @@ mod tests {
         assert_eq!(0x00000000, block.txs[0].value.tx_locktime);
 
         assert_eq!(
-            "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+            Some(String::from("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")),
             script::eval_from_bytes(script_pubkey, Bitcoin.version_id()).address
         );
 

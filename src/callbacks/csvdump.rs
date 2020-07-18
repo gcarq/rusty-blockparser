@@ -188,7 +188,7 @@ impl EvaluatedTxOut {
         let address = match self.script.address.clone() {
             Some(address) => address,
             None => {
-                debug!(target: "csvdump", "Unable to evaluate address for txid: {} (script: {})", txid, self.script.pattern);
+                debug!(target: "csvdump", "Unable to evaluate address for utxo in txid: {} ({})", txid, self.script.pattern);
                 String::new()
             }
         };

@@ -117,7 +117,7 @@ impl Callback for UnspentCsvDump {
                     }
                     None => {
                         debug!(
-                            target: "csvdump", "Ignoring txid: {} (script: {})",
+                            target: "unspentcsvdump", "Ignoring invalid utxo in: {} ({})",
                             utils::arr_to_hex_swapped(&tx.hash),
                             output.script.pattern
                         );
