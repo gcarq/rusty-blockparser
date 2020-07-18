@@ -58,6 +58,7 @@ You can also define custom callbacks. A callback gets called at startup, on each
 * **Low memory usage**
 
     The required memory usage depends on the used callback:
+
         * simplestats: ~100MB
         * csvdump: ~100M
         * unspentcsvdump: ~18GB
