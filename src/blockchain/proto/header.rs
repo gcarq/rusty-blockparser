@@ -37,12 +37,12 @@ impl BlockHeader {
 impl ToRaw for BlockHeader {
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(80);
-        bytes.extend_from_slice(&utils::le::u32_to_array(self.version));
+        bytes.extend_from_slice(&self.version.to_le_bytes());
         bytes.extend_from_slice(&self.prev_hash);
         bytes.extend_from_slice(&self.merkle_root);
-        bytes.extend_from_slice(&utils::le::u32_to_array(self.timestamp));
-        bytes.extend_from_slice(&utils::le::u32_to_array(self.bits));
-        bytes.extend_from_slice(&utils::le::u32_to_array(self.nonce));
+        bytes.extend_from_slice(&self.timestamp.to_le_bytes());
+        bytes.extend_from_slice(&self.bits.to_le_bytes());
+        bytes.extend_from_slice(&self.nonce.to_le_bytes());
         bytes
     }
 }
