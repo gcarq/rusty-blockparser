@@ -12,6 +12,7 @@ use crate::blockchain::proto::tx::TxOutpoint;
 use crate::callbacks::Callback;
 use crate::common::utils;
 use crate::errors::OpResult;
+
 /// Dumps the UTXOs along with address in a csv file
 pub struct UnspentCsvDump {
     dump_folder: PathBuf,
@@ -28,6 +29,7 @@ pub struct UnspentCsvDump {
 }
 
 struct HashMapVal {
+    block_height: u64,
     output_val: u64,
     address: String,
 }
@@ -89,7 +91,7 @@ impl Callback for UnspentCsvDump {
     ///   * block height as "last modified"
     ///   * output_val
     ///   * address
-    fn on_block(&mut self, block: &Block, _: u64) {
+    fn on_block(&mut self, block: &Block, block_height: u64) {
         for tx in &block.txs {
             for input in &tx.value.inputs {
                 let TxOutpoint { txid, index } = input.outpoint;
@@ -102,6 +104,7 @@ impl Callback for UnspentCsvDump {
             for (i, output) in tx.value.outputs.iter().enumerate() {
                 let index = i as u32;
                 let hash_val: HashMapVal = HashMapVal {
+                    block_height,
                     output_val: output.out.value,
                     address: output.script.address.clone(),
                 };
@@ -117,7 +120,13 @@ impl Callback for UnspentCsvDump {
         self.end_height = block_height;
 
         self.unspent_writer
-            .write_all(format!("{};{};{};{}\n", "txid", "indexOut", "value", "address").as_bytes())
+            .write_all(
+                format!(
+                    "{};{};{};{};{}\n",
+                    "txid", "indexOut", "height", "value", "address"
+                )
+                .as_bytes(),
+            )
             .unwrap();
         for (key, value) in self.unspents.iter() {
             let txid = &key[0..32];
@@ -125,9 +134,10 @@ impl Callback for UnspentCsvDump {
             self.unspent_writer
                 .write_all(
                     format!(
-                        "{};{};{};{}\n",
+                        "{};{};{};{};{}\n",
                         utils::arr_to_hex_swapped(txid),
                         index.read_u32::<LittleEndian>().unwrap(),
+                        value.block_height,
                         value.output_val,
                         value.address
                     )
