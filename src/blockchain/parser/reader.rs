@@ -94,10 +94,10 @@ pub trait BlockchainRead: io::Read {
     }
 
     fn read_tx_outpoint(&mut self) -> OpResult<TxOutpoint> {
-        Ok(TxOutpoint {
-            txid: self.read_256hash()?,
-            index: self.read_u32::<LittleEndian>()?,
-        })
+        Ok(TxOutpoint::new(
+            self.read_256hash()?,
+            self.read_u32::<LittleEndian>()?,
+        ))
     }
 
     fn read_tx_inputs(&mut self, input_count: u64) -> OpResult<Vec<TxInput>> {

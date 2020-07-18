@@ -94,6 +94,12 @@ pub struct TxOutpoint {
     pub index: u32, // 0-based offset within tx
 }
 
+impl TxOutpoint {
+    pub fn new(txid: [u8; 32], index: u32) -> Self {
+        Self { txid, index }
+    }
+}
+
 impl ToRaw for TxOutpoint {
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(32 + 4);

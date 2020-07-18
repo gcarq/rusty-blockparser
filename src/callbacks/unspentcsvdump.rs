@@ -9,6 +9,7 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::Block;
 use crate::blockchain::proto::tx::TxOutpoint;
+use crate::blockchain::proto::ToRaw;
 use crate::callbacks::Callback;
 use crate::common::utils;
 use crate::errors::OpResult;
@@ -94,8 +95,7 @@ impl Callback for UnspentCsvDump {
     fn on_block(&mut self, block: &Block, block_height: u64) {
         for tx in &block.txs {
             for input in &tx.value.inputs {
-                let TxOutpoint { txid, index } = input.outpoint;
-                let key = [&txid[..], &index.to_le_bytes()[..]].concat();
+                let key = input.outpoint.to_bytes();
                 if self.unspents.contains_key(&key) {
                     self.unspents.remove(&key);
                 }
@@ -104,15 +104,14 @@ impl Callback for UnspentCsvDump {
             for (i, output) in tx.value.outputs.iter().enumerate() {
                 match &output.script.address {
                     Some(address) => {
-                        let index = i as u32;
                         let hash_val: HashMapVal = HashMapVal {
                             block_height,
                             address: address.clone(),
                             output_val: output.out.value,
                         };
-                        let key = [&tx.hash[..], &index.to_le_bytes()[..]].concat();
-                        self.unspents.insert(key, hash_val);
 
+                        let key = TxOutpoint::new(tx.hash, i as u32).to_bytes();
+                        self.unspents.insert(key, hash_val);
                         self.out_count += 1;
                     }
                     None => {

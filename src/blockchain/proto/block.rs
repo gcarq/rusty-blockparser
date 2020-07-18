@@ -56,9 +56,7 @@ impl fmt::Debug for Block {
 
 /// Get block reward for given height
 pub fn get_base_reward(block_height: u64) -> u64 {
-    let mut reward: u64 = 50 * 100000000;
-    reward >>= block_height / 210000;
-    reward
+    (50 * 100000000) >> (block_height / 210000)
 }
 
 #[cfg(test)]

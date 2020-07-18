@@ -34,7 +34,7 @@ impl BlkFile {
     /// Collects all blk*.dat paths in the given directory
     pub fn from_path(path: &Path) -> OpResult<HashMap<usize, BlkFile>> {
         info!(target: "blkfile", "Reading files from {} ...", path.display());
-        let mut collected = HashMap::new();
+        let mut collected = HashMap::with_capacity(4000);
 
         for entry in fs::read_dir(path)? {
             match entry {

@@ -102,7 +102,7 @@ impl Callback for CsvDump {
             // serialize outputs
             for (i, output) in tx.value.outputs.iter().enumerate() {
                 self.txout_writer
-                    .write_all(output.as_csv(&txid_str, i).as_bytes())
+                    .write_all(output.as_csv(&txid_str, i as u32).as_bytes())
                     .unwrap();
             }
             self.out_count += tx.value.out_count.value;
@@ -184,7 +184,7 @@ impl TxInput {
 
 impl EvaluatedTxOut {
     #[inline]
-    fn as_csv(&self, txid: &str, index: usize) -> String {
+    fn as_csv(&self, txid: &str, index: u32) -> String {
         let address = match self.script.address.clone() {
             Some(address) => address,
             None => {

@@ -23,20 +23,6 @@ pub fn sha256(data: &[u8]) -> [u8; 32] {
     out
 }
 
-#[inline]
-fn double_sha256(a: &[u8], b: &[u8]) -> [u8; 32] {
-    sha256(&sha256(&merge_slices(a, b)))
-}
-
-/// Simple slice merge
-#[inline]
-pub fn merge_slices(a: &[u8], b: &[u8]) -> Vec<u8> {
-    [a, b]
-        .iter()
-        .flat_map(|v| v.iter().cloned())
-        .collect::<Vec<u8>>()
-}
-
 /// Calculates merkle root for the whole block
 /// See: https://en.bitcoin.it/wiki/Protocol_documentation#Merkle_Trees
 pub fn merkle_root(hashes: &[[u8; 32]]) -> [u8; 32] {
@@ -47,13 +33,13 @@ pub fn merkle_root(hashes: &[[u8; 32]]) -> [u8; 32] {
         let mut new_hashes = hashes
             .chunks(2)
             .filter(|c| c.len() == 2)
-            .map(|c| double_sha256(&c[0], &c[1]))
+            .map(|c| sha256(&sha256(&[c[0], c[1]].concat())))
             .collect::<Vec<[u8; 32]>>();
 
         // If the length is odd, take the last hash twice
         if hashes.len() % 2 == 1 {
             let last_hash = hashes.last().unwrap();
-            new_hashes.push(double_sha256(last_hash, last_hash));
+            new_hashes.push(sha256(&sha256(&[&last_hash[..], &last_hash[..]].concat())));
         }
         hashes = new_hashes;
     }
@@ -120,7 +106,7 @@ pub fn hex_to_vec_swapped(hex_str: &str) -> Vec<u8> {
 
 #[inline]
 pub fn hex_to_arr32_swapped(hex_str: &str) -> [u8; 32] {
-    assert_eq!(hex_str.len(), 64);
+    debug_assert_eq!(hex_str.len(), 64);
     let mut arr = [0u8; 32];
     for (place, element) in arr.iter_mut().zip(hex_to_vec(hex_str).iter().rev()) {
         *place = *element;
@@ -148,7 +134,6 @@ pub fn get_mean(slice: &[u32]) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::borrow::Borrow;
 
     #[test]
     fn test_arr_to_hex() {
@@ -204,18 +189,6 @@ mod tests {
         ];
 
         assert_eq!(ridemp160(test.as_bytes()), expected);
-    }
-
-    #[test]
-    fn test_merge_slices() {
-        let test1 = [0x8c, 0xb1, 0xdf, 0x74, 0xdb, 0xe9, 0x80, 0xc6];
-        let test2 = [0xb7, 0xa6, 0x06, 0x8e, 0x58, 0x14, 0x73, 0x84];
-
-        let expected = [
-            0x8c, 0xb1, 0xdf, 0x74, 0xdb, 0xe9, 0x80, 0xc6, 0xb7, 0xa6, 0x06, 0x8e, 0x58, 0x14,
-            0x73, 0x84,
-        ];
-        assert_eq!(expected, merge_slices(&test1, &test2).borrow());
     }
 
     #[test]

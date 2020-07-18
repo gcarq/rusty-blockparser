@@ -63,7 +63,7 @@ impl fmt::Debug for BlockIndexRecord {
 pub fn get_block_index(path: &Path) -> OpResult<Vec<BlockIndexRecord>> {
     info!(target: "index", "Reading index from {} ...", path.display());
 
-    let mut block_index = Vec::new();
+    let mut block_index = Vec::with_capacity(800000);
     let mut db = DB::open(path, Options::default())?;
     let mut iter = db.new_iter()?;
     let (mut k, mut v) = (vec![], vec![]);
