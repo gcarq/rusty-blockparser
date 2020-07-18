@@ -102,16 +102,28 @@ impl Callback for UnspentCsvDump {
             }
             self.in_count += tx.value.in_count.value;
             for (i, output) in tx.value.outputs.iter().enumerate() {
-                let index = i as u32;
-                let hash_val: HashMapVal = HashMapVal {
-                    block_height,
-                    output_val: output.out.value,
-                    address: output.script.address.clone(),
-                };
-                let key = [&tx.hash[..], &index.to_le_bytes()[..]].concat();
-                self.unspents.insert(key, hash_val);
+                match &output.script.address {
+                    Some(address) => {
+                        let index = i as u32;
+                        let hash_val: HashMapVal = HashMapVal {
+                            block_height,
+                            address: address.clone(),
+                            output_val: output.out.value,
+                        };
+                        let key = [&tx.hash[..], &index.to_le_bytes()[..]].concat();
+                        self.unspents.insert(key, hash_val);
+
+                        self.out_count += 1;
+                    }
+                    None => {
+                        debug!(
+                            target: "csvdump", "Ignoring txid: {} (script: {})",
+                            utils::arr_to_hex_swapped(&tx.hash),
+                            output.script.pattern
+                        );
+                    }
+                }
             }
-            self.out_count += tx.value.out_count.value;
         }
         self.tx_count += block.tx_count.value;
     }

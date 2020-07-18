@@ -110,7 +110,6 @@ impl StackElement {
     }
 }
 
-//TODO: find a better solution
 impl PartialEq for StackElement {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
@@ -158,7 +157,7 @@ impl fmt::Debug for Stack {
 
 #[derive(Clone)]
 pub struct EvaluatedScript {
-    pub address: String,
+    pub address: Option<String>,
     pub pattern: ScriptPattern,
 }
 
@@ -356,7 +355,7 @@ pub fn eval_from_bytes(bytes: &[u8], version_id: u8) -> EvaluatedScript {
     match ScriptEvaluator::new(bytes).eval() {
         Ok(stack) => eval_from_stack(stack, version_id),
         Err(err) => EvaluatedScript {
-            address: String::new(),
+            address: None,
             pattern: ScriptPattern::Error(err),
         },
     }
@@ -370,41 +369,41 @@ pub fn eval_from_stack(stack: Stack, version_id: u8) -> EvaluatedScript {
             ref p @ ScriptPattern::Pay2PublicKey => {
                 let pub_key = stack.elements[0].data()?;
                 EvaluatedScript {
-                    address: public_key_to_addr(&pub_key, version_id),
+                    address: Some(public_key_to_addr(&pub_key, version_id)),
                     pattern: p.clone(),
                 }
             }
             ref p @ ScriptPattern::Pay2PublicKeyHash => {
                 let h160 = stack.elements[2].data()?;
                 EvaluatedScript {
-                    address: hash_160_to_address(&h160, version_id),
+                    address: Some(hash_160_to_address(&h160, version_id)),
                     pattern: p.clone(),
                 }
             }
             ref p @ ScriptPattern::Pay2ScriptHash => {
                 let h160 = stack.elements[1].data()?;
                 EvaluatedScript {
-                    address: hash_160_to_address(&h160, 5),
+                    address: Some(hash_160_to_address(&h160, 5)),
                     pattern: p.clone(),
                 }
             }
             ScriptPattern::DataOutput(ref data) => EvaluatedScript {
-                address: String::new(),
+                address: None,
                 pattern: ScriptPattern::DataOutput(data.clone()),
             },
             ref p @ ScriptPattern::Pay2MultiSig => {
                 stack.elements[1].data()?;
                 EvaluatedScript {
-                    address: String::new(),
+                    address: None,
                     pattern: p.clone(),
                 }
             }
             ref p @ ScriptPattern::NotRecognised => EvaluatedScript {
-                address: String::new(),
+                address: None,
                 pattern: p.clone(),
             },
             ref p => EvaluatedScript {
-                address: String::new(),
+                address: None,
                 pattern: p.clone(),
             },
         };
@@ -412,7 +411,7 @@ pub fn eval_from_stack(stack: Stack, version_id: u8) -> EvaluatedScript {
     })() {
         Ok(script) => script,
         Err(e) => EvaluatedScript {
-            address: String::new(),
+            address: None,
             pattern: ScriptPattern::Error(e),
         },
     }

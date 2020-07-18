@@ -185,6 +185,14 @@ impl TxInput {
 impl EvaluatedTxOut {
     #[inline]
     fn as_csv(&self, txid: &str, index: usize) -> String {
+        let address = match self.script.address.clone() {
+            Some(address) => address,
+            None => {
+                debug!(target: "csvdump", "Unable to evaluate address for txid: {} (script: {})", txid, self.script.pattern);
+                String::new()
+            }
+        };
+
         // (@txid, indexOut, value, @scriptPubKey, address)
         format!(
             "{};{};{};{};{}\n",
@@ -192,7 +200,7 @@ impl EvaluatedTxOut {
             &index,
             &self.out.value,
             &utils::arr_to_hex(&self.out.script_pubkey),
-            &self.script.address
+            &address
         )
     }
 }
