@@ -422,16 +422,14 @@ fn public_key_to_addr(pub_key: &[u8], version: u8) -> String {
 }
 
 /// Takes 20 byte public key and version id
+#[inline]
 fn hash_160_to_address(h160: &[u8], version: u8) -> String {
-    let mut vh160 = Vec::with_capacity(h160.len() + 1);
-    vh160.push(version);
-    vh160.extend_from_slice(&h160);
-
-    let h3 = utils::sha256(&utils::sha256(&vh160));
-
-    let mut addr = vh160;
-    addr.extend_from_slice(&h3[0..4]);
-    addr.to_base58()
+    let mut hash = Vec::with_capacity(h160.len() + 5);
+    hash.push(version);
+    hash.extend_from_slice(&h160);
+    let checksum = &utils::sha256(&utils::sha256(&hash))[0..4];
+    hash.extend_from_slice(checksum);
+    hash.to_base58()
 }
 
 #[cfg(test)]
