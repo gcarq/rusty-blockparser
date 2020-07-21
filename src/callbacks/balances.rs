@@ -100,7 +100,7 @@ impl Callback for Balances {
                     }
                     None => {
                         debug!(
-                            target: "unspentcsvdump", "Ignoring invalid utxo in: {} ({})",
+                            target: "balances", "Ignoring invalid utxo in: {} ({})",
                             utils::arr_to_hex_swapped(&tx.hash),
                             output.script.pattern
                         );
