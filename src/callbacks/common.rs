@@ -47,7 +47,7 @@ pub fn insert_unspents(
             }
             None => {
                 debug!(
-                    target: "unspentcsvdump", "Ignoring invalid utxo in: {} ({})",
+                    target: "callback", "Ignoring invalid utxo in: {} ({})",
                     utils::arr_to_hex_swapped(&tx.hash),
                     output.script.pattern
                 );
