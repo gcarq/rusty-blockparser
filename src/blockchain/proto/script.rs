@@ -76,7 +76,7 @@ pub enum ScriptPattern {
 impl fmt::Display for ScriptPattern {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            ScriptPattern::OpReturn(_) => write!(f, "OpReturn"),
+            ScriptPattern::OpReturn(ref data) => write!(f, "OpReturn({})", data),
             ScriptPattern::Pay2MultiSig => write!(f, "Pay2MultiSig"),
             ScriptPattern::Pay2PublicKey => write!(f, "Pay2PublicKey"),
             ScriptPattern::Pay2PublicKeyHash => write!(f, "Pay2PublicKeyHash"),
@@ -105,7 +105,7 @@ impl EvaluatedScript {
 
 /// Workaround to parse address from p2pk scripts
 /// See issue https://github.com/rust-bitcoin/rust-bitcoin/issues/441
-fn p2pk_to_string(script: &Script) -> String {
+fn p2pk_to_string(script: &Script) -> Option<String> {
     assert!(script.is_p2pk());
     let pk = match script.iter(false).next() {
         Some(Instruction::PushBytes(bytes)) => bytes,
@@ -115,10 +115,10 @@ fn p2pk_to_string(script: &Script) -> String {
     let pkh = hash160::Hash::hash(pk);
 
     let address = Address {
-        payload: Payload::PubkeyHash(PubkeyHash::from_slice(&pkh).unwrap()),
+        payload: Payload::PubkeyHash(PubkeyHash::from_slice(&pkh).ok()?),
         network: Network::Bitcoin,
     };
-    address.to_string()
+    Some(address.to_string())
 }
 
 /// Extracts evaluated address from script
@@ -131,7 +131,7 @@ pub fn eval_from_bytes(bytes: &[u8], version_id: u8) -> EvaluatedScript {
     };
 
     if script.is_p2pk() {
-        EvaluatedScript::new(Some(p2pk_to_string(&script)), ScriptPattern::Pay2PublicKey)
+        EvaluatedScript::new(p2pk_to_string(&script), ScriptPattern::Pay2PublicKey)
     } else if script.is_p2pkh() {
         EvaluatedScript::new(address, ScriptPattern::Pay2PublicKeyHash)
     } else if script.is_p2sh() {
@@ -144,10 +144,8 @@ pub fn eval_from_bytes(bytes: &[u8], version_id: u8) -> EvaluatedScript {
         EvaluatedScript::new(address, ScriptPattern::WitnessProgram)
     } else if script.is_op_return() {
         // OP_RETURN 13 <data>
-        // TODO: pass OP_RETURN data
-        //let data = Vec::from(&script.to_bytes()[2..]);
-        //let pattern = ScriptPattern::OpReturn(String::from_utf8(data).unwrap_or(String::from("")));
-        let pattern = ScriptPattern::OpReturn(String::from(""));
+        let data = script.to_bytes().into_iter().skip(2).collect::<Vec<u8>>();
+        let pattern = ScriptPattern::OpReturn(String::from_utf8(data).unwrap_or(String::from("")));
         EvaluatedScript::new(address, pattern)
     } else if script.is_provably_unspendable() {
         EvaluatedScript::new(address, ScriptPattern::Unspendable)
