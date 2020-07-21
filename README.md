@@ -4,7 +4,7 @@
 
 rusty-blockparser is a Bitcoin Blockchain Parser written in **Rust language**.
 
-It allows extraction of various data types (blocks, transactions, scripts, public keys/hashes, balances, ...) from Bitcoin based blockchains.
+It allows extraction of various data types (blocks, transactions, scripts, public keys/hashes, balances, ...) and UTXDO dumps from Bitcoin based blockchains.
 
 ##### **Currently Supported Blockchains:**
 
@@ -17,6 +17,16 @@ It assumes a local copy of the blockchain with intact block index, downloaded wi
 * **Callbacks**
 
     Callbacks are built on top of the core parser. They can be implemented to extract specific types of information.
+
+
+    `unspentcsvdump`: dumps all UTXOs along with the address balance.
+    The csv file is in the following format:
+    ```
+    unspent.csv
+    txid ; indexOut ; height ; value ; address
+    ```
+    NOTE: The total size of the csv dump is at least 8 GiB (height 635000).
+
 
     `csvdump`: dumps all parsed data as CSV files into the specified `folder`. See [Usage](#Usage) for an example. I chose CSV dumps instead of  an active db-connection because `LOAD DATA INFILE` is the most performant way for bulk inserts.
     The files are in the following format:
@@ -38,13 +48,8 @@ It assumes a local copy of the blockchain with intact block index, downloaded wi
     ```
     If you want to insert the files into MySql see [sql/schema.sql](sql/schema.sql).
     It contains all table structures and SQL statements for bulk inserting. Also see [sql/views.sql](sql/views.sql) for some query examples.
+    NOTE: The total size of the csv dump is at least to 731 GiB (height 635000).
 
-    `unspentcsvdump`: dumps all UTXOs along with the address balance.
-    The csv file is in the following format:
-    ```
-    unspent.csv
-    txid ; indexOut ; value ; address
-    ```
 
     `simplestats`: prints some blockchain statistics like block count, transaction count, avg transactions per block, largest transaction, transaction types etc.
 
@@ -53,9 +58,10 @@ You can also define custom callbacks. A callback gets called at startup, on each
 * **Low memory usage**
 
     The required memory usage depends on the used callback:
+
         * simplestats: ~100MB
         * csvdump: ~100M
-        * unspentcsvdump: ~2GB
+        * unspentcsvdump: ~18GB
 
     NOTE: Those values are taken from parsing to block height 639631 (17.07.2020).
 
@@ -121,26 +127,28 @@ SUBCOMMANDS:
 ```
 ### Example
 
-To make a `csvdump` of the Bitcoin blockchain your command would look like this:
+To make a `unspentcsvdump` of the Bitcoin blockchain your command would look like this:
 ```
-# ./blockparser csvdump /path/to/dump/
-[00:42:19] INFO - main: Starting rusty-blockparser v0.6.0 ...
-[00:42:19] INFO - blkfile: Reading files from folder: ~/.bitcoin/blocks
-[00:42:19] INFO - parser: Building blockchain index ...
+# ./blockparser unspentcsvdump /path/to/dump/
+[6:02:53] INFO - main: Starting rusty-blockparser v0.7.0 ...
+[6:02:53] INFO - index: Reading index from ~/.bitcoin/blocks/index ...
+[6:02:54] INFO - index: Got longest chain with 639626 blocks ...
+[6:02:54] INFO - blkfile: Reading files from ~/.bitcoin/blocks ...
+[6:02:54] INFO - parser: Parsing Bitcoin blockchain (range=0..) ...
+[6:02:54] INFO - callback: Using `unspentcsvdump` with dump folder: /path/to/dump ...
+[6:03:04] INFO - parser: Status: 130885 Blocks processed. (left: 508741, avg: 13088 blocks/sec)
 ...
-[00:50:46] INFO - dispatch: All threads finished.
-[00:50:46] INFO - dispatch: Done. Processed 393496 blocks in 8.45 minutes. (avg: 776 blocks/sec)
-[00:50:47] INFO - chain: Inserted 393489 new blocks ...
-[00:50:49] INFO - blkfile: Reading files from folder: ~/.bitcoin/blocks
-[00:50:49] INFO - parser: Parsing 393489 blocks with mode FullData.
-[00:50:49] INFO - callback: Using `csvdump` with dump folder: csv-dump/ ...
-...
-[02:04:42] INFO - dispatch: Done. Processed 393489 blocks in 73.88 minutes. (avg: 88 blocks/sec)
-[02:04:42] INFO - callback: Done.
-Dumped all blocks:   393489
-	-> transactions: 103777752
-	-> inputs:       274278239
-	-> outputs:      308285408
+[10:28:47] INFO - parser: Status: 639163 Blocks processed. (left:    463, avg:    40 blocks/sec)
+[10:28:57] INFO - parser: Status: 639311 Blocks processed. (left:    315, avg:    40 blocks/sec)
+[10:29:07] INFO - parser: Status: 639452 Blocks processed. (left:    174, avg:    40 blocks/sec)
+[10:29:17] INFO - parser: Status: 639596 Blocks processed. (left:     30, avg:    40 blocks/sec)
+[10:29:19] INFO - parser: Done. Processed 639626 blocks in 266.43 minutes. (avg:    40 blocks/sec)
+[10:32:01] INFO - callback: Done.
+Dumped all 639626 blocks:
+        -> transactions: 549390991
+        -> inputs:       1347165535
+        -> outputs:      1359449320
+[10:32:01] INFO - main: Fin.
 ```
 
 
@@ -156,3 +164,4 @@ If you find this project helpful, please consider making a donation:
 
 * Implement correct SegWit handling
 * Implement Pay2MultiSig script evaluation
+* Handle BECH32 addresses

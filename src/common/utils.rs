@@ -46,32 +46,6 @@ pub fn merkle_root(hashes: &[[u8; 32]]) -> [u8; 32] {
     *hashes.first().unwrap()
 }
 
-/// Little endian helper functions
-pub mod le {
-    use byteorder::{ByteOrder, LittleEndian};
-
-    #[inline]
-    pub fn u16_to_array(v: u16) -> [u8; 2] {
-        let mut buf = [0u8; 2];
-        LittleEndian::write_u16(&mut buf, v);
-        buf
-    }
-
-    #[inline]
-    pub fn u32_to_array(v: u32) -> [u8; 4] {
-        let mut buf = [0u8; 4];
-        LittleEndian::write_u32(&mut buf, v);
-        buf
-    }
-
-    #[inline]
-    pub fn u64_to_array(v: u64) -> [u8; 8] {
-        let mut buf = [0u8; 8];
-        LittleEndian::write_u64(&mut buf, v);
-        buf
-    }
-}
-
 pub fn arr_to_hex(data: &[u8]) -> String {
     data.iter()
         .map(|b| format!("{:02x?}", b))

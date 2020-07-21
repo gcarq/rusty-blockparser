@@ -70,7 +70,7 @@ impl ToRaw for Tx {
             Vec::with_capacity((4 + self.in_count.value + self.out_count.value + 4) as usize);
 
         // Serialize version
-        bytes.extend_from_slice(&utils::le::u32_to_array(self.tx_version));
+        bytes.extend_from_slice(&self.tx_version.to_le_bytes());
         // Serialize all TxInputs
         bytes.extend_from_slice(&self.in_count.to_bytes());
         for i in &self.inputs {
@@ -82,7 +82,7 @@ impl ToRaw for Tx {
             bytes.extend_from_slice(&o.out.to_bytes());
         }
         // Serialize locktime
-        bytes.extend_from_slice(&utils::le::u32_to_array(self.tx_locktime));
+        bytes.extend_from_slice(&self.tx_locktime.to_le_bytes());
         bytes
     }
 }
@@ -104,7 +104,7 @@ impl ToRaw for TxOutpoint {
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(32 + 4);
         bytes.extend_from_slice(&self.txid);
-        bytes.extend_from_slice(&utils::le::u32_to_array(self.index));
+        bytes.extend_from_slice(&self.index.to_le_bytes());
         bytes
     }
 }
@@ -134,7 +134,7 @@ impl ToRaw for TxInput {
         bytes.extend_from_slice(&self.outpoint.to_bytes());
         bytes.extend_from_slice(&self.script_len.to_bytes());
         bytes.extend_from_slice(&self.script_sig);
-        bytes.extend_from_slice(&utils::le::u32_to_array(self.seq_no));
+        bytes.extend_from_slice(&self.seq_no.to_le_bytes());
         bytes
     }
 }
@@ -179,7 +179,7 @@ impl ToRaw for TxOutput {
     #[inline]
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(8 + 5 + self.script_len.value as usize);
-        bytes.extend_from_slice(&utils::le::u64_to_array(self.value));
+        bytes.extend_from_slice(&self.value.to_le_bytes());
         bytes.extend_from_slice(&self.script_len.to_bytes());
         bytes.extend_from_slice(&self.script_pubkey);
         bytes
