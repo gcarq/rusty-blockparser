@@ -3,6 +3,7 @@ use std::time::{Duration, Instant};
 
 use crate::blockchain::proto::block::Block;
 use crate::ParserOptions;
+use errors::OpResult;
 
 mod blkfile;
 pub mod chain;
@@ -49,28 +50,29 @@ impl<'a> BlockchainParser<'a> {
         }
     }
 
-    pub fn start(&mut self) {
+    pub fn start(&mut self) -> OpResult<()> {
         debug!(target: "parser", "Starting worker ...");
 
-        self.on_start();
+        self.on_start()?;
         while let Some(block) = self.chain_storage.get_next() {
-            self.on_block(&block);
+            self.on_block(&block)?;
         }
-        self.on_complete();
+        self.on_complete()
     }
 
     /// Triggers the on_start() callback and initializes state.
-    fn on_start(&mut self) {
+    fn on_start(&mut self) -> OpResult<()> {
         let coin_type = self.options.borrow().coin_type.clone();
         self.stats.t_started = Instant::now();
         self.stats.t_last_log = Instant::now();
-        (*self.options.borrow_mut().callback).on_start(&coin_type, self.stats.n_height);
+        (*self.options.borrow_mut().callback).on_start(&coin_type, self.stats.n_height)?;
         trace!(target: "parser", "on_start() called");
+        Ok(())
     }
 
     /// Triggers the on_block() callback and updates statistics.
-    fn on_block(&mut self, block: &Block) {
-        (*self.options.borrow_mut().callback).on_block(block, self.stats.n_height);
+    fn on_block(&mut self, block: &Block) -> OpResult<()> {
+        (*self.options.borrow_mut().callback).on_block(block, self.stats.n_height)?;
         trace!(target: "parser", "on_block(height={}) called", self.stats.n_height);
         self.stats.n_height += 1;
 
@@ -81,16 +83,18 @@ impl<'a> BlockchainParser<'a> {
                   self.stats.n_height, self.chain_storage.remaining(), self.blocks_sec());
             self.stats.t_last_log = now;
         }
+        Ok(())
     }
 
     /// Triggers the on_complete() callback and updates statistics.
-    fn on_complete(&mut self) {
+    fn on_complete(&mut self) -> OpResult<()> {
         info!(target: "parser", "Done. Processed {} blocks in {:.2} minutes. (avg: {:5.2} blocks/sec)",
               self.stats.n_height, (Instant::now() - self.stats.t_started).as_secs_f32() / 60.0,
               self.blocks_sec());
 
-        (*self.options.borrow_mut().callback).on_complete(self.stats.n_height);
+        (*self.options.borrow_mut().callback).on_complete(self.stats.n_height)?;
         trace!(target: "parser", "on_complete() called");
+        Ok(())
     }
 
     /// Returns the number of avg processed blocks
