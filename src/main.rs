@@ -8,6 +8,7 @@ use clap::{App, Arg};
 use crate::blockchain::parser::chain::ChainStorage;
 use crate::blockchain::parser::types::{Bitcoin, CoinType};
 use crate::blockchain::parser::BlockchainParser;
+use crate::callbacks::balances::Balances;
 use crate::callbacks::csvdump::CsvDump;
 use crate::callbacks::stats::SimpleStats;
 use crate::callbacks::unspentcsvdump::UnspentCsvDump;
@@ -161,6 +162,7 @@ fn parse_args() -> OpResult<RefCell<ParserOptions>> {
         .subcommand(UnspentCsvDump::build_subcommand())
         .subcommand(CsvDump::build_subcommand())
         .subcommand(SimpleStats::build_subcommand())
+        .subcommand(Balances::build_subcommand())
         .get_matches();
 
     let verify = matches.is_present("verify");
@@ -187,6 +189,8 @@ fn parse_args() -> OpResult<RefCell<ParserOptions>> {
         callback = Box::new(CsvDump::new(matches)?);
     } else if let Some(ref matches) = matches.subcommand_matches("unspentcsvdump") {
         callback = Box::new(UnspentCsvDump::new(matches)?);
+    } else if let Some(ref matches) = matches.subcommand_matches("balances") {
+        callback = Box::new(Balances::new(matches)?);
     } else {
         clap::Error {
             message: String::from("error: No Callback specified.\nFor more information try --help"),

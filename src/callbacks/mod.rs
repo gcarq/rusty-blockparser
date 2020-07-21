@@ -4,6 +4,7 @@ use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::Block;
 use crate::errors::OpResult;
 
+pub mod balances;
 pub mod csvdump;
 pub mod stats;
 pub mod unspentcsvdump;
