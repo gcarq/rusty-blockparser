@@ -49,7 +49,7 @@ pub trait BlockchainRead: io::Read {
         let mut txs: Vec<Tx> = Vec::with_capacity(tx_count as usize);
         for _ in 0..tx_count {
             let mut flags = 0u8;
-            let tx_version = self.read_u32::<LittleEndian>()?;
+            let version = self.read_u32::<LittleEndian>()?;
 
             // Parse transaction inputs and check if this transaction contains segwit data
             let mut in_count = VarUint::read_from(self)?;
@@ -74,15 +74,9 @@ pub trait BlockchainRead: io::Read {
                     }
                 }
             }
-            let tx_locktime = self.read_u32::<LittleEndian>()?;
+            let locktime = self.read_u32::<LittleEndian>()?;
             let tx = Tx::new(
-                tx_version,
-                in_count,
-                &inputs,
-                out_count,
-                &outputs,
-                tx_locktime,
-                version_id,
+                version, in_count, &inputs, out_count, &outputs, locktime, version_id,
             );
             txs.push(tx);
         }
@@ -154,7 +148,7 @@ mod tests {
         bits               0x1d00ffff
         nonce              0x1dac2b7c
         tx_count           0x01
-        tx_version         0x01000000   big endian??
+        tx.version         0x01000000   big endian??
         tx.in_count        0x01
         tx.in.prev_hash    0x0000000000000000000000000000000000000000000000000000000000000000
         tx.in.out_id       0xffffffff
@@ -242,7 +236,7 @@ mod tests {
 
         // Tx
         assert_eq!(0x01, block.tx_count.value);
-        assert_eq!(0x00000001, block.txs[0].value.tx_version);
+        assert_eq!(0x00000001, block.txs[0].value.version);
 
         // Tx Inputs
         assert_eq!(0x01, block.txs[0].value.in_count.value);
@@ -267,7 +261,7 @@ mod tests {
         let script_pubkey = &block.txs[0].value.outputs[0].out.script_pubkey;
         assert_eq!("4104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac",
                                 utils::arr_to_hex(&script_pubkey));
-        assert_eq!(0x00000000, block.txs[0].value.tx_locktime);
+        assert_eq!(0x00000000, block.txs[0].value.locktime);
 
         assert_eq!(
             Some(String::from("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")),
@@ -323,7 +317,7 @@ mod tests {
         assert_eq!(txs.len(), 1);
 
         let tx = txs.first().unwrap();
-        assert_eq!(tx.tx_version, 1);
+        assert_eq!(tx.version, 1);
 
         // Assert inputs
         assert_eq!(tx.in_count.value, 1);
@@ -352,6 +346,6 @@ mod tests {
             Some(String::from("13gv9XbKJPxxRF8Zm1LsVKeeiMCFguQPqm"))
         );
 
-        assert_eq!(tx.tx_locktime, 0);
+        assert_eq!(tx.locktime, 0);
     }
 }
