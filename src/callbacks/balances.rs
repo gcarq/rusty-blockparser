@@ -7,10 +7,7 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 
 use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::Block;
-use crate::blockchain::proto::tx::TxOutpoint;
-use crate::blockchain::proto::ToRaw;
-use crate::callbacks::Callback;
-use crate::common::utils;
+use crate::callbacks::{common, Callback};
 use crate::errors::OpResult;
 
 /// Dumps all addresses with non-zero balance in a csv file
@@ -19,15 +16,10 @@ pub struct Balances {
     writer: BufWriter<File>,
 
     // key: txid + index
-    unspents: HashMap<Vec<u8>, HashMapVal>,
+    unspents: HashMap<Vec<u8>, common::UnspentValue>,
 
     start_height: u64,
     end_height: u64,
-}
-
-struct HashMapVal {
-    output_val: u64,
-    address: String,
 }
 
 impl Balances {
@@ -77,36 +69,13 @@ impl Callback for Balances {
     ///   1. apply input transactions (remove (TxID == prevTxIDOut and prevOutID == spentOutID))
     ///   2. apply output transactions (add (TxID + curOutID -> HashMapVal))
     /// For each address, retain:
+    ///   * block height as "last modified"
     ///   * output_val
     ///   * address
-    fn on_block(&mut self, block: &Block, _: u64) {
+    fn on_block(&mut self, block: &Block, block_height: u64) {
         for tx in &block.txs {
-            for input in &tx.value.inputs {
-                let key = input.outpoint.to_bytes();
-                if self.unspents.contains_key(&key) {
-                    self.unspents.remove(&key);
-                }
-            }
-            for (i, output) in tx.value.outputs.iter().enumerate() {
-                match &output.script.address {
-                    Some(address) => {
-                        let hash_val: HashMapVal = HashMapVal {
-                            address: address.clone(),
-                            output_val: output.out.value,
-                        };
-
-                        let key = TxOutpoint::new(tx.hash, i as u32).to_bytes();
-                        self.unspents.insert(key, hash_val);
-                    }
-                    None => {
-                        debug!(
-                            target: "balances", "Ignoring invalid utxo in: {} ({})",
-                            utils::arr_to_hex_swapped(&tx.hash),
-                            output.script.pattern
-                        );
-                    }
-                }
-            }
+            common::remove_unspents(&tx, &mut self.unspents);
+            common::insert_unspents(&tx, block_height, &mut self.unspents);
         }
     }
 
@@ -121,7 +90,7 @@ impl Callback for Balances {
         let mut balances: HashMap<String, u64> = HashMap::new();
         for value in self.unspents.values() {
             let entry = balances.entry(value.address.clone()).or_insert(0);
-            *entry += value.output_val
+            *entry += value.value
         }
 
         for (address, balance) in balances.iter() {

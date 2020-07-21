@@ -5,6 +5,7 @@ use crate::blockchain::proto::block::Block;
 use crate::errors::OpResult;
 
 pub mod balances;
+mod common;
 pub mod csvdump;
 pub mod stats;
 pub mod unspentcsvdump;

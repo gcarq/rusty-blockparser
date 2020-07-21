@@ -101,6 +101,7 @@ impl TxOutpoint {
 }
 
 impl ToRaw for TxOutpoint {
+    #[inline]
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(32 + 4);
         bytes.extend_from_slice(&self.txid);
