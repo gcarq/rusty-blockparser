@@ -17,7 +17,7 @@ use crate::errors::OpResult;
 /// Dumps the UTXOs along with address in a csv file
 pub struct UnspentCsvDump {
     dump_folder: PathBuf,
-    unspent_writer: BufWriter<File>,
+    writer: BufWriter<File>,
 
     // key: txid + index
     unspents: HashMap<Vec<u8>, HashMapVal>,
@@ -65,11 +65,7 @@ impl Callback for UnspentCsvDump {
         let dump_folder = &PathBuf::from(matches.value_of("dump-folder").unwrap()); // Save to unwrap
         let cb = UnspentCsvDump {
             dump_folder: PathBuf::from(dump_folder),
-            unspent_writer: UnspentCsvDump::create_writer(
-                4000000,
-                dump_folder.join("unspent.csv.tmp"),
-            )?,
-            // Init hashmap for tracking the unspent transactions (with 10'000'000 mln preallocated entries)
+            writer: UnspentCsvDump::create_writer(4000000, dump_folder.join("unspent.csv.tmp"))?,
             unspents: HashMap::with_capacity(10000000),
             start_height: 0,
             end_height: 0,
@@ -130,7 +126,7 @@ impl Callback for UnspentCsvDump {
     fn on_complete(&mut self, block_height: u64) {
         self.end_height = block_height;
 
-        self.unspent_writer
+        self.writer
             .write_all(
                 format!(
                     "{};{};{};{};{}\n",
@@ -142,7 +138,7 @@ impl Callback for UnspentCsvDump {
         for (key, value) in self.unspents.iter() {
             let txid = &key[0..32];
             let mut index = &key[32..];
-            self.unspent_writer
+            self.writer
                 .write_all(
                     format!(
                         "{};{};{};{};{}\n",
@@ -157,18 +153,14 @@ impl Callback for UnspentCsvDump {
                 .unwrap();
         }
 
-        // Keep in sync with c'tor
-        for f in &["unspent"] {
-            // Rename temp file
-            fs::rename(
-                self.dump_folder.as_path().join(format!("{}.csv.tmp", f)),
-                self.dump_folder.as_path().join(format!(
-                    "{}-{}-{}.csv",
-                    f, self.start_height, self.end_height
-                )),
-            )
-            .expect("Unable to rename tmp file!");
-        }
+        fs::rename(
+            self.dump_folder.as_path().join("unspent.csv.tmp"),
+            self.dump_folder.as_path().join(format!(
+                "unspent-{}-{}.csv",
+                self.start_height, self.end_height
+            )),
+        )
+        .expect("Unable to rename tmp file!");
 
         info!(target: "callback", "Done.\nDumped all {} blocks:\n\
                                    \t-> transactions: {:9}\n\
