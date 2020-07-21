@@ -7,7 +7,7 @@ use crate::ParserOptions;
 mod blkfile;
 pub mod chain;
 mod index;
-mod reader;
+pub mod reader;
 pub mod types;
 
 /// Small struct to hold statistics together
