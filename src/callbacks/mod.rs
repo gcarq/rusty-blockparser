@@ -28,11 +28,11 @@ pub trait Callback {
         Self: Sized;
 
     /// Gets called shortly before the blocks are parsed.
-    fn on_start(&mut self, coin_type: &CoinType, block_height: u64);
+    fn on_start(&mut self, coin_type: &CoinType, block_height: u64) -> OpResult<()>;
 
     /// Gets called if a new block is available.
-    fn on_block(&mut self, block: &Block, block_height: u64);
+    fn on_block(&mut self, block: &Block, block_height: u64) -> OpResult<()>;
 
     /// Gets called if the parser has finished and all blocks are handled
-    fn on_complete(&mut self, block_height: u64);
+    fn on_complete(&mut self, block_height: u64) -> OpResult<()>;
 }

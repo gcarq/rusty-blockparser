@@ -1,9 +1,9 @@
+use clap::{App, Arg};
 use std::boxed::Box;
 use std::cell::RefCell;
 use std::fmt;
 use std::path::PathBuf;
-
-use clap::{App, Arg};
+use std::process;
 
 use crate::blockchain::parser::chain::ChainStorage;
 use crate::blockchain::parser::types::{Bitcoin, CoinType};
@@ -83,7 +83,7 @@ fn main() {
             // Init logger to print outstanding error message
             SimpleLogger::init(log::LevelFilter::Debug).unwrap();
             error!(target: "main", "{}", desc);
-            return;
+            process::exit(1);
         }
     };
 
@@ -101,13 +101,18 @@ fn main() {
                 options.borrow().blockchain_dir.display(),
                 e
             );
-            return;
+            process::exit(1);
         }
     };
 
     let mut parser = BlockchainParser::new(&options, chain_storage);
-    parser.start();
-    info!(target: "main", "Fin.");
+    match parser.start() {
+        Ok(_) => info!(target: "main", "Fin."),
+        Err(why) => {
+            error!("{}", why);
+            process::exit(1);
+        }
+    }
 }
 
 /// Parses args or panics if some requirements are not met.

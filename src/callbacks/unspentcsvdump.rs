@@ -53,7 +53,7 @@ impl Callback for UnspentCsvDump {
     where
         Self: Sized,
     {
-        let dump_folder = &PathBuf::from(matches.value_of("dump-folder").unwrap()); // Save to unwrap
+        let dump_folder = &PathBuf::from(matches.value_of("dump-folder").unwrap());
         let cb = UnspentCsvDump {
             dump_folder: PathBuf::from(dump_folder),
             writer: UnspentCsvDump::create_writer(4000000, dump_folder.join("unspent.csv.tmp"))?,
@@ -66,9 +66,10 @@ impl Callback for UnspentCsvDump {
         Ok(cb)
     }
 
-    fn on_start(&mut self, _: &CoinType, block_height: u64) {
+    fn on_start(&mut self, _: &CoinType, block_height: u64) -> OpResult<()> {
         self.start_height = block_height;
         info!(target: "callback", "Using `unspentcsvdump` with dump folder: {} ...", &self.dump_folder.display());
+        Ok(())
     }
 
     /// For each transaction in the block
@@ -78,40 +79,37 @@ impl Callback for UnspentCsvDump {
     ///   * block height as "last modified"
     ///   * output_val
     ///   * address
-    fn on_block(&mut self, block: &Block, block_height: u64) {
+    fn on_block(&mut self, block: &Block, block_height: u64) -> OpResult<()> {
         for tx in &block.txs {
             self.in_count += common::remove_unspents(&tx, &mut self.unspents);
             self.out_count += common::insert_unspents(&tx, block_height, &mut self.unspents);
         }
         self.tx_count += block.tx_count.value;
+        Ok(())
     }
 
-    fn on_complete(&mut self, block_height: u64) {
-        self.writer
-            .write_all(
-                format!(
-                    "{};{};{};{};{}\n",
-                    "txid", "indexOut", "height", "value", "address"
-                )
-                .as_bytes(),
+    fn on_complete(&mut self, block_height: u64) -> OpResult<()> {
+        self.writer.write_all(
+            format!(
+                "{};{};{};{};{}\n",
+                "txid", "indexOut", "height", "value", "address"
             )
-            .unwrap();
+            .as_bytes(),
+        )?;
         for (key, value) in self.unspents.iter() {
             let txid = &key[0..32];
             let mut index = &key[32..];
-            self.writer
-                .write_all(
-                    format!(
-                        "{};{};{};{};{}\n",
-                        utils::arr_to_hex_swapped(txid),
-                        index.read_u32::<LittleEndian>().unwrap(),
-                        value.block_height,
-                        value.value,
-                        value.address
-                    )
-                    .as_bytes(),
+            self.writer.write_all(
+                format!(
+                    "{};{};{};{};{}\n",
+                    utils::arr_to_hex_swapped(txid),
+                    index.read_u32::<LittleEndian>()?,
+                    value.block_height,
+                    value.value,
+                    value.address
                 )
-                .unwrap();
+                .as_bytes(),
+            )?;
         }
 
         fs::rename(
@@ -120,13 +118,13 @@ impl Callback for UnspentCsvDump {
                 "unspent-{}-{}.csv",
                 self.start_height, block_height
             )),
-        )
-        .expect("Unable to rename tmp file!");
+        )?;
 
         info!(target: "callback", "Done.\nDumped all {} blocks:\n\
                                    \t-> transactions: {:9}\n\
                                    \t-> inputs:       {:9}\n\
                                    \t-> outputs:      {:9}",
              block_height, self.tx_count, self.in_count, self.out_count);
+        Ok(())
     }
 }

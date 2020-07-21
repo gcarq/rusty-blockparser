@@ -49,7 +49,7 @@ impl Callback for Balances {
     where
         Self: Sized,
     {
-        let dump_folder = &PathBuf::from(matches.value_of("dump-folder").unwrap()); // Save to unwrap
+        let dump_folder = &PathBuf::from(matches.value_of("dump-folder").unwrap());
         let cb = Balances {
             dump_folder: PathBuf::from(dump_folder),
             writer: Balances::create_writer(4000000, dump_folder.join("balances.csv.tmp"))?,
@@ -60,9 +60,10 @@ impl Callback for Balances {
         Ok(cb)
     }
 
-    fn on_start(&mut self, _: &CoinType, block_height: u64) {
+    fn on_start(&mut self, _: &CoinType, block_height: u64) -> OpResult<()> {
         self.start_height = block_height;
         info!(target: "callback", "Using `balances` with dump folder: {} ...", &self.dump_folder.display());
+        Ok(())
     }
 
     /// For each transaction in the block
@@ -72,19 +73,19 @@ impl Callback for Balances {
     ///   * block height as "last modified"
     ///   * output_val
     ///   * address
-    fn on_block(&mut self, block: &Block, block_height: u64) {
+    fn on_block(&mut self, block: &Block, block_height: u64) -> OpResult<()> {
         for tx in &block.txs {
             common::remove_unspents(&tx, &mut self.unspents);
             common::insert_unspents(&tx, block_height, &mut self.unspents);
         }
+        Ok(())
     }
 
-    fn on_complete(&mut self, block_height: u64) {
+    fn on_complete(&mut self, block_height: u64) -> OpResult<()> {
         self.end_height = block_height;
 
         self.writer
-            .write_all(format!("{};{}\n", "address", "balance").as_bytes())
-            .unwrap();
+            .write_all(format!("{};{}\n", "address", "balance").as_bytes())?;
 
         // Collect balances for each address
         let mut balances: HashMap<String, u64> = HashMap::new();
@@ -95,8 +96,7 @@ impl Callback for Balances {
 
         for (address, balance) in balances.iter() {
             self.writer
-                .write_all(format!("{};{}\n", address, balance).as_bytes())
-                .unwrap();
+                .write_all(format!("{};{}\n", address, balance).as_bytes())?;
         }
 
         fs::rename(
@@ -109,5 +109,6 @@ impl Callback for Balances {
         .expect("Unable to rename tmp file!");
 
         info!(target: "callback", "Done.\nDumped {} addresses.", balances.len());
+        Ok(())
     }
 }

@@ -184,11 +184,12 @@ impl Callback for SimpleStats {
         Ok(SimpleStats::default())
     }
 
-    fn on_start(&mut self, _: &CoinType, _: u64) {
+    fn on_start(&mut self, _: &CoinType, _: u64) -> OpResult<()> {
         info!(target: "callback", "Executing SimpleStats ...");
+        Ok(())
     }
 
-    fn on_block(&mut self, block: &Block, block_height: u64) {
+    fn on_block(&mut self, block: &Block, block_height: u64) -> OpResult<()> {
         self.n_valid_blocks += 1;
         self.n_tx += block.tx_count.value;
         self.block_sizes.push(block.size);
@@ -236,16 +237,18 @@ impl Callback for SimpleStats {
             self.t_between_blocks.push(diff);
         }
         self.last_timestamp = block.header.value.timestamp;
+        Ok(())
     }
 
-    fn on_complete(&mut self, _: u64) {
+    fn on_complete(&mut self, _: u64) -> OpResult<()> {
         let mut buffer = Vec::with_capacity(4096);
-        self.print_simple_stats(&mut buffer).unwrap();
-        writeln!(&mut buffer).unwrap();
-        self.print_unusual_transactions(&mut buffer).unwrap();
-        self.print_averages(&mut buffer).unwrap();
-        writeln!(&mut buffer).unwrap();
-        self.print_transaction_types(&mut buffer).unwrap();
+        self.print_simple_stats(&mut buffer)?;
+        writeln!(&mut buffer)?;
+        self.print_unusual_transactions(&mut buffer)?;
+        self.print_averages(&mut buffer)?;
+        writeln!(&mut buffer)?;
+        self.print_transaction_types(&mut buffer)?;
         info!(target: "simplestats", "\n\n{}", String::from_utf8_lossy(&buffer));
+        Ok(())
     }
 }
