@@ -18,6 +18,12 @@ It assumes a local copy of the blockchain with intact block index, downloaded wi
 
     Callbacks are built on top of the core parser. They can be implemented to extract specific types of information.
 
+    `balances`: dumps all addresses with a non-zero balance.
+    The csv file is in the following format:
+    ```
+    balances.csv
+    address ; balance
+    ```
 
     `unspentcsvdump`: dumps all UTXOs along with the address balance.
     The csv file is in the following format:
@@ -62,6 +68,7 @@ You can also define custom callbacks. A callback gets called at startup, on each
         * simplestats: ~100MB
         * csvdump: ~100M
         * unspentcsvdump: ~18GB
+        * balances: ~18GB
 
     NOTE: Those values are taken from parsing to block height 639631 (17.07.2020).
 
@@ -120,6 +127,7 @@ OPTIONS:
     -s, --start <NUMBER>                     Specify starting block for parsing (inclusive)
 
 SUBCOMMANDS:
+    balances          Dumps all addresses with non-zero balance to CSV file
     csvdump           Dumps the whole blockchain into CSV files
     help              Prints this message or the help of the given subcommand(s)
     simplestats       Shows various Blockchain stats
