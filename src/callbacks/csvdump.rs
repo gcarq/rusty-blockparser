@@ -55,7 +55,7 @@ impl Callback for CsvDump {
     where
         Self: Sized,
     {
-        let dump_folder = &PathBuf::from(matches.value_of("dump-folder").unwrap()); // Save to unwrap
+        let dump_folder = &PathBuf::from(matches.value_of("dump-folder").unwrap());
         let cap = 4000000;
         let cb = CsvDump {
             dump_folder: PathBuf::from(dump_folder),
@@ -72,45 +72,43 @@ impl Callback for CsvDump {
         Ok(cb)
     }
 
-    fn on_start(&mut self, _: &CoinType, block_height: u64) {
+    fn on_start(&mut self, _: &CoinType, block_height: u64) -> OpResult<()> {
         self.start_height = block_height;
         info!(target: "callback", "Using `csvdump` with dump folder: {} ...", &self.dump_folder.display());
+        Ok(())
     }
 
-    fn on_block(&mut self, block: &Block, block_height: u64) {
+    fn on_block(&mut self, block: &Block, block_height: u64) -> OpResult<()> {
         // serialize block
         self.block_writer
-            .write_all(block.as_csv(block_height).as_bytes())
-            .unwrap();
+            .write_all(block.as_csv(block_height).as_bytes())?;
 
         // serialize transaction
         let block_hash = utils::arr_to_hex_swapped(&block.header.hash);
         for tx in &block.txs {
             self.tx_writer
-                .write_all(tx.as_csv(&block_hash).as_bytes())
-                .unwrap();
+                .write_all(tx.as_csv(&block_hash).as_bytes())?;
             let txid_str = utils::arr_to_hex_swapped(&tx.hash);
 
             // serialize inputs
             for input in &tx.value.inputs {
                 self.txin_writer
-                    .write_all(input.as_csv(&txid_str).as_bytes())
-                    .unwrap();
+                    .write_all(input.as_csv(&txid_str).as_bytes())?;
             }
             self.in_count += tx.value.in_count.value;
 
             // serialize outputs
             for (i, output) in tx.value.outputs.iter().enumerate() {
                 self.txout_writer
-                    .write_all(output.as_csv(&txid_str, i as u32).as_bytes())
-                    .unwrap();
+                    .write_all(output.as_csv(&txid_str, i as u32).as_bytes())?;
             }
             self.out_count += tx.value.out_count.value;
         }
         self.tx_count += block.tx_count.value;
+        Ok(())
     }
 
-    fn on_complete(&mut self, block_height: u64) {
+    fn on_complete(&mut self, block_height: u64) -> OpResult<()> {
         self.end_height = block_height;
 
         // Keep in sync with c'tor
@@ -122,8 +120,7 @@ impl Callback for CsvDump {
                     "{}-{}-{}.csv",
                     f, self.start_height, self.end_height
                 )),
-            )
-            .expect("Unable to rename tmp file!");
+            )?;
         }
 
         info!(target: "callback", "Done.\nDumped all {} blocks:\n\
@@ -131,6 +128,7 @@ impl Callback for CsvDump {
                                    \t-> inputs:       {:9}\n\
                                    \t-> outputs:      {:9}",
              self.end_height, self.tx_count, self.in_count, self.out_count);
+        Ok(())
     }
 }
 

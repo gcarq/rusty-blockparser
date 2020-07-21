@@ -1,13 +1,14 @@
+use clap::{App, Arg};
 use std::boxed::Box;
 use std::cell::RefCell;
 use std::fmt;
 use std::path::PathBuf;
-
-use clap::{App, Arg};
+use std::process;
 
 use crate::blockchain::parser::chain::ChainStorage;
 use crate::blockchain::parser::types::{Bitcoin, CoinType};
 use crate::blockchain::parser::BlockchainParser;
+use crate::callbacks::balances::Balances;
 use crate::callbacks::csvdump::CsvDump;
 use crate::callbacks::stats::SimpleStats;
 use crate::callbacks::unspentcsvdump::UnspentCsvDump;
@@ -82,7 +83,7 @@ fn main() {
             // Init logger to print outstanding error message
             SimpleLogger::init(log::LevelFilter::Debug).unwrap();
             error!(target: "main", "{}", desc);
-            return;
+            process::exit(1);
         }
     };
 
@@ -100,13 +101,18 @@ fn main() {
                 options.borrow().blockchain_dir.display(),
                 e
             );
-            return;
+            process::exit(1);
         }
     };
 
     let mut parser = BlockchainParser::new(&options, chain_storage);
-    parser.start();
-    info!(target: "main", "Fin.");
+    match parser.start() {
+        Ok(_) => info!(target: "main", "Fin."),
+        Err(why) => {
+            error!("{}", why);
+            process::exit(1);
+        }
+    }
 }
 
 /// Parses args or panics if some requirements are not met.
@@ -160,6 +166,7 @@ fn parse_args() -> OpResult<RefCell<ParserOptions>> {
         .subcommand(UnspentCsvDump::build_subcommand())
         .subcommand(CsvDump::build_subcommand())
         .subcommand(SimpleStats::build_subcommand())
+        .subcommand(Balances::build_subcommand())
         .get_matches();
 
     let verify = matches.is_present("verify");
@@ -186,6 +193,8 @@ fn parse_args() -> OpResult<RefCell<ParserOptions>> {
         callback = Box::new(CsvDump::new(matches)?);
     } else if let Some(ref matches) = matches.subcommand_matches("unspentcsvdump") {
         callback = Box::new(UnspentCsvDump::new(matches)?);
+    } else if let Some(ref matches) = matches.subcommand_matches("balances") {
+        callback = Box::new(Balances::new(matches)?);
     } else {
         clap::Error {
             message: String::from("error: No Callback specified.\nFor more information try --help"),
