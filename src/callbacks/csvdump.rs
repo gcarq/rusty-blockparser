@@ -161,8 +161,8 @@ impl Hashed<Tx> {
             "{};{};{};{}\n",
             &utils::arr_to_hex_swapped(&self.hash),
             &block_hash,
-            &self.value.tx_version,
-            &self.value.tx_locktime
+            &self.value.version,
+            &self.value.locktime
         )
     }
 }

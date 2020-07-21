@@ -9,22 +9,22 @@ use crate::common::utils;
 /// Please note: The txid is not stored here. See Hashed.
 #[derive(Clone)]
 pub struct Tx {
-    pub tx_version: u32,
+    pub version: u32,
     pub in_count: VarUint,
     pub inputs: Vec<TxInput>,
     pub out_count: VarUint,
     pub outputs: Vec<EvaluatedTxOut>,
-    pub tx_locktime: u32,
+    pub locktime: u32,
 }
 
 impl Tx {
     pub fn new(
-        tx_version: u32,
+        version: u32,
         in_count: VarUint,
         inputs: &[TxInput],
         out_count: VarUint,
         outputs: &[TxOutput],
-        tx_locktime: u32,
+        locktime: u32,
         version_id: u8,
     ) -> Self {
         // Evaluate and wrap all outputs to process them later
@@ -34,12 +34,12 @@ impl Tx {
             .map(|o| EvaluatedTxOut::eval_script(o, version_id))
             .collect();
         Tx {
-            tx_version,
+            version,
             in_count,
             inputs: Vec::from(inputs),
             out_count,
             outputs: evaluated_out,
-            tx_locktime,
+            locktime,
         }
     }
 
@@ -56,10 +56,10 @@ impl Tx {
 impl fmt::Debug for Tx {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("Tx")
-            .field("tx_version", &self.tx_version)
+            .field("version", &self.version)
             .field("in_count", &self.in_count)
             .field("out_count", &self.out_count)
-            .field("tx_locktime", &self.tx_locktime)
+            .field("locktime", &self.locktime)
             .finish()
     }
 }
@@ -70,7 +70,7 @@ impl ToRaw for Tx {
             Vec::with_capacity((4 + self.in_count.value + self.out_count.value + 4) as usize);
 
         // Serialize version
-        bytes.extend_from_slice(&self.tx_version.to_le_bytes());
+        bytes.extend_from_slice(&self.version.to_le_bytes());
         // Serialize all TxInputs
         bytes.extend_from_slice(&self.in_count.to_bytes());
         for i in &self.inputs {
@@ -82,7 +82,7 @@ impl ToRaw for Tx {
             bytes.extend_from_slice(&o.out.to_bytes());
         }
         // Serialize locktime
-        bytes.extend_from_slice(&self.tx_locktime.to_le_bytes());
+        bytes.extend_from_slice(&self.locktime.to_le_bytes());
         bytes
     }
 }
