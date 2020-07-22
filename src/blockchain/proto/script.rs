@@ -144,8 +144,8 @@ pub fn eval_from_bytes(bytes: &[u8], version_id: u8) -> EvaluatedScript {
         EvaluatedScript::new(address, ScriptPattern::WitnessProgram)
     } else if script.is_op_return() {
         // OP_RETURN 13 <data>
-        let data = script.to_bytes().into_iter().skip(2).collect::<Vec<u8>>();
-        let pattern = ScriptPattern::OpReturn(String::from_utf8(data).unwrap_or(String::from("")));
+        let data = String::from_utf8(script.to_bytes().into_iter().skip(2).collect());
+        let pattern = ScriptPattern::OpReturn(data.unwrap_or_else(|_| String::from("")));
         EvaluatedScript::new(address, pattern)
     } else if script.is_provably_unspendable() {
         EvaluatedScript::new(address, ScriptPattern::Unspendable)
