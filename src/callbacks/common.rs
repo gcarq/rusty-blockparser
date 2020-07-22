@@ -61,9 +61,9 @@ pub fn insert_unspents(
 mod tests {
     use super::*;
     use crate::blockchain::parser::reader::BlockchainRead;
+    use crate::blockchain::proto::block::Block;
     use crate::blockchain::proto::header::BlockHeader;
     use crate::blockchain::proto::varuint::VarUint;
-    use blockchain::proto::block::Block;
     use std::io::{BufReader, Cursor};
 
     #[test]

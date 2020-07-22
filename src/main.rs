@@ -1,9 +1,10 @@
-use clap::{App, Arg};
 use std::boxed::Box;
 use std::cell::RefCell;
 use std::fmt;
 use std::path::PathBuf;
 use std::process;
+
+use clap::{App, Arg};
 
 use crate::blockchain::parser::chain::ChainStorage;
 use crate::blockchain::parser::types::{Bitcoin, CoinType};
@@ -19,14 +20,8 @@ use crate::errors::{OpError, OpResult};
 
 #[macro_use]
 extern crate log;
-extern crate time;
 #[macro_use]
 extern crate clap;
-extern crate bitcoin;
-extern crate bitcoin_hashes;
-extern crate byteorder;
-extern crate rust_base58;
-extern crate rusty_leveldb;
 
 #[macro_use]
 pub mod errors;

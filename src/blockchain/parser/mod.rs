@@ -2,8 +2,8 @@ use std::cell::RefCell;
 use std::time::{Duration, Instant};
 
 use crate::blockchain::proto::block::Block;
+use crate::errors::OpResult;
 use crate::ParserOptions;
-use errors::OpResult;
 
 mod blkfile;
 pub mod chain;

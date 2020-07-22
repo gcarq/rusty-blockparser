@@ -156,7 +156,7 @@ pub fn eval_from_bytes(bytes: &[u8], version_id: u8) -> EvaluatedScript {
 
 #[cfg(test)]
 mod tests {
-    use super::{eval_from_bytes, ScriptError, ScriptPattern};
+    use super::{eval_from_bytes, ScriptPattern};
 
     #[test]
     fn test_bitcoin_script_p2pkh() {
