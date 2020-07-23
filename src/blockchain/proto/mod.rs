@@ -15,7 +15,6 @@ pub trait ToRaw {
 }
 
 /// Wrapper to hold a 32 byte verification hash along the data type T
-#[derive(Clone)]
 pub struct Hashed<T> {
     pub hash: [u8; 32],
     pub value: T,

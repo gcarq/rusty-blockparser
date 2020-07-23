@@ -110,7 +110,7 @@ impl ToRaw for EvaluatedTx {
 }
 
 /// TxOutpoint references an existing transaction output
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct TxOutpoint {
     pub txid: [u8; 32],
     pub index: u32, // 0-based offset within tx
@@ -142,7 +142,6 @@ impl fmt::Debug for TxOutpoint {
 }
 
 /// Holds TxInput informations
-#[derive(Clone)]
 pub struct TxInput {
     pub outpoint: TxOutpoint,
     pub script_len: VarUint,
@@ -174,7 +173,6 @@ impl fmt::Debug for TxInput {
 }
 
 /// Evaluates script_pubkey and wraps TxOutput
-#[derive(Clone)]
 pub struct EvaluatedTxOut {
     pub script: script::EvaluatedScript,
     pub out: TxOutput,
@@ -191,7 +189,6 @@ impl EvaluatedTxOut {
 }
 
 /// Holds TxOutput informations
-#[derive(Clone)]
 pub struct TxOutput {
     pub value: u64,
     pub script_len: VarUint,
