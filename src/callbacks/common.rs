@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::blockchain::proto::tx::Tx;
+use crate::blockchain::proto::tx::EvaluatedTx;
 use crate::blockchain::proto::tx::TxOutpoint;
 use crate::blockchain::proto::Hashed;
 use crate::blockchain::proto::ToRaw;
@@ -14,7 +14,10 @@ pub struct UnspentValue {
 
 /// Iterates over transaction inputs and removes spent outputs from HashMap.
 /// Returns the total number of processed inputs.
-pub fn remove_unspents(tx: &Hashed<Tx>, unspents: &mut HashMap<Vec<u8>, UnspentValue>) -> u64 {
+pub fn remove_unspents(
+    tx: &Hashed<EvaluatedTx>,
+    unspents: &mut HashMap<Vec<u8>, UnspentValue>,
+) -> u64 {
     for input in &tx.value.inputs {
         let key = input.outpoint.to_bytes();
         if unspents.contains_key(&key) {
@@ -27,7 +30,7 @@ pub fn remove_unspents(tx: &Hashed<Tx>, unspents: &mut HashMap<Vec<u8>, UnspentV
 /// Iterates over transaction outputs and adds valid unspents to HashMap.
 /// Returns the total number of valid outputs.
 pub fn insert_unspents(
-    tx: &Hashed<Tx>,
+    tx: &Hashed<EvaluatedTx>,
     block_height: u64,
     unspents: &mut HashMap<Vec<u8>, UnspentValue>,
 ) -> u64 {
@@ -103,7 +106,7 @@ mod tests {
         ];
         let mut reader = BufReader::new(Cursor::new(raw_data));
         let txs = reader.read_txs(1, 0x00).unwrap();
-        let block1 = Block::new(0, header.clone(), VarUint::from(1u8), txs.clone());
+        let block1 = Block::new(0, header.clone(), VarUint::from(1u8), txs);
 
         for tx in &block1.txs {
             remove_unspents(&tx, &mut unspents);
@@ -241,7 +244,7 @@ mod tests {
         ];
         let mut reader = BufReader::new(Cursor::new(raw_data));
         let txs = reader.read_txs(1, 0x00).unwrap();
-        let block2 = Block::new(0, header.clone(), VarUint::from(1u8), txs.clone());
+        let block2 = Block::new(0, header.clone(), VarUint::from(1u8), txs);
 
         for tx in &block2.txs {
             remove_unspents(&tx, &mut unspents);

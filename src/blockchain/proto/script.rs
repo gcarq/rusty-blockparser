@@ -153,7 +153,6 @@ impl fmt::Debug for Stack {
     }
 }
 
-#[derive(Clone)]
 pub struct EvaluatedScript {
     pub address: Option<String>,
     pub pattern: ScriptPattern,

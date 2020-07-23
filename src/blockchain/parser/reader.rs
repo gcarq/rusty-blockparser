@@ -5,7 +5,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 
 use crate::blockchain::proto::block::Block;
 use crate::blockchain::proto::header::BlockHeader;
-use crate::blockchain::proto::tx::{Tx, TxInput, TxOutpoint, TxOutput};
+use crate::blockchain::proto::tx::{RawTx, TxInput, TxOutpoint, TxOutput};
 use crate::blockchain::proto::varuint::VarUint;
 use crate::errors::OpResult;
 
@@ -45,8 +45,8 @@ pub trait BlockchainRead: io::Read {
         ))
     }
 
-    fn read_txs(&mut self, tx_count: u64, version_id: u8) -> OpResult<Vec<Tx>> {
-        let mut txs: Vec<Tx> = Vec::with_capacity(tx_count as usize);
+    fn read_txs(&mut self, tx_count: u64, version_id: u8) -> OpResult<Vec<RawTx>> {
+        let mut txs = Vec::with_capacity(tx_count as usize);
         for _ in 0..tx_count {
             let mut flags = 0u8;
             let version = self.read_u32::<LittleEndian>()?;
@@ -75,10 +75,15 @@ pub trait BlockchainRead: io::Read {
                 }
             }
             let locktime = self.read_u32::<LittleEndian>()?;
-            let tx = Tx::new(
-                version, in_count, &inputs, out_count, &outputs, locktime, version_id,
-            );
-            txs.push(tx);
+            txs.push(RawTx {
+                version,
+                in_count,
+                inputs,
+                out_count,
+                outputs,
+                locktime,
+                version_id,
+            });
         }
         Ok(txs)
     }
@@ -92,7 +97,7 @@ pub trait BlockchainRead: io::Read {
     }
 
     fn read_tx_inputs(&mut self, input_count: u64) -> OpResult<Vec<TxInput>> {
-        let mut inputs: Vec<TxInput> = Vec::with_capacity(input_count as usize);
+        let mut inputs = Vec::with_capacity(input_count as usize);
         for _ in 0..input_count {
             let outpoint = self.read_tx_outpoint()?;
             let script_len = VarUint::read_from(self)?;
@@ -109,7 +114,7 @@ pub trait BlockchainRead: io::Read {
     }
 
     fn read_tx_outputs(&mut self, output_count: u64) -> OpResult<Vec<TxOutput>> {
-        let mut outputs: Vec<TxOutput> = Vec::with_capacity(output_count as usize);
+        let mut outputs = Vec::with_capacity(output_count as usize);
         for _ in 0..output_count {
             let value = self.read_u64::<LittleEndian>()?;
             let script_len = VarUint::read_from(self)?;
@@ -133,6 +138,7 @@ mod tests {
     use super::*;
     use crate::blockchain::parser::types::{Bitcoin, Coin};
     use crate::blockchain::proto::script;
+    use crate::blockchain::proto::tx::EvaluatedTx;
     use crate::common::utils;
     use blockchain::proto::script::ScriptPattern;
     use byteorder::{LittleEndian, ReadBytesExt};
@@ -313,7 +319,12 @@ mod tests {
         ];
         let inner = Cursor::new(raw_data);
         let mut reader = BufReader::with_capacity(200, inner);
-        let txs = reader.read_txs(1, 0x00).unwrap();
+        let txs: Vec<EvaluatedTx> = reader
+            .read_txs(1, 0x00)
+            .unwrap()
+            .into_iter()
+            .map(|raw| EvaluatedTx::from(raw))
+            .collect();
         assert_eq!(txs.len(), 1);
 
         let tx = txs.first().unwrap();
