@@ -1,7 +1,9 @@
 use std::fmt;
 
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
+
 use crate::blockchain::proto::header::BlockHeader;
-use crate::blockchain::proto::tx::Tx;
+use crate::blockchain::proto::tx::{EvaluatedTx, RawTx};
 use crate::blockchain::proto::varuint::VarUint;
 use crate::blockchain::proto::Hashed;
 use crate::common::utils;
@@ -11,17 +13,21 @@ pub struct Block {
     pub size: u32,
     pub header: Hashed<BlockHeader>,
     pub tx_count: VarUint,
-    pub txs: Vec<Hashed<Tx>>,
+    pub txs: Vec<Hashed<EvaluatedTx>>,
 }
 
 impl Block {
     #[inline]
-    pub fn new(size: u32, header: BlockHeader, tx_count: VarUint, txs: Vec<Tx>) -> Block {
+    pub fn new(size: u32, header: BlockHeader, tx_count: VarUint, txs: Vec<RawTx>) -> Block {
+        let txs = txs
+            .into_par_iter()
+            .map(|raw| Hashed::double_sha256(EvaluatedTx::from(raw)))
+            .collect();
         Block {
             size,
             header: Hashed::double_sha256(header),
             tx_count,
-            txs: txs.into_iter().map(Hashed::double_sha256).collect(),
+            txs,
         }
     }
 
