@@ -5,10 +5,19 @@ use crate::blockchain::proto::varuint::VarUint;
 use crate::blockchain::proto::ToRaw;
 use crate::common::utils;
 
+pub struct RawTx {
+    pub version: u32,
+    pub in_count: VarUint,
+    pub inputs: Vec<TxInput>,
+    pub out_count: VarUint,
+    pub outputs: Vec<TxOutput>,
+    pub locktime: u32,
+    pub version_id: u8,
+}
+
 /// Simple transaction struct
 /// Please note: The txid is not stored here. See Hashed.
-#[derive(Clone)]
-pub struct Tx {
+pub struct EvaluatedTx {
     pub version: u32,
     pub in_count: VarUint,
     pub inputs: Vec<TxInput>,
@@ -17,28 +26,27 @@ pub struct Tx {
     pub locktime: u32,
 }
 
-impl Tx {
+impl EvaluatedTx {
     pub fn new(
         version: u32,
         in_count: VarUint,
-        inputs: &[TxInput],
+        inputs: Vec<TxInput>,
         out_count: VarUint,
-        outputs: &[TxOutput],
+        outputs: Vec<TxOutput>,
         locktime: u32,
         version_id: u8,
     ) -> Self {
         // Evaluate and wrap all outputs to process them later
-        let evaluated_out = outputs
-            .iter()
-            .cloned()
+        let outputs = outputs
+            .into_iter()
             .map(|o| EvaluatedTxOut::eval_script(o, version_id))
             .collect();
-        Tx {
+        EvaluatedTx {
             version,
             in_count,
-            inputs: Vec::from(inputs),
+            inputs,
             out_count,
-            outputs: evaluated_out,
+            outputs,
             locktime,
         }
     }
@@ -53,7 +61,7 @@ impl Tx {
     }
 }
 
-impl fmt::Debug for Tx {
+impl fmt::Debug for EvaluatedTx {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("Tx")
             .field("version", &self.version)
@@ -64,7 +72,21 @@ impl fmt::Debug for Tx {
     }
 }
 
-impl ToRaw for Tx {
+impl From<RawTx> for EvaluatedTx {
+    fn from(tx: RawTx) -> Self {
+        Self::new(
+            tx.version,
+            tx.in_count,
+            tx.inputs,
+            tx.out_count,
+            tx.outputs,
+            tx.locktime,
+            tx.version_id,
+        )
+    }
+}
+
+impl ToRaw for EvaluatedTx {
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes =
             Vec::with_capacity((4 + self.in_count.value + self.out_count.value + 4) as usize);

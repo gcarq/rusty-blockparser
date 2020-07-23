@@ -24,6 +24,7 @@ extern crate time;
 #[macro_use]
 extern crate clap;
 extern crate byteorder;
+extern crate rayon;
 extern crate rust_base58;
 extern crate rusty_leveldb;
 
