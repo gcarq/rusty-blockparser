@@ -4,7 +4,6 @@ use crate::common::utils;
 
 pub mod block;
 pub mod header;
-pub mod opcodes;
 pub mod script;
 pub mod tx;
 pub mod varuint;

@@ -9,16 +9,18 @@ homepage = "https://github.com/gcarq/rusty-blockparser/"
 readme = "README.md"
 keywords = ["Cryptocurrency", "Bitcoin", "Litecoin", "Blockchain", "Parser"]
 license = "GPL-3.0"
+edition = "2018"
 
 [dependencies]
 time = { version = "^0.2", default-features = false, features = ["std"] }
 log = { version = "^0.4", default-features = false, features = ["std"] }
 clap = "^2.26"
-rust-crypto = "^0.2"
 byteorder = "^1.3"
 rust-base58 = "^0.0"
 rusty-leveldb = "^0.3"
 dirs = "^3.0"
+bitcoin = "^0.23"
+bitcoin_hashes = "^0.7"
 rayon = "^1.3"
 
 # The development profile, used for `cargo build`
