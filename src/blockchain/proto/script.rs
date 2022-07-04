@@ -57,6 +57,8 @@ pub enum ScriptPattern {
     /// Signature script: <sig>[sig][sig...] <redeemScript>
     Pay2ScriptHash,
 
+    Pay2Tr,
+
     /// Sign Multisig script [BIP11]
     //SignMultiSig,
 
@@ -85,6 +87,7 @@ impl fmt::Display for ScriptPattern {
             ScriptPattern::Pay2PublicKey => write!(f, "Pay2PublicKey"),
             ScriptPattern::Pay2PublicKeyHash => write!(f, "Pay2PublicKeyHash"),
             ScriptPattern::Pay2ScriptHash => write!(f, "Pay2ScriptHash"),
+            ScriptPattern::Pay2Tr => write!(f, "Pay2Tr"),
             ScriptPattern::NotRecognised => write!(f, "NotRecognised"),
             ScriptPattern::Error(ref err) => write!(f, "ScriptError: {}", err),
         }
@@ -279,6 +282,15 @@ impl<'a> ScriptEvaluator<'a> {
             return ScriptPattern::Pay2ScriptHash;
         }
 
+        // Pay to Script Hash (p2sh)
+        let p2tr = [
+            StackElement::Op(opcodes::All::OP_PUSHNUM_1),
+            StackElement::Data(Vec::new()),
+        ];
+        if ScriptEvaluator::match_stack_pattern(&elements, &p2tr) {
+            return ScriptPattern::Pay2Tr;
+        }
+
         // Data output
         // pubkey: OP_RETURN <0 to 40 bytes of data>
         let data_output = [
@@ -384,6 +396,13 @@ pub fn eval_from_stack(stack: Stack, version_id: u8) -> EvaluatedScript {
                     pattern: p.clone(),
                 }
             }
+            ref p @ ScriptPattern::Pay2Tr => {
+                let bytes = stack.elements[1].data()?;
+                EvaluatedScript {
+                    address: p2tr_bytes(&bytes),
+                    pattern: p.clone(),
+                }
+            }
             ScriptPattern::DataOutput(ref data) => EvaluatedScript {
                 address: None,
                 pattern: ScriptPattern::DataOutput(data.clone()),
@@ -429,6 +448,16 @@ fn hash_160_to_address(h160: &[u8], version: u8) -> String {
     let checksum = &utils::sha256(&utils::sha256(&hash))[0..4];
     hash.extend_from_slice(checksum);
     hash.to_base58()
+}
+
+fn p2tr_bytes(bytes: &[u8]) -> Option<String> {
+    if bytes.len() != 32 {
+        None
+    } else {
+        let extended_bytes = [bytes, &[0x51 as u8]].concat();
+        // NEED BECH32 conversion
+        Some(extended_bytes.to_base58())
+    }
 }
 
 #[cfg(test)]
