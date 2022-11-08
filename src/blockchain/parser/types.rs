@@ -177,7 +177,7 @@ impl Coin for NoteBlockchain {
         0xe3ede5f4
     }
     fn version_id(&self) -> u8 {
-        0x30
+        0x35
     }
     fn genesis(&self) -> [u8; 32] {
         utils::hex_to_arr32_swapped(
