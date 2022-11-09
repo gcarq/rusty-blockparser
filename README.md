@@ -171,7 +171,7 @@ If you find this project helpful, please consider making a donation:
 
 The tool can easily be customized to your coin. This section outlines the changes that need to be made and is for a beginner user (both with Rust and Blockchain). (This guide is made possible by reviewing the commits made by MerlinMagic2018). During this example the coin name used is NoCoinium.
 
-The main change is `src/blockchain/parser/types.rs`.
+* The main change is `src/blockchain/parser/types.rs`.
 * Add a new entry `pub struct NoCoinium` above the line `//pub struct Dash`(The case you use here is to be carried in all subsequent references, except when noted)
 * You will then need to add a `impl Coin for NoCoinium`. You could easily copy a previous block e.g. Bitcoin. The changes you need to do are highlighted below as comments
 ```
@@ -207,6 +207,10 @@ impl Coin for NoCoinium {
         // from your coin implementation.
     }
 }
+```
+* Finally, tie these changes within `impl FromStr for CoinType` under `match coin`. The first part will be the case passed as argument to the program (see bullet point below) and the name within `from()` will be the name used above.
+```
+"nocoinium" => Ok(CoinType::from(NoCoinium)),
 ```
 
 * The next change is in `src/main.rs`. Under the fn `parse_args()` add your coin to the array of coins. The case you use here will be the same value as you pass in the arguments when executing the blockchain (using the `-c` argument)
