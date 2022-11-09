@@ -167,6 +167,50 @@ Use the issue tracker to report problems, suggestions and questions. You may als
 If you find this project helpful, please consider making a donation:
 `1LFidBTeg5joAqjw35ksebiNkVM8azFM1K`
 
+## Customizing the tool for your coin
+
+The tool can easily be customized to your coin. This section outlines the changes that need to be made and is for a beginner user (both with Rust and Blockchain). (This guide is made possible by reviewing the commits made by MerlinMagic2018). During this example the coin name used is NoCoinium.
+
+The main change is `src/blockchain/parser/types.rs`.
+* Add a new entry `pub struct NoCoinium` above the line `//pub struct Dash`(The case you use here is to be carried in all subsequent references, except when noted)
+* You will then need to add a `impl Coin for NoCoinium`. You could easily copy a previous block e.g. Bitcoin. The changes you need to do are highlighted below as comments
+```
+//The name here should be the same case as defined in the pub struct line
+impl Coin for NoCoinium {
+    fn name(&self) -> String {
+        String::from("NoCoinium")
+        //This is primarily for display. Use same case as before
+    }
+    fn magic(&self) -> u32 {
+        0xd9b4bef9
+        // Magic bytes are a string of hex characters that prefix messages in the chain. 
+        // To find this value, look for the fields pchMessageStart[0-3] in the file chainparams.cpp under CMainParams
+        // The value to be used here is 0x + pchMessageStart[3] + pchMessageStart[2] + pchMessageStart[1] + pchMessageStart[0]
+        // i.e. string the values in reverse.
+    }
+    fn version_id(&self) -> u8 {
+        0x00
+        // Version ID is used to identify the address prefix for Base58 encoding of the public address
+        // Found this using the stackoverflow comment - https://bitcoin.stackexchange.com/questions/62781/litecoin-constants-and-prefixes
+        // Again with chainparams.cpp and CMainParams, look for base58Prefixes[PUBKEY_ADDRESS]. Convert the decimal value to Hex and add it here
+    }
+    fn genesis(&self) -> [u8; 32] {
+        utils::hex_to_arr32_swapped(
+            "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
+            // This is the Genesis Block hash - Get the value from consensus.hashGenesisBlock, again found in chainparams.cpp
+        )
+    }
+    fn default_folder(&self) -> PathBuf {
+        Path::new(".nocoinium").join("blocks")
+        // This is the folder from the user's home folder to where the blocks files are found
+        // Note the case here. It is not CamelCase as most coin directories are lower case. However, use the actual folder name
+        // from your coin implementation.
+    }
+}
+```
+
+* The next change is in `src/main.rs`. Under the fn `parse_args()` add your coin to the array of coins. The case you use here will be the same value as you pass in the arguments when executing the blockchain (using the `-c` argument)
+* Finally, add your coin name in the README.md file so others know your coin is supported
 
 ## TODO
 
