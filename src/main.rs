@@ -126,6 +126,7 @@ fn parse_args() -> OpResult<RefCell<ParserOptions>> {
         "dogecoin",
         "myriadcoin",
         "unobtanium",
+        "noteblockchain"
     ];
     let matches = App::new("Multithreaded Blockchain Parser written in Rust")
         .version(crate_version!())

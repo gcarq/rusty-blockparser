@@ -1,13 +1,13 @@
 [package]
 name = "rusty-blockparser"
-version = "0.8.1"
+version = "0.8.2"
 authors = ["gcarq <egger.m@protonmail.com>"]
 include = ["src/*", "sql/*", "LICENSE", "README.md", "Cargo.toml"]
 description = "Blockchain Parser for most common Cryptocurrencies based on Bitcoin"
 documentation = "https://github.com/gcarq/rusty-blockparser/blob/master/README.md"
 homepage = "https://github.com/gcarq/rusty-blockparser/"
 readme = "README.md"
-keywords = ["Cryptocurrency", "Bitcoin", "Litecoin", "Blockchain", "Parser"]
+keywords = ["Cryptocurrency", "Bitcoin", "Litecoin", "Blockchain", "Parser", "NoteBlockchain"]
 license = "GPL-3.0"
 
 [dependencies]
