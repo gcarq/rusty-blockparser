@@ -1,5 +1,5 @@
 use std::convert::From;
-use std::error::{self, Error};
+use std::error;
 use std::fmt;
 
 use bitcoin::blockdata::script::Instruction;
@@ -15,7 +15,7 @@ pub enum ScriptError {
 
 impl fmt::Display for ScriptError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.description())
+        write!(f, "{}", self.to_string())
     }
 }
 
@@ -38,7 +38,7 @@ pub enum ScriptPattern {
     /// Pay to Multisig [BIP11]
     /// Pubkey script: <m> <A pubkey>[B pubkey][C pubkey...] <n> OP_CHECKMULTISIG
     /// Signature script: OP_0 <A sig>[B sig][C sig...]
-    /// TODO: Implement Pay2MultiSig: For now only 2n3 MultiSigs are detected
+    /// TODO: Implement Pay2MultiSig
     Pay2MultiSig,
 
     /// Pay to Public Key (p2pk) scripts are a simplified form of the p2pkh,
@@ -107,8 +107,12 @@ impl EvaluatedScript {
 /// See issue https://github.com/rust-bitcoin/rust-bitcoin/issues/441
 fn p2pk_to_string(script: &Script) -> Option<String> {
     assert!(script.is_p2pk());
-    let pk = match script.iter(false).next() {
-        Some(Instruction::PushBytes(bytes)) => bytes,
+    let pk = match script.instructions().next() {
+        Some(Ok(Instruction::PushBytes(bytes))) => bytes,
+        Some(Err(msg)) => {
+            warn!(target: "script", "Unable to parse address from p2pk script: {}", msg);
+            return None;
+        }
         _ => unreachable!(),
     };
 
@@ -126,8 +130,11 @@ fn p2pk_to_string(script: &Script) -> Option<String> {
 pub fn eval_from_bytes(bytes: &[u8], version_id: u8) -> EvaluatedScript {
     let script = Script::from(Vec::from(bytes));
     let address = match Address::from_script(&script, Network::Bitcoin) {
-        Some(address) => Some(format!("{}", address)),
-        None => None,
+        Ok(address) => Some(format!("{}", address)),
+        Err(msg) => {
+            warn!(target: "script", "Unable to extract evaluated address: {}", msg);
+            None
+        }
     };
 
     if script.is_p2pk() {
