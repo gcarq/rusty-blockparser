@@ -6,11 +6,15 @@ rusty-blockparser is a Bitcoin Blockchain Parser written in **Rust language**.
 
 It allows extraction of various data types (blocks, transactions, scripts, public keys/hashes, balances, ...) and UTXDO dumps from Bitcoin based blockchains.
 
+**NOTE**: Use the branch `use-bitcoin-lib` for Bitcoin as it implements SegWit and BECH32 address support (https://github.com/gcarq/rusty-blockparser/pull/62). This will be merged eventually but at this point it would break support for other coins.
+
 ##### **Currently Supported Blockchains:**
 
  `Bitcoin`, `Namecoin`, `Litecoin`, `Dogecoin`, `Myriadcoin`, `Unobtanium` and `NoteBlockchain`.
 
-It assumes a local copy of the blockchain with intact block index, downloaded with [Bitcoin Core](https://github.com/bitcoin/bitcoin) 0.15.1+. If you are not sure whether your local copy is valid you can apply `--verify` to validate the chain and block merkle trees. If something doesn't match the parser exits.
+It assumes a local unpruned copy of the blockchain with intact block index, downloaded with [Bitcoin Core](https://github.com/bitcoin/bitcoin) 0.15.1+. If you are not sure whether your local copy is valid you can apply `--verify` to validate the chain and block merkle trees. If something doesn't match the parser exits.
+
+
 
 ## Features
 
@@ -218,6 +222,4 @@ impl Coin for NoCoinium {
 
 ## TODO
 
-* Implement correct SegWit handling
 * Implement Pay2MultiSig script evaluation
-* Handle BECH32 addresses
