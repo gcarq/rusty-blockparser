@@ -10,7 +10,7 @@ It allows extraction of various data types (blocks, transactions, scripts, publi
 
 ##### **Currently Supported Blockchains:**
 
- `Bitcoin`, `Namecoin`, `Litecoin`, `Dogecoin`, `Myriadcoin`, `Unobtanium` and `NoteBlockchain`.
+ `Bitcoin`, `Namecoin`, `Litecoin`, `Dogecoin`, `Myriadcoin`, `Unobtanium`, `NoteBlockchain` and `UfoCoin`.
 
 It assumes a local unpruned copy of the blockchain with intact block index, downloaded with [Bitcoin Core](https://github.com/bitcoin/bitcoin) 0.15.1+. If you are not sure whether your local copy is valid you can apply `--verify` to validate the chain and block merkle trees. If something doesn't match the parser exits.
 
