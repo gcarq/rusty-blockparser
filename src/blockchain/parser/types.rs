@@ -26,6 +26,7 @@ pub struct Dogecoin;
 pub struct Myriadcoin;
 pub struct Unobtanium;
 pub struct NoteBlockchain;
+pub struct UfoCoin;
 //pub struct Dash;
 
 impl Coin for Bitcoin {
@@ -45,6 +46,26 @@ impl Coin for Bitcoin {
     }
     fn default_folder(&self) -> PathBuf {
         Path::new(".bitcoin").join("blocks")
+    }
+}
+
+impl Coin for UfoCoin {
+    fn name(&self) -> String {
+        String::from("ufocoin")
+    }
+    fn magic(&self) -> u32 {
+        0xfcd9b7dd
+    }
+    fn version_id(&self) -> u8 {
+        0x1b
+    }
+    fn genesis(&self) -> [u8; 32] {
+        utils::hex_to_arr32_swapped(
+            "ba1d39b4928ab03d813d952daf65fb7797fcf538a9c1b8274f4edc8557722d13",
+        )
+    }
+    fn default_folder(&self) -> PathBuf {
+        Path::new(".ufo").join("blocks")
     }
 }
 
@@ -231,6 +252,7 @@ impl FromStr for CoinType {
     fn from_str(coin_name: &str) -> OpResult<Self> {
         match coin_name {
             "bitcoin" => Ok(CoinType::from(Bitcoin)),
+            "ufocoin" => Ok(CoinType::from(UfoCoin)),
             "testnet3" => Ok(CoinType::from(TestNet3)),
             "namecoin" => Ok(CoinType::from(Namecoin)),
             "litecoin" => Ok(CoinType::from(Litecoin)),
