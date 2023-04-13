@@ -49,7 +49,7 @@ impl SimpleStats {
     ) {
         // Strip exact OP_RETURN bytes
         let pattern = match script_pattern {
-            ScriptPattern::DataOutput(_) => ScriptPattern::DataOutput(String::new()),
+            ScriptPattern::OpReturn(_) => ScriptPattern::OpReturn(String::new()),
             p => p,
         };
         if !self.n_tx_types.contains_key(&pattern) {

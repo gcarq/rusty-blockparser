@@ -138,9 +138,9 @@ mod tests {
     use super::*;
     use crate::blockchain::parser::types::{Bitcoin, Coin};
     use crate::blockchain::proto::script;
+    use crate::blockchain::proto::script::ScriptPattern;
     use crate::blockchain::proto::tx::EvaluatedTx;
     use crate::common::utils;
-    use blockchain::proto::script::ScriptPattern;
     use byteorder::{LittleEndian, ReadBytesExt};
     use std::io::{BufReader, Cursor};
 

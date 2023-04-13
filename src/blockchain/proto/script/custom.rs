@@ -1,95 +1,7 @@
-use std::convert::From;
-use std::error::{self, Error};
-use std::fmt;
-
-use rust_base58::ToBase58;
-
-use crate::blockchain::proto::opcodes;
+use crate::blockchain::proto::script::{opcodes, EvaluatedScript, ScriptError, ScriptPattern};
 use crate::common::utils;
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum ScriptError {
-    UnexpectedEof,
-    InvalidFormat,
-}
-
-impl fmt::Display for ScriptError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.description())
-    }
-}
-
-impl error::Error for ScriptError {
-    fn description(&self) -> &str {
-        match *self {
-            ScriptError::UnexpectedEof => "Unexpected EOF",
-            ScriptError::InvalidFormat => "Invalid Script format",
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum ScriptPattern {
-    /// Null Data
-    /// Pubkey Script: OP_RETURN <0 to 80 bytes of data> (formerly 40 bytes)
-    /// Null data scripts cannot be spent, so there's no signature script.
-    DataOutput(String),
-
-    /// Pay to Multisig [BIP11]
-    /// Pubkey script: <m> <A pubkey>[B pubkey][C pubkey...] <n> OP_CHECKMULTISIG
-    /// Signature script: OP_0 <A sig>[B sig][C sig...]
-    /// TODO: Implement Pay2MultiSig: For now only 2n3 MultiSigs are detected
-    Pay2MultiSig,
-
-    /// Pay to Public Key (p2pk) scripts are a simplified form of the p2pkh,
-    /// but aren't commonly used in new transactions anymore,
-    /// because p2pkh scripts are more secure (the public key is not revealed until the output is spent).
-    Pay2PublicKey,
-
-    /// Pay to Public Key Hash (p2pkh)
-    /// This is the most commonly used transaction output script.
-    /// It's used to pay to a bitcoin address (a bitcoin address is a public key hash encoded in base58check)
-    Pay2PublicKeyHash,
-
-    /// Pay to Script Hash [p2sh/BIP16]
-    /// The redeem script may be any pay type, but only multisig makes sense.
-    /// Pubkey script: OP_HASH160 <Hash160(redeemScript)> OP_EQUAL
-    /// Signature script: <sig>[sig][sig...] <redeemScript>
-    Pay2ScriptHash,
-
-    /// Sign Multisig script [BIP11]
-    //SignMultiSig,
-
-    /// Sign Public Key (obsolete)
-    //SignPublicKey,
-
-    /// Sign Public Key Hash [P2PKH]
-    //SignKeyHash,
-
-    /// Sign Script Hash [P2SH/BIP16]
-    //SignScriptHash,
-
-    /// The script is valid but does not conform to the standard templates.
-    /// Such scripts are always accepted if they are mined into blocks, but
-    /// transactions with non-standard scripts may not be forwarded by peers.
-    NotRecognised,
-
-    Error(ScriptError),
-}
-
-impl fmt::Display for ScriptPattern {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            ScriptPattern::DataOutput(_) => write!(f, "DataOutput (OP_RETURN)"),
-            ScriptPattern::Pay2MultiSig => write!(f, "Pay2MultiSig"),
-            ScriptPattern::Pay2PublicKey => write!(f, "Pay2PublicKey"),
-            ScriptPattern::Pay2PublicKeyHash => write!(f, "Pay2PublicKeyHash"),
-            ScriptPattern::Pay2ScriptHash => write!(f, "Pay2ScriptHash"),
-            ScriptPattern::NotRecognised => write!(f, "NotRecognised"),
-            ScriptPattern::Error(ref err) => write!(f, "ScriptError: {}", err),
-        }
-    }
-}
+use rust_base58::ToBase58;
+use std::fmt;
 
 pub enum StackElement {
     Op(opcodes::All),
@@ -134,7 +46,7 @@ impl fmt::Debug for StackElement {
 }
 
 /// Simple stack structure to match against patterns
-pub struct Stack {
+struct Stack {
     pub pattern: ScriptPattern,
     pub elements: Vec<StackElement>,
 }
@@ -153,13 +65,8 @@ impl fmt::Debug for Stack {
     }
 }
 
-pub struct EvaluatedScript {
-    pub address: Option<String>,
-    pub pattern: ScriptPattern,
-}
-
 /// Evaluates scripts
-pub struct ScriptEvaluator<'a> {
+struct ScriptEvaluator<'a> {
     bytes: &'a [u8],
     n_bytes: usize,
     pub ip: usize,
@@ -287,7 +194,7 @@ impl<'a> ScriptEvaluator<'a> {
         ];
         if ScriptEvaluator::match_stack_pattern(&elements, &data_output) {
             if let Ok(data) = elements[1].data() {
-                return ScriptPattern::DataOutput(String::from_utf8_lossy(&data).into_owned());
+                return ScriptPattern::OpReturn(String::from_utf8_lossy(&data).into_owned());
             } else {
                 return ScriptPattern::Error(ScriptError::InvalidFormat);
             }
@@ -347,10 +254,13 @@ impl<'a> ScriptEvaluator<'a> {
     }
 }
 
-/// Extracts evaluated address from ScriptPubKey
-pub fn eval_from_bytes(bytes: &[u8], version_id: u8) -> EvaluatedScript {
+pub fn eval_from_bytes_custom(bytes: &[u8], version_id: u8) -> EvaluatedScript {
     match ScriptEvaluator::new(bytes).eval() {
         Ok(stack) => eval_from_stack(stack, version_id),
+        Err(ScriptError::UnexpectedEof) => EvaluatedScript {
+            address: None,
+            pattern: ScriptPattern::NotRecognised,
+        },
         Err(err) => EvaluatedScript {
             address: None,
             pattern: ScriptPattern::Error(err),
@@ -359,57 +269,63 @@ pub fn eval_from_bytes(bytes: &[u8], version_id: u8) -> EvaluatedScript {
 }
 
 /// Extracts evaluated address from script stack
-pub fn eval_from_stack(stack: Stack, version_id: u8) -> EvaluatedScript {
-    // Wrap everything in a closure to early catch try!()
-    match (|| -> Result<EvaluatedScript, ScriptError> {
-        let script = match stack.pattern {
-            ref p @ ScriptPattern::Pay2PublicKey => {
-                let pub_key = stack.elements[0].data()?;
-                EvaluatedScript {
-                    address: Some(public_key_to_addr(&pub_key, version_id)),
-                    pattern: p.clone(),
-                }
-            }
-            ref p @ ScriptPattern::Pay2PublicKeyHash => {
-                let h160 = stack.elements[2].data()?;
-                EvaluatedScript {
-                    address: Some(hash_160_to_address(&h160, version_id)),
-                    pattern: p.clone(),
-                }
-            }
-            ref p @ ScriptPattern::Pay2ScriptHash => {
-                let h160 = stack.elements[1].data()?;
-                EvaluatedScript {
-                    address: Some(hash_160_to_address(&h160, 5)),
-                    pattern: p.clone(),
-                }
-            }
-            ScriptPattern::DataOutput(ref data) => EvaluatedScript {
-                address: None,
-                pattern: ScriptPattern::DataOutput(data.clone()),
-            },
-            ref p @ ScriptPattern::Pay2MultiSig => {
-                stack.elements[1].data()?;
-                EvaluatedScript {
-                    address: None,
-                    pattern: p.clone(),
-                }
-            }
-            ref p @ ScriptPattern::NotRecognised => EvaluatedScript {
-                address: None,
+fn compute_stack(stack: Stack, version_id: u8) -> Result<EvaluatedScript, ScriptError> {
+    let script = match stack.pattern {
+        ref p @ ScriptPattern::Pay2PublicKey => {
+            let pub_key = stack.elements[0].data()?;
+            EvaluatedScript {
+                address: Some(public_key_to_addr(&pub_key, version_id)),
                 pattern: p.clone(),
-            },
-            ref p => EvaluatedScript {
-                address: None,
+            }
+        }
+        ref p @ ScriptPattern::Pay2PublicKeyHash => {
+            let h160 = stack.elements[2].data()?;
+            EvaluatedScript {
+                address: Some(hash_160_to_address(&h160, version_id)),
                 pattern: p.clone(),
-            },
-        };
-        Ok(script)
-    })() {
-        Ok(script) => script,
-        Err(e) => EvaluatedScript {
+            }
+        }
+        ref p @ ScriptPattern::Pay2ScriptHash => {
+            let h160 = stack.elements[1].data()?;
+            EvaluatedScript {
+                address: Some(hash_160_to_address(&h160, 5)),
+                pattern: p.clone(),
+            }
+        }
+        ScriptPattern::OpReturn(ref data) => EvaluatedScript {
             address: None,
-            pattern: ScriptPattern::Error(e),
+            pattern: ScriptPattern::OpReturn(data.clone()),
+        },
+        ref p @ ScriptPattern::Pay2MultiSig => {
+            stack.elements[1].data()?;
+            EvaluatedScript {
+                address: None,
+                pattern: p.clone(),
+            }
+        }
+        ref p @ ScriptPattern::NotRecognised => EvaluatedScript {
+            address: None,
+            pattern: p.clone(),
+        },
+        ref p => EvaluatedScript {
+            address: None,
+            pattern: p.clone(),
+        },
+    };
+    Ok(script)
+}
+
+/// Extracts evaluated address from script stack
+fn eval_from_stack(stack: Stack, version_id: u8) -> EvaluatedScript {
+    match compute_stack(stack, version_id) {
+        Ok(script) => script,
+        Err(ScriptError::UnexpectedEof) => EvaluatedScript {
+            address: None,
+            pattern: ScriptPattern::NotRecognised,
+        },
+        Err(err) => EvaluatedScript {
+            address: None,
+            pattern: ScriptPattern::Error(err),
         },
     }
 }
@@ -433,7 +349,7 @@ fn hash_160_to_address(h160: &[u8], version: u8) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{eval_from_bytes, eval_from_stack, ScriptError, ScriptEvaluator, ScriptPattern};
+    use super::{eval_from_bytes_custom, eval_from_stack, ScriptEvaluator, ScriptPattern};
 
     #[test]
     fn test_bitcoin_script_p2pkh() {
@@ -555,7 +471,7 @@ mod tests {
         assert_eq!(script.address, None);
         assert_eq!(
             script.pattern,
-            ScriptPattern::DataOutput(String::from("charley loves heidi"))
+            ScriptPattern::OpReturn(String::from("charley loves heidi"))
         );
     }
 
@@ -579,11 +495,8 @@ mod tests {
     #[test]
     fn test_bitcoin_bogus_script() {
         let bytes = [0x4c, 0xFF, 0x00];
-        let script = eval_from_bytes(&bytes, 0x00);
+        let script = eval_from_bytes_custom(&bytes, 0x00);
         assert_eq!(script.address, None);
-        assert_eq!(
-            script.pattern,
-            ScriptPattern::Error(ScriptError::UnexpectedEof)
-        );
+        assert_eq!(script.pattern, ScriptPattern::NotRecognised);
     }
 }

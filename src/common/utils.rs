@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use crate::blockchain::parser::types::CoinType;
 use crate::crypto::digest::Digest;
 use crate::crypto::ripemd160::Ripemd160;
-use crate::crypto::sha2::Sha256;
+use bitcoin_hashes::{sha256, Hash};
 
 #[inline]
 pub fn ridemp160(data: &[u8]) -> [u8; 20] {
@@ -16,11 +16,7 @@ pub fn ridemp160(data: &[u8]) -> [u8; 20] {
 
 #[inline]
 pub fn sha256(data: &[u8]) -> [u8; 32] {
-    let mut out = [0u8; 32];
-    let mut hasher = Sha256::new();
-    hasher.input(data);
-    hasher.result(&mut out);
-    out
+    sha256::Hash::hash(data).into_inner()
 }
 
 /// Calculates merkle root for the whole block
