@@ -64,6 +64,10 @@ pub enum ScriptPattern {
 
     WitnessProgram,
 
+    /// A Taproot output is a native SegWit output (see BIP141) with version number 1, and a 32-byte witness program.
+    /// See https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#constructing-and-spending-taproot-outputs
+    Pay2Taproot,
+
     Unspendable,
 
     /// The script is valid but does not conform to the standard templates.
@@ -85,6 +89,7 @@ impl fmt::Display for ScriptPattern {
             ScriptPattern::Pay2WitnessPublicKeyHash => write!(f, "Pay2WitnessPublicKeyHash"),
             ScriptPattern::Pay2WitnessScriptHash => write!(f, "Pay2WitnessScriptHash"),
             ScriptPattern::WitnessProgram => write!(f, "WitnessProgram"),
+            ScriptPattern::Pay2Taproot => write!(f, "Pay2Taproot"),
             ScriptPattern::Unspendable => write!(f, "Unspendable"),
             ScriptPattern::NotRecognised => write!(f, "NotRecognised"),
             ScriptPattern::Error(ref err) => write!(f, "ScriptError: {}", err),
@@ -142,6 +147,8 @@ pub fn eval_from_bytes_bitcoin(bytes: &[u8], version_id: u8) -> EvaluatedScript 
         EvaluatedScript::new(address, ScriptPattern::Pay2WitnessPublicKeyHash)
     } else if script.is_v0_p2wsh() {
         EvaluatedScript::new(address, ScriptPattern::Pay2WitnessScriptHash)
+    } else if script.is_v1_p2tr() {
+        EvaluatedScript::new(address, ScriptPattern::Pay2Taproot)
     } else if script.is_witness_program() {
         EvaluatedScript::new(address, ScriptPattern::WitnessProgram)
     } else if script.is_op_return() {
