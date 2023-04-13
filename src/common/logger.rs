@@ -1,7 +1,7 @@
 use std::io::{stderr, stdout, Write};
 
 use log::{self, Level, LevelFilter, Metadata, Record, SetLoggerError};
-use time::OffsetDateTime;
+use time::{format_description, OffsetDateTime};
 
 pub struct SimpleLogger {
     level_filter: LevelFilter,
@@ -15,10 +15,16 @@ impl SimpleLogger {
         Ok(())
     }
 
-    fn create_log_line(&self, record: &Record) -> String {
+    fn format_log(&self, record: &Record) -> String {
+        // Fallback to UTC if local time cannot be determined
+        let now = match OffsetDateTime::now_local() {
+            Ok(time) => time,
+            Err(_) => OffsetDateTime::now_utc(),
+        };
+        let date_format = format_description::parse("%T").unwrap();
         format!(
             "[{}] {} - {}: {}\n",
-            OffsetDateTime::now_local().format("%T"),
+            now.format(&date_format).unwrap(),
             record.level(),
             record.target(),
             record.args()
@@ -33,7 +39,7 @@ impl log::Log for SimpleLogger {
 
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
-            let line = self.create_log_line(record);
+            let line = self.format_log(record);
             match record.level() {
                 Level::Error => {
                     stderr().write_all(line.as_bytes()).unwrap();
