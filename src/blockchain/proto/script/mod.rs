@@ -6,8 +6,8 @@ use std::error::Error;
 use std::fmt;
 
 use crate::blockchain::proto::script::custom::eval_from_bytes_custom;
+use bitcoin::address::Payload;
 use bitcoin::blockdata::script::Instruction;
-use bitcoin::util::address::Payload;
 use bitcoin::{Address, Network, PubkeyHash, Script};
 use bitcoin_hashes::{hash160, Hash};
 
@@ -120,8 +120,8 @@ pub fn eval_from_bytes_bitcoin(bytes: &[u8], version_id: u8) -> EvaluatedScript 
         _ => panic!("invalid network version"),
     };
 
-    let script = Script::from(Vec::from(bytes));
-    let address = match Address::from_script(&script, network) {
+    let script = Script::from_bytes(bytes);
+    let address = match Address::from_script(script, network) {
         Ok(address) => Some(format!("{}", address)),
         Err(msg) => {
             warn!(target: "script", "Unable to extract evaluated address: {}", msg);
@@ -130,7 +130,10 @@ pub fn eval_from_bytes_bitcoin(bytes: &[u8], version_id: u8) -> EvaluatedScript 
     };
 
     if script.is_p2pk() {
-        EvaluatedScript::new(p2pk_to_string(&script), ScriptPattern::Pay2PublicKey)
+        EvaluatedScript::new(
+            p2pk_to_string(script, network),
+            ScriptPattern::Pay2PublicKey,
+        )
     } else if script.is_p2pkh() {
         EvaluatedScript::new(address, ScriptPattern::Pay2PublicKeyHash)
     } else if script.is_p2sh() {
@@ -155,7 +158,7 @@ pub fn eval_from_bytes_bitcoin(bytes: &[u8], version_id: u8) -> EvaluatedScript 
 
 /// Workaround to parse address from p2pk scripts
 /// See issue https://github.com/rust-bitcoin/rust-bitcoin/issues/441
-fn p2pk_to_string(script: &Script) -> Option<String> {
+fn p2pk_to_string(script: &Script, network: Network) -> Option<String> {
     assert!(script.is_p2pk());
     let pk = match script.instructions().next() {
         Some(Ok(Instruction::PushBytes(bytes))) => bytes,
@@ -166,12 +169,8 @@ fn p2pk_to_string(script: &Script) -> Option<String> {
         _ => unreachable!(),
     };
 
-    let pkh = hash160::Hash::hash(pk);
-
-    let address = Address {
-        payload: Payload::PubkeyHash(PubkeyHash::from_slice(&pkh).ok()?),
-        network: Network::Bitcoin,
-    };
+    let pkh = PubkeyHash::from_raw_hash(hash160::Hash::hash(pk.as_bytes()));
+    let address = Address::new(network, Payload::PubkeyHash(pkh));
     Some(address.to_string())
 }
 

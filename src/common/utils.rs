@@ -1,3 +1,4 @@
+use bitcoin::secp256k1::ThirtyTwoByteHash;
 use std::path::PathBuf;
 
 use crate::blockchain::parser::types::CoinType;
@@ -5,7 +6,7 @@ use bitcoin_hashes::{sha256, Hash};
 
 #[inline]
 pub fn sha256(data: &[u8]) -> [u8; 32] {
-    sha256::Hash::hash(data).into_inner()
+    sha256::Hash::hash(data).into_32()
 }
 
 /// Calculates merkle root for the whole block

@@ -333,8 +333,8 @@ fn eval_from_stack(stack: Stack, version_id: u8) -> EvaluatedScript {
 
 /// Takes full ECDSA public key (65 bytes) and a version id
 fn public_key_to_addr(pub_key: &[u8], version: u8) -> String {
-    let hash = hash160::Hash::hash(pub_key).into_inner();
-    hash_160_to_address(&hash, version)
+    let hash = hash160::Hash::hash(pub_key);
+    hash_160_to_address(hash.as_ref(), version)
 }
 
 /// Takes 20 byte public key and version id
