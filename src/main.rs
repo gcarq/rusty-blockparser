@@ -19,7 +19,6 @@ use crate::errors::{OpError, OpResult};
 
 #[macro_use]
 extern crate log;
-extern crate crypto;
 extern crate time;
 #[macro_use]
 extern crate clap;

@@ -1,18 +1,7 @@
 use std::path::PathBuf;
 
 use crate::blockchain::parser::types::CoinType;
-use crate::crypto::digest::Digest;
-use crate::crypto::ripemd160::Ripemd160;
 use bitcoin_hashes::{sha256, Hash};
-
-#[inline]
-pub fn ridemp160(data: &[u8]) -> [u8; 20] {
-    let mut out = [0u8; 20];
-    let mut hasher = Ripemd160::new();
-    hasher.input(data);
-    hasher.result(&mut out);
-    out
-}
 
 #[inline]
 pub fn sha256(data: &[u8]) -> [u8; 32] {
@@ -148,17 +137,6 @@ mod tests {
         ];
         let hash = sha256(&sha256(test.as_bytes()));
         assert_eq!(expected, hash);
-    }
-
-    #[test]
-    fn test_ridemp160() {
-        let test = "The quick brown fox jumps over the lazy dog";
-        let expected = [
-            0x37, 0xf3, 0x32, 0xf6, 0x8d, 0xb7, 0x7b, 0xd9, 0xd7, 0xed, 0xd4, 0x96, 0x95, 0x71,
-            0xad, 0x67, 0x1c, 0xf9, 0xdd, 0x3b,
-        ];
-
-        assert_eq!(ridemp160(test.as_bytes()), expected);
     }
 
     #[test]
