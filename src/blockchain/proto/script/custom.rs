@@ -1,11 +1,13 @@
-use crate::blockchain::proto::script::{opcodes, EvaluatedScript, ScriptError, ScriptPattern};
+/// This custom Script implementation is for all networks other than Bitcoin and Bitcoin Testnet
+use crate::blockchain::proto::script::{EvaluatedScript, ScriptError, ScriptPattern};
 use crate::common::utils;
 use bitcoin::base58;
 use bitcoin::hashes::{hash160, Hash};
+use bitcoin::opcodes::{all, All, Class, ClassifyContext};
 use std::fmt;
 
 pub enum StackElement {
-    Op(opcodes::All),
+    Op(All),
     Data(Vec<u8>),
 }
 
@@ -88,9 +90,9 @@ impl<'a> ScriptEvaluator<'a> {
         let mut elements = Vec::with_capacity(10);
         //print!("Script(");
         while self.ip < self.n_bytes {
-            let opcode = opcodes::All::from(self.bytes[self.ip]);
-            let opcode_class = opcode.classify();
-            let data_len = self.maybe_push_data(opcode, opcode_class)?;
+            let opcode = All::from(self.bytes[self.ip]);
+            let class = opcode.classify(ClassifyContext::Legacy);
+            let data_len = self.maybe_push_data(opcode, class)?;
             self.ip += 1;
 
             if data_len > 0 {
@@ -104,7 +106,7 @@ impl<'a> ScriptEvaluator<'a> {
                     elements.push(StackElement::Data(data));
                     self.ip += data_len;
                 }
-            } else if opcode_class != opcodes::Class::NoOp {
+            } else if class != Class::NoOp {
                 elements.push(StackElement::Op(opcode));
                 //print!("{:?} ", opcode);
             }
@@ -116,16 +118,12 @@ impl<'a> ScriptEvaluator<'a> {
 
     /// Checks Opcode if should to push some bytes
     /// Especially opcodes between 0x00 and 0x4e
-    fn maybe_push_data(
-        &mut self,
-        opcode: opcodes::All,
-        opcode_class: opcodes::Class,
-    ) -> Result<usize, ScriptError> {
-        let data_len = if let opcodes::Class::PushBytes(n) = opcode_class {
+    fn maybe_push_data(&mut self, opcode: All, opcode_class: Class) -> Result<usize, ScriptError> {
+        let data_len = if let Class::PushBytes(n) = opcode_class {
             n as usize
         } else {
             match opcode {
-                opcodes::All::OP_PUSHDATA1 => {
+                all::OP_PUSHDATA1 => {
                     if self.ip + 1 > self.n_bytes {
                         return Err(ScriptError::UnexpectedEof);
                     }
@@ -133,7 +131,7 @@ impl<'a> ScriptEvaluator<'a> {
                     self.ip += 1;
                     val
                 }
-                opcodes::All::OP_PUSHDATA2 => {
+                all::OP_PUSHDATA2 => {
                     if self.ip + 2 > self.n_bytes {
                         return Err(ScriptError::UnexpectedEof);
                     }
@@ -141,7 +139,7 @@ impl<'a> ScriptEvaluator<'a> {
                     self.ip += 2;
                     val
                 }
-                opcodes::All::OP_PUSHDATA4 => {
+                all::OP_PUSHDATA4 => {
                     if self.ip + 4 > self.n_bytes {
                         return Err(ScriptError::UnexpectedEof);
                     }
@@ -158,11 +156,11 @@ impl<'a> ScriptEvaluator<'a> {
     fn eval_script_pattern(elements: &[StackElement]) -> ScriptPattern {
         // Pay to Public Key Hash (p2pkh)
         let p2pkh = [
-            StackElement::Op(opcodes::All::OP_DUP),
-            StackElement::Op(opcodes::All::OP_HASH160),
+            StackElement::Op(all::OP_DUP),
+            StackElement::Op(all::OP_HASH160),
             StackElement::Data(Vec::new()),
-            StackElement::Op(opcodes::All::OP_EQUALVERIFY),
-            StackElement::Op(opcodes::All::OP_CHECKSIG),
+            StackElement::Op(all::OP_EQUALVERIFY),
+            StackElement::Op(all::OP_CHECKSIG),
         ];
         if ScriptEvaluator::match_stack_pattern(elements, &p2pkh) {
             return ScriptPattern::Pay2PublicKeyHash;
@@ -171,7 +169,7 @@ impl<'a> ScriptEvaluator<'a> {
         // Pay to Public Key (p2pk)
         let p2pk = [
             StackElement::Data(Vec::new()),
-            StackElement::Op(opcodes::All::OP_CHECKSIG),
+            StackElement::Op(all::OP_CHECKSIG),
         ];
         if ScriptEvaluator::match_stack_pattern(elements, &p2pk) {
             return ScriptPattern::Pay2PublicKey;
@@ -179,9 +177,9 @@ impl<'a> ScriptEvaluator<'a> {
 
         // Pay to Script Hash (p2sh)
         let p2sh = [
-            StackElement::Op(opcodes::All::OP_HASH160),
+            StackElement::Op(all::OP_HASH160),
             StackElement::Data(Vec::new()),
-            StackElement::Op(opcodes::All::OP_EQUAL),
+            StackElement::Op(all::OP_EQUAL),
         ];
         if ScriptEvaluator::match_stack_pattern(elements, &p2sh) {
             return ScriptPattern::Pay2ScriptHash;
@@ -190,25 +188,24 @@ impl<'a> ScriptEvaluator<'a> {
         // Data output
         // pubkey: OP_RETURN <0 to 40 bytes of data>
         let data_output = [
-            StackElement::Op(opcodes::All::OP_RETURN),
+            StackElement::Op(all::OP_RETURN),
             StackElement::Data(Vec::new()),
         ];
         if ScriptEvaluator::match_stack_pattern(elements, &data_output) {
-            if let Ok(data) = elements[1].data() {
-                return ScriptPattern::OpReturn(String::from_utf8_lossy(&data).into_owned());
-            } else {
-                return ScriptPattern::Error(ScriptError::InvalidFormat);
-            }
+            return match elements[1].data() {
+                Ok(data) => ScriptPattern::OpReturn(String::from_utf8_lossy(&data).into_owned()),
+                Err(_) => ScriptPattern::Error(ScriptError::InvalidFormat),
+            };
         }
 
         //TODO: implement n to m multisig
         let multisig_2n3 = [
-            StackElement::Op(opcodes::All::OP_PUSHNUM_2),
+            StackElement::Op(all::OP_PUSHNUM_2),
             StackElement::Data(Vec::new()),
             StackElement::Data(Vec::new()),
             StackElement::Data(Vec::new()),
-            StackElement::Op(opcodes::All::OP_PUSHNUM_3),
-            StackElement::Op(opcodes::All::OP_CHECKMULTISIG),
+            StackElement::Op(all::OP_PUSHNUM_3),
+            StackElement::Op(all::OP_CHECKMULTISIG),
         ];
         if ScriptEvaluator::match_stack_pattern(elements, &multisig_2n3) {
             return ScriptPattern::Pay2MultiSig;

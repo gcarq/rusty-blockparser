@@ -1,5 +1,4 @@
 mod custom;
-pub mod opcodes;
 
 use std::convert::From;
 use std::error::Error;
@@ -223,8 +222,8 @@ mod tests {
         assert_eq!(result.pattern, ScriptPattern::Pay2PublicKey);
     }
 
-    // FIXME:
     /*
+    // FIXME: See https://github.com/rust-bitcoin/rust-bitcoin/pull/657/files
     #[test]
     fn test_bitcoin_script_p2ms() {
         // 2-of-3 Multi sig output
@@ -242,7 +241,7 @@ mod tests {
             0x84, 0x92, 0x5d, 0xec, 0xd3, 0xfd, 0x21, 0xbc, 0x44, 0x57, 0x12, 0x57, 0x68, 0x73,
             0xfb, 0x8c, 0x6e, 0xbc, 0x18, 0x53, 0xae,
         ];
-        let result = eval_from_bytes(&bytes, 0x00);
+        let result = eval_from_bytes_bitcoin(&bytes, 0x00);
         assert_eq!(result.pattern, ScriptPattern::Pay2MultiSig);
     }
     */
