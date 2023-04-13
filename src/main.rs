@@ -25,7 +25,6 @@ extern crate clap;
 extern crate bitcoin;
 extern crate byteorder;
 extern crate rayon;
-extern crate rust_base58;
 extern crate rusty_leveldb;
 
 #[macro_use]

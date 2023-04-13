@@ -1,7 +1,7 @@
 use crate::blockchain::proto::script::{opcodes, EvaluatedScript, ScriptError, ScriptPattern};
 use crate::common::utils;
+use bitcoin::base58;
 use bitcoin::hashes::{hash160, Hash};
-use rust_base58::ToBase58;
 use std::fmt;
 
 pub enum StackElement {
@@ -345,7 +345,7 @@ fn hash_160_to_address(h160: &[u8], version: u8) -> String {
     hash.extend_from_slice(h160);
     let checksum = &utils::sha256(&utils::sha256(&hash))[0..4];
     hash.extend_from_slice(checksum);
-    hash.to_base58()
+    base58::encode(&hash)
 }
 
 #[cfg(test)]
