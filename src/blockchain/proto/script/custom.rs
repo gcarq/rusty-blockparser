@@ -1,6 +1,6 @@
 use crate::blockchain::proto::script::{opcodes, EvaluatedScript, ScriptError, ScriptPattern};
 use crate::common::utils;
-use bitcoin_hashes::{hash160, Hash};
+use bitcoin::hashes::{hash160, Hash};
 use rust_base58::ToBase58;
 use std::fmt;
 

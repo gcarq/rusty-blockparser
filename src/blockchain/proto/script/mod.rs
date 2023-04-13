@@ -8,8 +8,8 @@ use std::fmt;
 use crate::blockchain::proto::script::custom::eval_from_bytes_custom;
 use bitcoin::address::Payload;
 use bitcoin::blockdata::script::Instruction;
+use bitcoin::hashes::{hash160, Hash};
 use bitcoin::{Address, Network, PubkeyHash, Script};
-use bitcoin_hashes::{hash160, Hash};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ScriptError {

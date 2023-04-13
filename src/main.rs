@@ -23,7 +23,6 @@ extern crate time;
 #[macro_use]
 extern crate clap;
 extern crate bitcoin;
-extern crate bitcoin_hashes;
 extern crate byteorder;
 extern crate rayon;
 extern crate rust_base58;

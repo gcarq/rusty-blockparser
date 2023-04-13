@@ -1,8 +1,8 @@
+use bitcoin::hashes::{sha256, Hash};
 use bitcoin::secp256k1::ThirtyTwoByteHash;
 use std::path::PathBuf;
 
 use crate::blockchain::parser::types::CoinType;
-use bitcoin_hashes::{sha256, Hash};
 
 #[inline]
 pub fn sha256(data: &[u8]) -> [u8; 32] {
