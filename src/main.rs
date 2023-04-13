@@ -191,13 +191,13 @@ fn parse_args() -> OpResult<RefCell<ParserOptions>> {
 
     // Set callback
     let callback: Box<dyn Callback>;
-    if let Some(ref matches) = matches.subcommand_matches("simplestats") {
+    if let Some(matches) = matches.subcommand_matches("simplestats") {
         callback = Box::new(SimpleStats::new(matches)?);
-    } else if let Some(ref matches) = matches.subcommand_matches("csvdump") {
+    } else if let Some(matches) = matches.subcommand_matches("csvdump") {
         callback = Box::new(CsvDump::new(matches)?);
-    } else if let Some(ref matches) = matches.subcommand_matches("unspentcsvdump") {
+    } else if let Some(matches) = matches.subcommand_matches("unspentcsvdump") {
         callback = Box::new(UnspentCsvDump::new(matches)?);
-    } else if let Some(ref matches) = matches.subcommand_matches("balances") {
+    } else if let Some(matches) = matches.subcommand_matches("balances") {
         callback = Box::new(Balances::new(matches)?);
     } else {
         clap::Error {

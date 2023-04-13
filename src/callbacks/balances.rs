@@ -24,7 +24,7 @@ pub struct Balances {
 
 impl Balances {
     fn create_writer(cap: usize, path: PathBuf) -> OpResult<BufWriter<File>> {
-        Ok(BufWriter::with_capacity(cap, File::create(&path)?))
+        Ok(BufWriter::with_capacity(cap, File::create(path)?))
     }
 }
 
@@ -75,8 +75,8 @@ impl Callback for Balances {
     ///   * address
     fn on_block(&mut self, block: &Block, block_height: u64) -> OpResult<()> {
         for tx in &block.txs {
-            common::remove_unspents(&tx, &mut self.unspents);
-            common::insert_unspents(&tx, block_height, &mut self.unspents);
+            common::remove_unspents(tx, &mut self.unspents);
+            common::insert_unspents(tx, block_height, &mut self.unspents);
         }
         Ok(())
     }

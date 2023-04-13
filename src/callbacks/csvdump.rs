@@ -30,7 +30,7 @@ pub struct CsvDump {
 
 impl CsvDump {
     fn create_writer(cap: usize, path: PathBuf) -> OpResult<BufWriter<File>> {
-        Ok(BufWriter::with_capacity(cap, File::create(&path)?))
+        Ok(BufWriter::with_capacity(cap, File::create(path)?))
     }
 }
 

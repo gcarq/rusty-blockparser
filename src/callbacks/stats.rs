@@ -200,7 +200,7 @@ impl Callback for SimpleStats {
                 self.n_tx_total_fee += tx.value.outputs[0]
                     .out
                     .value
-                    .checked_sub(block::get_base_reward(block_height as u64))
+                    .checked_sub(block::get_base_reward(block_height))
                     .unwrap_or_default();
             }
 

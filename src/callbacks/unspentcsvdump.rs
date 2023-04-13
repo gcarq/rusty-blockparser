@@ -28,7 +28,7 @@ pub struct UnspentCsvDump {
 
 impl UnspentCsvDump {
     fn create_writer(cap: usize, path: PathBuf) -> OpResult<BufWriter<File>> {
-        Ok(BufWriter::with_capacity(cap, File::create(&path)?))
+        Ok(BufWriter::with_capacity(cap, File::create(path)?))
     }
 }
 
@@ -81,8 +81,8 @@ impl Callback for UnspentCsvDump {
     ///   * address
     fn on_block(&mut self, block: &Block, block_height: u64) -> OpResult<()> {
         for tx in &block.txs {
-            self.in_count += common::remove_unspents(&tx, &mut self.unspents);
-            self.out_count += common::insert_unspents(&tx, block_height, &mut self.unspents);
+            self.in_count += common::remove_unspents(tx, &mut self.unspents);
+            self.out_count += common::insert_unspents(tx, block_height, &mut self.unspents);
         }
         self.tx_count += block.tx_count.value;
         Ok(())

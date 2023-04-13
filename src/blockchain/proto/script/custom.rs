@@ -40,7 +40,7 @@ impl fmt::Debug for StackElement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             StackElement::Op(ref op) => write!(f, "{:?}", &op),
-            StackElement::Data(ref d) => write!(f, "{}", &utils::arr_to_hex(&d)),
+            StackElement::Data(ref d) => write!(f, "{}", &utils::arr_to_hex(d)),
         }
     }
 }
@@ -163,7 +163,7 @@ impl<'a> ScriptEvaluator<'a> {
             StackElement::Op(opcodes::All::OP_EQUALVERIFY),
             StackElement::Op(opcodes::All::OP_CHECKSIG),
         ];
-        if ScriptEvaluator::match_stack_pattern(&elements, &p2pkh) {
+        if ScriptEvaluator::match_stack_pattern(elements, &p2pkh) {
             return ScriptPattern::Pay2PublicKeyHash;
         }
 
@@ -172,7 +172,7 @@ impl<'a> ScriptEvaluator<'a> {
             StackElement::Data(Vec::new()),
             StackElement::Op(opcodes::All::OP_CHECKSIG),
         ];
-        if ScriptEvaluator::match_stack_pattern(&elements, &p2pk) {
+        if ScriptEvaluator::match_stack_pattern(elements, &p2pk) {
             return ScriptPattern::Pay2PublicKey;
         }
 
@@ -182,7 +182,7 @@ impl<'a> ScriptEvaluator<'a> {
             StackElement::Data(Vec::new()),
             StackElement::Op(opcodes::All::OP_EQUAL),
         ];
-        if ScriptEvaluator::match_stack_pattern(&elements, &p2sh) {
+        if ScriptEvaluator::match_stack_pattern(elements, &p2sh) {
             return ScriptPattern::Pay2ScriptHash;
         }
 
@@ -192,7 +192,7 @@ impl<'a> ScriptEvaluator<'a> {
             StackElement::Op(opcodes::All::OP_RETURN),
             StackElement::Data(Vec::new()),
         ];
-        if ScriptEvaluator::match_stack_pattern(&elements, &data_output) {
+        if ScriptEvaluator::match_stack_pattern(elements, &data_output) {
             if let Ok(data) = elements[1].data() {
                 return ScriptPattern::OpReturn(String::from_utf8_lossy(&data).into_owned());
             } else {
@@ -209,7 +209,7 @@ impl<'a> ScriptEvaluator<'a> {
             StackElement::Op(opcodes::All::OP_PUSHNUM_3),
             StackElement::Op(opcodes::All::OP_CHECKMULTISIG),
         ];
-        if ScriptEvaluator::match_stack_pattern(&elements, &multisig_2n3) {
+        if ScriptEvaluator::match_stack_pattern(elements, &multisig_2n3) {
             return ScriptPattern::Pay2MultiSig;
         }
         /* TODO:
@@ -341,7 +341,7 @@ fn public_key_to_addr(pub_key: &[u8], version: u8) -> String {
 fn hash_160_to_address(h160: &[u8], version: u8) -> String {
     let mut hash = Vec::with_capacity(h160.len() + 5);
     hash.push(version);
-    hash.extend_from_slice(&h160);
+    hash.extend_from_slice(h160);
     let checksum = &utils::sha256(&utils::sha256(&hash))[0..4];
     hash.extend_from_slice(checksum);
     hash.to_base58()

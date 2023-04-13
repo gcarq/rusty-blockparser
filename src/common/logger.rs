@@ -19,7 +19,7 @@ impl SimpleLogger {
         format!(
             "[{}] {} - {}: {}\n",
             OffsetDateTime::now_local().format("%T"),
-            record.level().to_string(),
+            record.level(),
             record.target(),
             record.args()
         )

@@ -17,10 +17,7 @@ pub struct VarUint {
 impl VarUint {
     #[inline]
     fn new(value: u64, buf: Vec<u8>) -> VarUint {
-        VarUint {
-            value: value as u64,
-            buf,
-        }
+        VarUint { value, buf }
     }
 
     pub fn read_from<R: Read + ?Sized>(reader: &mut R) -> io::Result<VarUint> {
@@ -65,7 +62,7 @@ impl From<u64> for VarUint {
         let mut buf: Vec<u8> = Vec::with_capacity(9);
         buf.push(0xff);
         buf.extend_from_slice(&value.to_le_bytes());
-        VarUint::new(value as u64, buf)
+        VarUint::new(value, buf)
     }
 }
 

@@ -84,7 +84,7 @@ pub fn get_block_index(path: &Path) -> OpResult<Vec<BlockIndexRecord>> {
 
 #[inline]
 fn is_block_index_record(data: &[u8]) -> bool {
-    *data.get(0).unwrap() == b'b'
+    *data.first().unwrap() == b'b'
 }
 
 /// TODO: this is a wonky 1:1 translation from https://github.com/bitcoin/bitcoin
