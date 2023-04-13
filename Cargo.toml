@@ -9,7 +9,7 @@ homepage = "https://github.com/gcarq/rusty-blockparser/"
 readme = "README.md"
 keywords = ["Cryptocurrency", "Bitcoin", "Litecoin", "Blockchain", "Parser", "NoteBlockchain"]
 license = "GPL-3.0"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 time = { version = "^0.2", default-features = false, features = ["std"] }
