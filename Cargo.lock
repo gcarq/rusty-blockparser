@@ -288,9 +288,9 @@ checksum = "3011d1213f159867b13cfd6ac92d2cd5f1345762c63be3554e84092d85a50bbd"
 
 [[package]]
 name = "integer-encoding"
-version = "1.1.7"
+version = "3.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48dc51180a9b377fd75814d0cc02199c20f8e99433d6762f650d39cdbbd3b56f"
+checksum = "8bb03732005da905c88227371639bf1ad885cc712789c011c31c5fb3ab3ccf02"
 
 [[package]]
 name = "itoa"
@@ -563,9 +563,9 @@ dependencies = [
 
 [[package]]
 name = "rusty-leveldb"
-version = "0.3.6"
+version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19365c4619fa0892aef573e6ee1b569b1161ac1ac3da765f550a17645192615e"
+checksum = "04c67700d4731d7c35c914a844dba95ae6689a419a576433c745b76757a555db"
 dependencies = [
  "crc",
  "errno",
