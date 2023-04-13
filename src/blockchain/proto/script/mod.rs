@@ -2,7 +2,6 @@ mod custom;
 pub mod opcodes;
 
 use std::convert::From;
-use std::error;
 use std::error::Error;
 use std::fmt;
 
@@ -20,18 +19,15 @@ pub enum ScriptError {
 
 impl fmt::Display for ScriptError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.description())
+        let str = match *self {
+            ScriptError::UnexpectedEof => "Unexpected EOF",
+            ScriptError::InvalidFormat => "Invalid Script format",
+        };
+        write!(f, "{}", str)
     }
 }
 
-impl error::Error for ScriptError {
-    fn description(&self) -> &str {
-        match *self {
-            ScriptError::UnexpectedEof => "Unexpected EOF",
-            ScriptError::InvalidFormat => "Invalid Script format",
-        }
-    }
-}
+impl Error for ScriptError {}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ScriptPattern {
