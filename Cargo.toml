@@ -14,7 +14,7 @@ edition = "2021"
 [dependencies]
 log = { version = "^0.4", default-features = false, features = ["std"] }
 chrono = { version = "^0.4.24", default-features = false, features = ["std"] }
-clap = "^2.26"
+clap = "^2.34.0"
 byteorder = "^1.3"
 rusty-leveldb = "^1.0.6"
 dirs = "^5.0.0"
