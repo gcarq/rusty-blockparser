@@ -19,7 +19,7 @@ use crate::errors::{OpError, OpResult};
 
 #[macro_use]
 extern crate log;
-extern crate time;
+extern crate chrono;
 #[macro_use]
 extern crate clap;
 extern crate bitcoin;
@@ -91,7 +91,7 @@ fn main() {
     let log_level = options.borrow().log_level_filter;
     SimpleLogger::init(log_level).expect("Unable to initialize logger!");
     info!(target: "main", "Starting rusty-blockparser v{} ...", env!("CARGO_PKG_VERSION"));
-    debug!(target: "main", "Using LogLevel {}", log_level);
+    debug!(target: "main", "Using log level {}", log_level);
 
     let chain_storage = match ChainStorage::new(&options) {
         Ok(storage) => storage,

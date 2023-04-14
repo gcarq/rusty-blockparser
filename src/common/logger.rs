@@ -1,7 +1,8 @@
+use chrono::{DateTime, Utc};
 use std::io::{stderr, stdout, Write};
+use std::time::SystemTime;
 
 use log::{self, Level, LevelFilter, Metadata, Record, SetLoggerError};
-use time::{format_description, OffsetDateTime};
 
 pub struct SimpleLogger {
     level_filter: LevelFilter,
@@ -16,15 +17,10 @@ impl SimpleLogger {
     }
 
     fn format_log(&self, record: &Record) -> String {
-        // Fallback to UTC if local time cannot be determined
-        let now = match OffsetDateTime::now_local() {
-            Ok(time) => time,
-            Err(_) => OffsetDateTime::now_utc(),
-        };
-        let date_format = format_description::parse("%T").unwrap();
+        let datetime: DateTime<Utc> = SystemTime::now().into();
         format!(
             "[{}] {} - {}: {}\n",
-            now.format(&date_format).unwrap(),
+            datetime.format("%T"),
             record.level(),
             record.target(),
             record.args()

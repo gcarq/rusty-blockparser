@@ -12,8 +12,8 @@ license = "GPL-3.0"
 edition = "2021"
 
 [dependencies]
-time = { version = "^0.3.20", default-features = false, features = ["local-offset", "formatting"] }
 log = { version = "^0.4", default-features = false, features = ["std"] }
+chrono = { version = "^0.4.24", default-features = false, features = ["std"] }
 clap = "^2.26"
 byteorder = "^1.3"
 rusty-leveldb = "^1.0.6"
