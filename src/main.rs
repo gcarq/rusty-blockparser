@@ -35,13 +35,13 @@ pub mod common;
 pub mod callbacks;
 
 #[derive(Copy, Clone)]
-pub struct ParseRange {
-    start: usize,
-    end: Option<usize>,
+pub struct BlockHeightRange {
+    start: u64,
+    end: Option<u64>,
 }
 
-impl ParseRange {
-    pub fn new(start: usize, end: Option<usize>) -> OpResult<Self> {
+impl BlockHeightRange {
+    pub fn new(start: u64, end: Option<u64>) -> OpResult<Self> {
         if end.is_some() && start >= end.unwrap() {
             return Err(OpError::from(String::from(
                 "--start value must be lower than --end value",
@@ -51,7 +51,7 @@ impl ParseRange {
     }
 }
 
-impl fmt::Display for ParseRange {
+impl fmt::Display for BlockHeightRange {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let end = match self.end {
             Some(e) => e.to_string(),
@@ -74,7 +74,7 @@ pub struct ParserOptions {
     // Verbosity level, 0 = Error, 1 = Info, 2 = Debug, 3+ = Trace
     log_level_filter: log::LevelFilter,
     // Range which is considered for parsing
-    range: ParseRange,
+    range: BlockHeightRange,
 }
 
 fn main() {
@@ -183,9 +183,9 @@ fn parse_args() -> OpResult<RefCell<ParserOptions>> {
         Some(p) => PathBuf::from(p),
         None => utils::get_absolute_blockchain_dir(&coin_type),
     };
-    let start = value_t!(matches, "start", usize).unwrap_or(0);
-    let end = value_t!(matches, "end", usize).ok();
-    let range = ParseRange::new(start, end)?;
+    let start = value_t!(matches, "start", u64).unwrap_or(0);
+    let end = value_t!(matches, "end", u64).ok();
+    let range = BlockHeightRange::new(start, end)?;
 
     // Set callback
     let callback: Box<dyn Callback>;
