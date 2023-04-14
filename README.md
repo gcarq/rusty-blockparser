@@ -162,10 +162,6 @@ Callbacks are built on top of the core parser. They can be implemented to extrac
 
 You can also define custom callbacks. A callback gets called at startup, on each block and at the end. See [src/callbacks/mod.rs](src/callbacks/mod.rs) for more information.
 
-## Resume scans
-
-    `--start <height>` and `--end <height>` can be passed to resume a scan. However this makes no sense for `unspentcsvdump`!
-
 
 ## Contributing
 

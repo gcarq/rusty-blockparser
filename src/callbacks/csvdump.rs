@@ -133,7 +133,6 @@ impl Callback for CsvDump {
 }
 
 impl Block {
-    #[inline]
     fn as_csv(&self, block_height: u64) -> String {
         // (@hash, height, version, blocksize, @hashPrev, @hashMerkleRoot, nTime, nBits, nNonce)
         format!(
@@ -152,7 +151,6 @@ impl Block {
 }
 
 impl Hashed<EvaluatedTx> {
-    #[inline]
     fn as_csv(&self, block_hash: &str) -> String {
         // (@txid, @hashBlock, version, lockTime)
         format!(
@@ -166,7 +164,6 @@ impl Hashed<EvaluatedTx> {
 }
 
 impl TxInput {
-    #[inline]
     fn as_csv(&self, txid: &str) -> String {
         // (@txid, @hashPrevOut, indexPrevOut, scriptSig, sequence)
         format!(
@@ -181,7 +178,6 @@ impl TxInput {
 }
 
 impl EvaluatedTxOut {
-    #[inline]
     fn as_csv(&self, txid: &str, index: u32) -> String {
         let address = match self.script.address.clone() {
             Some(address) => address,

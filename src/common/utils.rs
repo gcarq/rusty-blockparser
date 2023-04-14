@@ -36,7 +36,6 @@ pub fn arr_to_hex(data: &[u8]) -> String {
     data.iter().map(|b| format!("{:02x?}", b)).collect()
 }
 
-#[inline]
 pub fn arr_to_hex_swapped(data: &[u8]) -> String {
     data.iter().rev().map(|b| format!("{:02x}", b)).collect()
 }
@@ -52,14 +51,12 @@ pub fn hex_to_vec(hex_str: &str) -> Vec<u8> {
         .collect()
 }
 
-#[inline]
 pub fn hex_to_vec_swapped(hex_str: &str) -> Vec<u8> {
     let mut vec = hex_to_vec(hex_str);
     vec.reverse();
     vec
 }
 
-#[inline]
 pub fn hex_to_arr32_swapped(hex_str: &str) -> [u8; 32] {
     debug_assert_eq!(hex_str.len(), 64);
     let mut arr = [0u8; 32];
@@ -77,7 +74,6 @@ pub fn get_absolute_blockchain_dir(coin_type: &CoinType) -> PathBuf {
 }
 
 /// Get mean value from u32 slice
-#[inline]
 pub fn get_mean(slice: &[u32]) -> f64 {
     if slice.is_empty() {
         return 0.00;

@@ -61,8 +61,10 @@ impl BlockchainParser {
 
     /// Triggers the on_start() callback and initializes state.
     fn on_start(&mut self, height: u64) -> OpResult<()> {
-        self.stats.t_started = Instant::now();
-        self.stats.t_last_log = Instant::now();
+        let now = Instant::now();
+        self.stats.t_started = now;
+        self.stats.t_last_log = now;
+        info!(target: "parser", "Starting to process blocks starting from height {} ...", height);
         self.callback.on_start(&self.coin_type, height)?;
         trace!(target: "parser", "on_start() called");
         Ok(())

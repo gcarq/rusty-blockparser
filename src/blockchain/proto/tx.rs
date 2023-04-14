@@ -51,7 +51,6 @@ impl EvaluatedTx {
         }
     }
 
-    #[inline]
     pub fn is_coinbase(&self) -> bool {
         if self.in_count.value == 1 {
             let input = self.inputs.first().unwrap();
@@ -123,7 +122,6 @@ impl TxOutpoint {
 }
 
 impl ToRaw for TxOutpoint {
-    #[inline]
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(32 + 4);
         bytes.extend_from_slice(&self.txid);
@@ -150,7 +148,6 @@ pub struct TxInput {
 }
 
 impl ToRaw for TxInput {
-    #[inline]
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(36 + 5 + self.script_len.value as usize + 4);
         bytes.extend_from_slice(&self.outpoint.to_bytes());
@@ -179,7 +176,6 @@ pub struct EvaluatedTxOut {
 }
 
 impl EvaluatedTxOut {
-    #[inline]
     pub fn eval_script(out: TxOutput, version_id: u8) -> EvaluatedTxOut {
         EvaluatedTxOut {
             script: script::eval_from_bytes(&out.script_pubkey, version_id),
@@ -196,7 +192,6 @@ pub struct TxOutput {
 }
 
 impl ToRaw for TxOutput {
-    #[inline]
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(8 + 5 + self.script_len.value as usize);
         bytes.extend_from_slice(&self.value.to_le_bytes());

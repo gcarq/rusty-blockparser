@@ -85,7 +85,6 @@ impl ChainStorage {
     }
 
     /// Returns number of remaining blocks
-    #[inline]
     pub fn remaining(&self) -> usize {
         self.block_index
             .len()

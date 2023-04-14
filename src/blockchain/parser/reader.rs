@@ -11,14 +11,12 @@ use crate::errors::OpResult;
 
 /// Trait for structured reading of blockchain data
 pub trait BlockchainRead: io::Read {
-    #[inline]
     fn read_256hash(&mut self) -> OpResult<[u8; 32]> {
         let mut arr = [0u8; 32];
         self.read_exact(arr.borrow_mut())?;
         Ok(arr)
     }
 
-    #[inline]
     fn read_u8_vec(&mut self, count: u32) -> OpResult<Vec<u8>> {
         let mut arr = vec![0u8; count as usize];
         self.read_exact(arr.borrow_mut())?;
@@ -33,7 +31,6 @@ pub trait BlockchainRead: io::Read {
         Ok(Block::new(size, header, tx_count, txs))
     }
 
-    #[inline]
     fn read_block_header(&mut self) -> OpResult<BlockHeader> {
         Ok(BlockHeader::new(
             self.read_u32::<LittleEndian>()?,
@@ -88,7 +85,6 @@ pub trait BlockchainRead: io::Read {
         Ok(txs)
     }
 
-    #[inline]
     fn read_tx_outpoint(&mut self) -> OpResult<TxOutpoint> {
         Ok(TxOutpoint::new(
             self.read_256hash()?,

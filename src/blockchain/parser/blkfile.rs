@@ -20,7 +20,6 @@ pub struct BlkFile {
 }
 
 impl BlkFile {
-    #[inline]
     fn new(path: PathBuf, size: u64) -> OpResult<BlkFile> {
         let file = File::open(&path)?;
         let reader = BufReader::new(file);

@@ -14,7 +14,6 @@ pub enum StackElement {
 impl StackElement {
     /// Extracts underlyling byte array.
     /// If the element contains an OpCode, InvalidFormat Error is returned.
-    #[inline]
     pub fn data(&self) -> Result<Vec<u8>, ScriptError> {
         match *self {
             StackElement::Op(_) => Err(ScriptError::InvalidFormat),
@@ -24,7 +23,6 @@ impl StackElement {
 }
 
 impl PartialEq for StackElement {
-    #[inline]
     fn eq(&self, other: &Self) -> bool {
         match *self {
             StackElement::Op(code) => match *other {
@@ -76,7 +74,6 @@ struct ScriptEvaluator<'a> {
 }
 
 impl<'a> ScriptEvaluator<'a> {
-    #[inline]
     pub fn new(bytes: &'a [u8]) -> ScriptEvaluator {
         ScriptEvaluator {
             bytes,
@@ -222,7 +219,6 @@ impl<'a> ScriptEvaluator<'a> {
     }
 
     /// Read a script-encoded unsigned integer.
-    #[inline]
     fn read_uint(data: &[u8], size: usize) -> Result<usize, ScriptError> {
         if data.len() < size {
             Err(ScriptError::UnexpectedEof)
@@ -237,7 +233,6 @@ impl<'a> ScriptEvaluator<'a> {
 
     /// Matches stack elements against a defined pattern.
     /// For StackElement::Data() we just make a type comparison
-    #[inline]
     pub fn match_stack_pattern(elements: &[StackElement], pattern: &[StackElement]) -> bool {
         let plen = pattern.len();
         if elements.len() != plen {
@@ -335,7 +330,6 @@ fn public_key_to_addr(pub_key: &[u8], version: u8) -> String {
 }
 
 /// Takes 20 byte public key and version id
-#[inline]
 fn hash_160_to_address(h160: &[u8], version: u8) -> String {
     let mut hash = Vec::with_capacity(h160.len() + 5);
     hash.push(version);
