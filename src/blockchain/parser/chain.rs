@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
 
 use crate::blockchain::parser::blkfile::BlkFile;
@@ -20,9 +19,8 @@ pub struct ChainStorage {
 }
 
 impl ChainStorage {
-    pub fn new(options: &RefCell<ParserOptions>) -> OpResult<Self> {
-        let blockchain_dir = options.borrow().blockchain_dir.clone();
-        let options = options.borrow();
+    pub fn new(options: &ParserOptions) -> OpResult<Self> {
+        let blockchain_dir = options.blockchain_dir.clone();
         Ok(Self {
             blocks: get_block_index(blockchain_dir.join("index").as_path())?,
             blk_files: BlkFile::from_path(blockchain_dir.as_path())?,

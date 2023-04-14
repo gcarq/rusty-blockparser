@@ -1,6 +1,5 @@
 use clap::{App, Arg};
 use std::boxed::Box;
-use std::cell::RefCell;
 use std::fmt;
 use std::path::PathBuf;
 use std::process;
@@ -89,7 +88,7 @@ fn main() {
     };
 
     // Apply log filter based on verbosity
-    let log_level = options.borrow().log_level_filter;
+    let log_level = options.log_level_filter;
     SimpleLogger::init(log_level).expect("Unable to initialize logger!");
     info!(target: "main", "Starting rusty-blockparser v{} ...", env!("CARGO_PKG_VERSION"));
     debug!(target: "main", "Using log level {}", log_level);
@@ -99,14 +98,14 @@ fn main() {
         Err(e) => {
             error!(
                 "Cannot load blockchain from: '{}'. {}",
-                options.borrow().blockchain_dir.display(),
+                options.blockchain_dir.display(),
                 e
             );
             process::exit(1);
         }
     };
 
-    let mut parser = BlockchainParser::new(&options, chain_storage);
+    let mut parser = BlockchainParser::new(options, chain_storage);
     match parser.start() {
         Ok(_) => info!(target: "main", "Fin."),
         Err(why) => {
@@ -117,8 +116,8 @@ fn main() {
 }
 
 /// Parses args or panics if some requirements are not met.
-fn parse_args() -> OpResult<RefCell<ParserOptions>> {
-    let coins = &[
+fn parse_args() -> OpResult<ParserOptions> {
+    let coins = [
         "bitcoin",
         "testnet3",
         "namecoin",
@@ -145,7 +144,7 @@ fn parse_args() -> OpResult<RefCell<ParserOptions>> {
             .long("coin")
             .value_name("NAME")
             .help("Specify blockchain coin (default: bitcoin)")
-            .possible_values(coins)
+            .possible_values(&coins)
             .takes_value(true))
         .arg(Arg::with_name("blockchain-dir")
             .short("d")
@@ -214,5 +213,5 @@ fn parse_args() -> OpResult<RefCell<ParserOptions>> {
         log_level_filter,
         range,
     };
-    Ok(RefCell::new(options))
+    Ok(options)
 }

@@ -1,8 +1,9 @@
 use crate::blockchain::parser::chain::ChainStorage;
-use std::cell::RefCell;
+use crate::blockchain::parser::types::CoinType;
 use std::time::{Duration, Instant};
 
 use crate::blockchain::proto::block::Block;
+use crate::callbacks::Callback;
 use crate::errors::OpResult;
 use crate::ParserOptions;
 
@@ -29,20 +30,22 @@ impl Default for WorkerStats {
     }
 }
 
-pub struct BlockchainParser<'a> {
-    options: &'a RefCell<ParserOptions>, // struct to hold cli arguments
-    chain_storage: ChainStorage,         // Hash storage with the longest chain
-    stats: WorkerStats,                  // struct for thread management & statistics
+pub struct BlockchainParser {
+    chain_storage: ChainStorage, // Hash storage with the longest chain
+    stats: WorkerStats,          // struct for thread management & statistics
+    callback: Box<dyn Callback>,
+    coin_type: CoinType,
 }
 
-impl<'a> BlockchainParser<'a> {
+impl BlockchainParser {
     /// Instantiates a new Parser but does not start the workers.
-    pub fn new(options: &'a RefCell<ParserOptions>, chain_storage: ChainStorage) -> Self {
-        info!(target: "parser", "Parsing {} blockchain (range={}) ...", options.borrow().coin_type.name, options.borrow().range);
+    pub fn new(options: ParserOptions, chain_storage: ChainStorage) -> Self {
+        info!(target: "parser", "Parsing {} blockchain (range={}) ...", options.coin_type.name, options.range);
         Self {
-            options,
             chain_storage,
             stats: WorkerStats::default(),
+            callback: options.callback,
+            coin_type: options.coin_type,
         }
     }
 
@@ -58,17 +61,16 @@ impl<'a> BlockchainParser<'a> {
 
     /// Triggers the on_start() callback and initializes state.
     fn on_start(&mut self, height: u64) -> OpResult<()> {
-        let coin_type = self.options.borrow().coin_type.clone();
         self.stats.t_started = Instant::now();
         self.stats.t_last_log = Instant::now();
-        (*self.options.borrow_mut().callback).on_start(&coin_type, height)?;
+        self.callback.on_start(&self.coin_type, height)?;
         trace!(target: "parser", "on_start() called");
         Ok(())
     }
 
     /// Triggers the on_block() callback and updates statistics.
     fn on_block(&mut self, block: &Block, height: u64) -> OpResult<()> {
-        (*self.options.borrow_mut().callback).on_block(block, height)?;
+        self.callback.on_block(block, height)?;
         trace!(target: "parser", "on_block(height={}) called", height);
         self.print_progress(height);
         Ok(())
@@ -79,18 +81,17 @@ impl<'a> BlockchainParser<'a> {
         info!(target: "parser", "Done. Processed blocks up to height {} in {:.2} minutes.",
         height, (Instant::now() - self.stats.t_started).as_secs_f32() / 60.0);
 
-        (*self.options.borrow_mut().callback).on_complete(height)?;
+        self.callback.on_complete(height)?;
         trace!(target: "parser", "on_complete() called");
         Ok(())
     }
 
     fn print_progress(&mut self, height: u64) {
+        let now = Instant::now();
         let blocks_sec = height
-            .checked_div((Instant::now() - self.stats.t_started).as_secs())
+            .checked_div((now - self.stats.t_started).as_secs())
             .unwrap_or(height);
 
-        // Some performance measurements and logging
-        let now = Instant::now();
         if now - self.stats.t_last_log > self.stats.t_measure_frame {
             info!(target: "parser", "Status: {:6} Blocks processed. (left: {:6}, avg: {:5.2} blocks/sec)",
               height, self.chain_storage.remaining(), blocks_sec);
