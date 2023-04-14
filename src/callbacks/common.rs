@@ -20,9 +20,7 @@ pub fn remove_unspents(
 ) -> u64 {
     for input in &tx.value.inputs {
         let key = input.outpoint.to_bytes();
-        if unspents.contains_key(&key) {
-            unspents.remove(&key);
-        }
+        unspents.remove(&key);
     }
     tx.value.in_count.value
 }
