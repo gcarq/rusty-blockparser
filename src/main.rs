@@ -34,6 +34,7 @@ pub mod common;
 #[macro_use]
 pub mod callbacks;
 
+#[derive(Copy, Clone)]
 pub struct ParseRange {
     start: usize,
     end: Option<usize>,

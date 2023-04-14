@@ -32,16 +32,13 @@ impl Default for WorkerStats {
 
 pub struct BlockchainParser<'a> {
     options: &'a RefCell<ParserOptions>, // struct to hold cli arguments
-    chain_storage: chain::ChainStorage<'a>, // Hash storage with the longest chain
+    chain_storage: chain::ChainStorage,  // Hash storage with the longest chain
     stats: WorkerStats,                  // struct for thread management & statistics
 }
 
 impl<'a> BlockchainParser<'a> {
     /// Instantiates a new Parser but does not start the workers.
-    pub fn new(
-        options: &'a RefCell<ParserOptions>,
-        chain_storage: chain::ChainStorage<'a>,
-    ) -> Self {
+    pub fn new(options: &'a RefCell<ParserOptions>, chain_storage: chain::ChainStorage) -> Self {
         info!(target: "parser", "Parsing {} blockchain (range={}) ...", options.borrow().coin_type.name, options.borrow().range);
         Self {
             options,

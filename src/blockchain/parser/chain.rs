@@ -3,34 +3,39 @@ use std::collections::HashMap;
 
 use crate::blockchain::parser::blkfile::BlkFile;
 use crate::blockchain::parser::index::{get_block_index, BlockIndexRecord};
+use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::Block;
 use crate::common::utils;
 use crate::errors::OpResult;
-use crate::ParserOptions;
+use crate::{ParseRange, ParserOptions};
 
 /// Holds the index of longest valid chain
-pub struct ChainStorage<'a> {
+pub struct ChainStorage {
     blocks: Vec<BlockIndexRecord>,
     index: usize,
     blk_files: HashMap<usize, BlkFile>,
-    options: &'a RefCell<ParserOptions>,
+    range: ParseRange,
+    coin_type: CoinType,
+    verify_merkle_root: bool,
 }
 
-impl<'a> ChainStorage<'a> {
-    #[inline]
-    pub fn new(options: &'a RefCell<ParserOptions>) -> OpResult<Self> {
+impl ChainStorage {
+    pub fn new(options: &RefCell<ParserOptions>) -> OpResult<Self> {
         let blockchain_dir = options.borrow().blockchain_dir.clone();
+        let options = options.borrow();
         Ok(Self {
             blocks: get_block_index(blockchain_dir.join("index").as_path())?,
             blk_files: BlkFile::from_path(blockchain_dir.as_path())?,
-            index: options.borrow().range.start,
-            options,
+            index: options.range.start,
+            range: options.range,
+            coin_type: options.coin_type.clone(),
+            verify_merkle_root: options.verify,
         })
     }
 
     /// Returns the next hash without removing it
     pub fn get_next(&mut self) -> Option<Block> {
-        if let Some(end) = self.options.borrow().range.end {
+        if let Some(end) = self.range.end {
             if self.index == end {
                 return None;
             }
@@ -40,10 +45,10 @@ impl<'a> ChainStorage<'a> {
         let block = self
             .blk_files
             .get(&meta.n_file)?
-            .read_block(meta.n_data_pos, self.options.borrow().coin_type.version_id)
+            .read_block(meta.n_data_pos, self.coin_type.version_id)
             .ok()?;
 
-        if self.options.borrow().verify {
+        if self.verify_merkle_root {
             self.verify(&block);
         }
 
@@ -56,7 +61,7 @@ impl<'a> ChainStorage<'a> {
     fn verify(&self, block: &Block) {
         block.verify_merkle_root();
         if self.index == 0 {
-            let genesis_hash = self.options.borrow().coin_type.genesis_hash;
+            let genesis_hash = self.coin_type.genesis_hash;
             if block.header.hash != genesis_hash {
                 panic!(
                     "Hash of genesis doesn't match!\n  -> expected: {}\n  -> got: {}\n",
