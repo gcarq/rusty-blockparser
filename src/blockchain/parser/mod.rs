@@ -74,7 +74,9 @@ impl BlockchainParser {
     fn on_block(&mut self, block: &Block, height: u64) -> OpResult<()> {
         self.callback.on_block(block, height)?;
         trace!(target: "parser", "on_block(height={}) called", height);
-        self.print_progress(height);
+        if self.callback.show_progress() {
+            self.print_progress(height);
+        }
         Ok(())
     }
 

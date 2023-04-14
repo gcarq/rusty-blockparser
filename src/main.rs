@@ -9,7 +9,8 @@ use crate::blockchain::parser::types::{Bitcoin, CoinType};
 use crate::blockchain::parser::BlockchainParser;
 use crate::callbacks::balances::Balances;
 use crate::callbacks::csvdump::CsvDump;
-use crate::callbacks::stats::SimpleStats;
+use crate::callbacks::opreturn::OpReturn;
+use crate::callbacks::simplestats::SimpleStats;
 use crate::callbacks::unspentcsvdump::UnspentCsvDump;
 use crate::callbacks::Callback;
 use crate::common::logger::SimpleLogger;
@@ -155,13 +156,13 @@ fn parse_args() -> OpResult<ParserOptions> {
         .arg(Arg::with_name("start")
             .short("s")
             .long("start")
-            .value_name("NUMBER")
+            .value_name("HEIGHT")
             .help("Specify starting block for parsing (inclusive)")
             .takes_value(true))
         .arg(Arg::with_name("end")
             .short("e")
             .long("end")
-            .value_name("NUMBER")
+            .value_name("HEIGHT")
             .help("Specify last block for parsing (inclusive) (default: all known blocks)")
             .takes_value(true))
         // Add callbacks
@@ -169,6 +170,7 @@ fn parse_args() -> OpResult<ParserOptions> {
         .subcommand(CsvDump::build_subcommand())
         .subcommand(SimpleStats::build_subcommand())
         .subcommand(Balances::build_subcommand())
+        .subcommand(OpReturn::build_subcommand())
         .get_matches();
 
     let verify = matches.is_present("verify");
@@ -197,9 +199,13 @@ fn parse_args() -> OpResult<ParserOptions> {
         callback = Box::new(UnspentCsvDump::new(matches)?);
     } else if let Some(matches) = matches.subcommand_matches("balances") {
         callback = Box::new(Balances::new(matches)?);
+    } else if let Some(matches) = matches.subcommand_matches("opreturn") {
+        callback = Box::new(OpReturn::new(matches)?);
     } else {
         clap::Error {
-            message: String::from("error: No Callback specified.\nFor more information try --help"),
+            message: String::from(
+                "error: No valid callback specified.\nFor more information try --help",
+            ),
             kind: clap::ErrorKind::MissingSubcommand,
             info: None,
         }

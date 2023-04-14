@@ -7,7 +7,8 @@ use crate::errors::OpResult;
 pub mod balances;
 mod common;
 pub mod csvdump;
-pub mod stats;
+pub mod opreturn;
+pub mod simplestats;
 pub mod unspentcsvdump;
 
 /// Implement this trait for a custom Callback.
@@ -33,4 +34,9 @@ pub trait Callback {
 
     /// Gets called if the parser has finished and all blocks are handled
     fn on_complete(&mut self, block_height: u64) -> OpResult<()>;
+
+    /// Can be used to toggle whether the progress should be shown for specific callbacks or not
+    fn show_progress(&self) -> bool {
+        true
+    }
 }

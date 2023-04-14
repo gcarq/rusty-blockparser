@@ -13,7 +13,6 @@ use crate::errors::OpResult;
 
 #[derive(Default)]
 pub struct SimpleStats {
-    //X coin_type: CoinType,
     n_valid_blocks: u64,
     block_sizes: Vec<u32>,
 

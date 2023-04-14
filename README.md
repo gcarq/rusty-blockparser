@@ -31,8 +31,8 @@ OPTIONS:
                                              ~/.bitcoin/blocks)
     -c, --coin <NAME>                        Specify blockchain coin (default: bitcoin) [possible values: bitcoin,
                                              testnet3, namecoin, litecoin, dogecoin, myriadcoin, unobtanium]
-    -e, --end <NUMBER>                       Specify last block for parsing (inclusive) (default: all known blocks)
-    -s, --start <NUMBER>                     Specify starting block for parsing (inclusive)
+    -e, --end <HEIGHT>                       Specify last block for parsing (exclusive) (default: all known blocks)
+    -s, --start <HEIGHT>                     Specify starting block for parsing (inclusive)
 
 SUBCOMMANDS:
     balances          Dumps all addresses with non-zero balance to CSV file
@@ -134,6 +134,7 @@ Callbacks are built on top of the core parser. They can be implemented to extrac
     ```
     NOTE: The total size of the csv dump is at least 8 GiB (height 635000).
 
+* `opreturn`: shows transactions with embedded OP_RETURN data that is representable as UTF8.
 
 * `csvdump`: dumps all parsed data as CSV files into the specified `folder`. See [Usage](#Usage) for an example. I chose CSV dumps instead of  an active db-connection because `LOAD DATA INFILE` is the most performant way for bulk inserts.
     The files are in the following format:
