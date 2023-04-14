@@ -8,7 +8,7 @@ use crate::blockchain::proto::script::custom::eval_from_bytes_custom;
 use bitcoin::address::Payload;
 use bitcoin::blockdata::script::Instruction;
 use bitcoin::hashes::{hash160, Hash};
-use bitcoin::{Address, Network, PubkeyHash, Script};
+use bitcoin::{address, Address, Network, PubkeyHash, Script};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ScriptError {
@@ -80,7 +80,7 @@ pub enum ScriptPattern {
 impl fmt::Display for ScriptPattern {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            ScriptPattern::OpReturn(_) => write!(f, "DataOutput (OP_RETURN)"),
+            ScriptPattern::OpReturn(_) => write!(f, "OpReturn"),
             ScriptPattern::Pay2MultiSig => write!(f, "Pay2MultiSig"),
             ScriptPattern::Pay2PublicKey => write!(f, "Pay2PublicKey"),
             ScriptPattern::Pay2PublicKeyHash => write!(f, "Pay2PublicKeyHash"),
@@ -125,10 +125,23 @@ pub fn eval_from_bytes_bitcoin(bytes: &[u8], version_id: u8) -> EvaluatedScript 
     };
 
     let script = Script::from_bytes(bytes);
+
+    // For OP_RETURN and provably unspendable scripts there is no point in parsing the address
+    if script.is_op_return() {
+        // OP_RETURN 13 <data>
+        let data = String::from_utf8(script.to_bytes().into_iter().skip(2).collect());
+        let pattern = ScriptPattern::OpReturn(data.unwrap_or_else(|_| String::from("")));
+        return EvaluatedScript::new(None, pattern);
+    } else if script.is_provably_unspendable() {
+        return EvaluatedScript::new(None, ScriptPattern::Unspendable);
+    }
+
     let address = match Address::from_script(script, network) {
         Ok(address) => Some(format!("{}", address)),
-        Err(msg) => {
-            warn!(target: "script", "Unable to extract evaluated address: {}", msg);
+        Err(err) => {
+            if err != address::Error::UnrecognizedScript {
+                warn!(target: "script", "Unable to extract evaluated address: {}", err)
+            }
             None
         }
     };
@@ -150,13 +163,6 @@ pub fn eval_from_bytes_bitcoin(bytes: &[u8], version_id: u8) -> EvaluatedScript 
         EvaluatedScript::new(address, ScriptPattern::Pay2Taproot)
     } else if script.is_witness_program() {
         EvaluatedScript::new(address, ScriptPattern::WitnessProgram)
-    } else if script.is_op_return() {
-        // OP_RETURN 13 <data>
-        let data = String::from_utf8(script.to_bytes().into_iter().skip(2).collect());
-        let pattern = ScriptPattern::OpReturn(data.unwrap_or_else(|_| String::from("")));
-        EvaluatedScript::new(address, pattern)
-    } else if script.is_provably_unspendable() {
-        EvaluatedScript::new(address, ScriptPattern::Unspendable)
     } else {
         EvaluatedScript::new(address, ScriptPattern::NotRecognised)
     }
@@ -165,7 +171,7 @@ pub fn eval_from_bytes_bitcoin(bytes: &[u8], version_id: u8) -> EvaluatedScript 
 /// Workaround to parse address from p2pk scripts
 /// See issue https://github.com/rust-bitcoin/rust-bitcoin/issues/441
 fn p2pk_to_string(script: &Script, network: Network) -> Option<String> {
-    assert!(script.is_p2pk());
+    debug_assert!(script.is_p2pk());
     let pk = match script.instructions().next() {
         Some(Ok(Instruction::PushBytes(bytes))) => bytes,
         Some(Err(msg)) => {
