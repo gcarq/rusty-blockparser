@@ -20,6 +20,7 @@ rusty-leveldb = "^1.0.6"
 dirs = "^5.0.0"
 bitcoin = "^0.30.0"
 rayon = "^1.3"
+seek_bufread = "^1.2.2"
 
 # The development profile, used for `cargo build`
 [profile.dev]

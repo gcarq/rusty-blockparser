@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 use std::convert::From;
 use std::fs::{self, DirEntry, File};
-use std::io::{self, BufReader, Seek, SeekFrom};
+use std::io::{self, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
 use byteorder::{LittleEndian, ReadBytesExt};
+use seek_bufread::BufReader;
 
 use crate::blockchain::parser::reader::BlockchainRead;
 use crate::blockchain::proto::block::Block;
@@ -15,20 +16,21 @@ use crate::errors::{OpError, OpErrorKind, OpResult};
 pub struct BlkFile {
     pub path: PathBuf,
     pub size: u64,
+    reader: BufReader<File>,
 }
 
 impl BlkFile {
     #[inline]
-    fn new(path: PathBuf, size: u64) -> BlkFile {
-        BlkFile { path, size }
+    fn new(path: PathBuf, size: u64) -> OpResult<BlkFile> {
+        let file = File::open(&path)?;
+        let reader = BufReader::new(file);
+        Ok(BlkFile { path, size, reader })
     }
 
-    #[inline]
-    pub fn read_block(&self, offset: u64, version_id: u8) -> OpResult<Block> {
-        let mut f = BufReader::new(File::open(&self.path)?);
-        f.seek(SeekFrom::Start(offset - 4))?;
-        let block_size = f.read_u32::<LittleEndian>()?;
-        f.read_block(block_size, version_id)
+    pub fn read_block(&mut self, offset: u64, version_id: u8) -> OpResult<Block> {
+        self.reader.seek(SeekFrom::Start(offset - 4))?;
+        let block_size = self.reader.read_u32::<LittleEndian>()?;
+        self.reader.read_block(block_size, version_id)
     }
 
     /// Collects all blk*.dat paths in the given directory
@@ -51,7 +53,7 @@ impl BlkFile {
                         // Build BlkFile structures
                         let size = fs::metadata(path.as_path())?.len();
                         trace!(target: "blkfile", "Adding {}... (index: {}, size: {})", path.display(), index, size);
-                        collected.insert(index, BlkFile::new(path, size));
+                        collected.insert(index, BlkFile::new(path, size)?);
                     }
                 }
                 Err(msg) => {

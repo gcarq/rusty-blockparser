@@ -33,17 +33,12 @@ pub fn merkle_root(hashes: &[[u8; 32]]) -> [u8; 32] {
 }
 
 pub fn arr_to_hex(data: &[u8]) -> String {
-    data.iter()
-        .map(|b| format!("{:02x?}", b))
-        .collect::<String>()
+    data.iter().map(|b| format!("{:02x?}", b)).collect()
 }
 
 #[inline]
 pub fn arr_to_hex_swapped(data: &[u8]) -> String {
-    data.iter()
-        .rev()
-        .map(|b| format!("{:02x}", b))
-        .collect::<String>()
+    data.iter().rev().map(|b| format!("{:02x}", b)).collect()
 }
 
 pub fn hex_to_vec(hex_str: &str) -> Vec<u8> {

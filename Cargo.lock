@@ -450,6 +450,7 @@ dependencies = [
  "log",
  "rayon",
  "rusty-leveldb",
+ "seek_bufread",
 ]
 
 [[package]]
@@ -490,6 +491,12 @@ checksum = "70a129b9e9efbfb223753b9163c4ab3b13cff7fd9c7f010fbac25ab4099fa07e"
 dependencies = [
  "cc",
 ]
+
+[[package]]
+name = "seek_bufread"
+version = "1.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d8a248bca144497822c75e8a12d26b7c0bfd9240fc4baa0b2f64f81619ddd58d"
 
 [[package]]
 name = "snap"

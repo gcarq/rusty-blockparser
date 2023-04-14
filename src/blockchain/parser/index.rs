@@ -11,7 +11,8 @@ use crate::errors::OpResult;
 const BLOCK_VALID_CHAIN: usize = 4;
 const BLOCK_HAVE_DATA: usize = 8;
 
-/// https://bitcoin.stackexchange.com/questions/28168/what-are-the-keys-used-in-the-blockchain-leveldb-ie-what-are-the-keyvalue-pair
+/// Holds the metadata where the block data is stored,
+/// See https://bitcoin.stackexchange.com/questions/28168/what-are-the-keys-used-in-the-blockchain-leveldb-ie-what-are-the-keyvalue-pair
 pub struct BlockIndexRecord {
     pub block_hash: [u8; 32],
     version: usize,
@@ -93,12 +94,12 @@ fn read_varint(reader: &mut Cursor<&[u8]>) -> OpResult<usize> {
     let mut n = 0;
     loop {
         let ch_data = reader.read_u8()?;
-        if n > usize::max_value() >> 7 {
+        if n > usize::MAX >> 7 {
             panic!("size too large");
         }
         n = (n << 7) | (ch_data & 0x7F) as usize;
         if ch_data & 0x80 > 0 {
-            if n == usize::max_value() {
+            if n == usize::MAX {
                 panic!("size too large");
             }
             n += 1;

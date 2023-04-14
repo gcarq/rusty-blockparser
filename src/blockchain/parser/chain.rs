@@ -10,7 +10,7 @@ use crate::{BlockHeightRange, ParserOptions};
 
 /// Holds the index of longest valid chain
 pub struct ChainStorage {
-    blocks: Vec<BlockIndexRecord>,
+    block_index: Vec<BlockIndexRecord>,
     blk_files: HashMap<usize, BlkFile>,
     coin_type: CoinType,
     verify_merkle_root: bool,
@@ -22,7 +22,7 @@ impl ChainStorage {
     pub fn new(options: &ParserOptions) -> OpResult<Self> {
         let blockchain_dir = options.blockchain_dir.clone();
         Ok(Self {
-            blocks: get_block_index(blockchain_dir.join("index").as_path())?,
+            block_index: get_block_index(blockchain_dir.join("index").as_path())?,
             blk_files: BlkFile::from_path(blockchain_dir.as_path())?,
             cur_height: options.range.start,
             range: options.range,
@@ -40,11 +40,10 @@ impl ChainStorage {
             }
         }
 
-        let meta = self.blocks.get(height as usize)?;
-        let block = self
-            .blk_files
-            .get(&meta.n_file)?
-            .read_block(meta.n_data_pos, self.coin_type.version_id)
+        let block_meta = self.block_index.get(height as usize)?;
+        let blk_file = self.blk_files.get_mut(&block_meta.n_file)?;
+        let block = blk_file
+            .read_block(block_meta.n_data_pos, self.coin_type.version_id)
             .ok()?;
 
         if self.verify_merkle_root {
@@ -70,7 +69,7 @@ impl ChainStorage {
             }
         } else {
             let prev_hash = self
-                .blocks
+                .block_index
                 .get(self.cur_height as usize - 1)
                 .unwrap()
                 .block_hash;
@@ -88,6 +87,8 @@ impl ChainStorage {
     /// Returns number of remaining blocks
     #[inline]
     pub fn remaining(&self) -> usize {
-        self.blocks.len().saturating_sub(self.cur_height as usize)
+        self.block_index
+            .len()
+            .saturating_sub(self.cur_height as usize)
     }
 }

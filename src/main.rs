@@ -25,6 +25,7 @@ extern crate bitcoin;
 extern crate byteorder;
 extern crate rayon;
 extern crate rusty_leveldb;
+extern crate seek_bufread;
 
 #[macro_use]
 pub mod errors;
