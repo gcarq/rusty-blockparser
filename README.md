@@ -30,14 +30,16 @@ OPTIONS:
     -d, --blockchain-dir <blockchain-dir>    Sets blockchain directory which contains blk.dat files (default:
                                              ~/.bitcoin/blocks)
     -c, --coin <NAME>                        Specify blockchain coin (default: bitcoin) [possible values: bitcoin,
-                                             testnet3, namecoin, litecoin, dogecoin, myriadcoin, unobtanium]
-    -e, --end <HEIGHT>                       Specify last block for parsing (exclusive) (default: all known blocks)
+                                             testnet3, namecoin, litecoin, dogecoin, myriadcoin, unobtanium,
+                                             noteblockchain]
+    -e, --end <HEIGHT>                       Specify last block for parsing (inclusive) (default: all known blocks)
     -s, --start <HEIGHT>                     Specify starting block for parsing (inclusive)
 
 SUBCOMMANDS:
     balances          Dumps all addresses with non-zero balance to CSV file
     csvdump           Dumps the whole blockchain into CSV files
     help              Prints this message or the help of the given subcommand(s)
+    opreturn          Shows embedded OP_RETURN data that is representable as UTF8
     simplestats       Shows various Blockchain stats
     unspentcsvdump    Dumps the unspent outputs to CSV file
 ```
