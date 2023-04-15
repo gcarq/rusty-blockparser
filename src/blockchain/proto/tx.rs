@@ -1,3 +1,4 @@
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::fmt;
 
 use crate::blockchain::proto::script;
@@ -38,7 +39,7 @@ impl EvaluatedTx {
     ) -> Self {
         // Evaluate and wrap all outputs to process them later
         let outputs = outputs
-            .into_iter()
+            .into_par_iter()
             .map(|o| EvaluatedTxOut::eval_script(o, version_id))
             .collect();
         EvaluatedTx {

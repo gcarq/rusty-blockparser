@@ -13,7 +13,7 @@ pub struct ChainStorage {
     block_index: Vec<BlockIndexRecord>,
     blk_files: HashMap<usize, BlkFile>,
     coin_type: CoinType,
-    verify_merkle_root: bool,
+    verify: bool,
     range: BlockHeightRange,
     pub cur_height: u64,
 }
@@ -27,7 +27,7 @@ impl ChainStorage {
             cur_height: options.range.start,
             range: options.range,
             coin_type: options.coin_type.clone(),
-            verify_merkle_root: options.verify,
+            verify: options.verify,
         })
     }
 
@@ -46,7 +46,7 @@ impl ChainStorage {
             .read_block(block_meta.n_data_pos, self.coin_type.version_id)
             .ok()?;
 
-        if self.verify_merkle_root {
+        if self.verify {
             self.verify(&block);
         }
 

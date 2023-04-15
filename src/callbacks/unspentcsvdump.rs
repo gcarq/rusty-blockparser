@@ -68,7 +68,7 @@ impl Callback for UnspentCsvDump {
 
     fn on_start(&mut self, _: &CoinType, block_height: u64) -> OpResult<()> {
         self.start_height = block_height;
-        info!(target: "callback", "Using `unspentcsvdump` with dump folder: {} ...", &self.dump_folder.display());
+        info!(target: "callback", "Executing unspentcsvdump with dump folder: {} ...", &self.dump_folder.display());
         Ok(())
     }
 

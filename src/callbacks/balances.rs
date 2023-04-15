@@ -62,7 +62,7 @@ impl Callback for Balances {
 
     fn on_start(&mut self, _: &CoinType, block_height: u64) -> OpResult<()> {
         self.start_height = block_height;
-        info!(target: "callback", "Using `balances` with dump folder: {} ...", &self.dump_folder.display());
+        info!(target: "callback", "Executing balances with dump folder: {} ...", &self.dump_folder.display());
         Ok(())
     }
 
@@ -88,10 +88,10 @@ impl Callback for Balances {
             .write_all(format!("{};{}\n", "address", "balance").as_bytes())?;
 
         // Collect balances for each address
-        let mut balances: HashMap<String, u64> = HashMap::new();
-        for value in self.unspents.values() {
-            let entry = balances.entry(value.address.clone()).or_insert(0);
-            *entry += value.value
+        let mut balances: HashMap<&str, u64> = HashMap::new();
+        for unspent in self.unspents.values() {
+            let entry = balances.entry(&unspent.address).or_insert(0);
+            *entry += unspent.value
         }
 
         for (address, balance) in balances.iter() {

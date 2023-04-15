@@ -74,7 +74,7 @@ impl Callback for CsvDump {
 
     fn on_start(&mut self, _: &CoinType, block_height: u64) -> OpResult<()> {
         self.start_height = block_height;
-        info!(target: "callback", "Using `csvdump` with dump folder: {} ...", &self.dump_folder.display());
+        info!(target: "callback", "Executing csvdump with dump folder: {} ...", &self.dump_folder.display());
         Ok(())
     }
 

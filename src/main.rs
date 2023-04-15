@@ -56,7 +56,7 @@ impl fmt::Display for BlockHeightRange {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let end = match self.end {
             Some(e) => e.to_string(),
-            None => String::from(""),
+            None => String::from("HEAD"),
         };
         write!(f, "{}..{}", self.start, end)
     }

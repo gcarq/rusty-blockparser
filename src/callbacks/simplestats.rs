@@ -184,7 +184,7 @@ impl Callback for SimpleStats {
     }
 
     fn on_start(&mut self, _: &CoinType, _: u64) -> OpResult<()> {
-        info!(target: "callback", "Executing SimpleStats ...");
+        info!(target: "callback", "Executing simplestats ...");
         Ok(())
     }
 
