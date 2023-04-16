@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fmt;
 use std::io::Cursor;
@@ -7,20 +8,70 @@ use byteorder::ReadBytesExt;
 use rusty_leveldb::{LdbIterator, Options, DB};
 
 use crate::errors::OpResult;
+use crate::ParserOptions;
 
-const BLOCK_VALID_CHAIN: usize = 4;
-const BLOCK_HAVE_DATA: usize = 8;
+const BLOCK_VALID_CHAIN: u64 = 4;
+const BLOCK_HAVE_DATA: u64 = 8;
+
+/// Holds the index of longest valid chain
+pub struct ChainIndex {
+    block_index: HashMap<u64, BlockIndexRecord>,
+    max_height_blk_index: HashMap<u64, u64>, // Maps blk_index to max_height found in the file
+    max_height: u64,
+}
+
+impl ChainIndex {
+    pub fn new(options: &ParserOptions) -> OpResult<Self> {
+        let path = options.blockchain_dir.join("index");
+        let block_index = get_block_index(&path)?;
+        let mut max_height_blk_index = HashMap::new();
+
+        for (height, index_record) in &block_index {
+            match max_height_blk_index.get(&index_record.blk_index) {
+                Some(cur_height) if height > cur_height => {
+                    max_height_blk_index.insert(index_record.blk_index, *height);
+                }
+                None => {
+                    max_height_blk_index.insert(index_record.blk_index, *height);
+                }
+                _ => {}
+            }
+        }
+
+        let max_height = *block_index.keys().max().unwrap();
+        Ok(Self {
+            block_index,
+            max_height,
+            max_height_blk_index,
+        })
+    }
+
+    /// Returns the `BlockIndexRecord` for the given height
+    pub fn get(&self, height: u64) -> Option<&BlockIndexRecord> {
+        self.block_index.get(&height)
+    }
+
+    /// Returns the maximum height known
+    pub fn max_height(&self) -> u64 {
+        self.max_height
+    }
+
+    /// Returns the maximum height that can be found in the given blk_index
+    pub fn max_height_by_blk(&self, blk_index: u64) -> u64 {
+        *self.max_height_blk_index.get(&blk_index).unwrap()
+    }
+}
 
 /// Holds the metadata where the block data is stored,
 /// See https://bitcoin.stackexchange.com/questions/28168/what-are-the-keys-used-in-the-blockchain-leveldb-ie-what-are-the-keyvalue-pair
 pub struct BlockIndexRecord {
     pub block_hash: [u8; 32],
-    version: usize,
-    height: usize,
-    status: usize,
-    n_tx: usize,
-    pub n_file: usize,
-    pub n_data_pos: u64,
+    pub blk_index: u64,
+    pub data_offset: u64, // offset within the blk file
+    version: u64,
+    height: u64,
+    status: u64,
+    tx_count: u64,
 }
 
 impl BlockIndexRecord {
@@ -31,18 +82,18 @@ impl BlockIndexRecord {
         let version = read_varint(&mut reader)?;
         let height = read_varint(&mut reader)?;
         let status = read_varint(&mut reader)?;
-        let n_tx = read_varint(&mut reader)?;
-        let n_file = read_varint(&mut reader)?;
-        let n_data_pos = read_varint(&mut reader)? as u64;
+        let tx_count = read_varint(&mut reader)?;
+        let blk_index = read_varint(&mut reader)?;
+        let data_offset = read_varint(&mut reader)?;
 
         Ok(BlockIndexRecord {
             block_hash,
             version,
             height,
             status,
-            n_tx,
-            n_file,
-            n_data_pos,
+            tx_count,
+            blk_index,
+            data_offset,
         })
     }
 }
@@ -54,31 +105,29 @@ impl fmt::Debug for BlockIndexRecord {
             .field("version", &self.version)
             .field("height", &self.height)
             .field("status", &self.status)
-            .field("n_tx", &self.n_tx)
-            .field("n_file", &self.n_file)
-            .field("n_data_pos", &self.n_data_pos)
+            .field("n_tx", &self.tx_count)
+            .field("n_file", &self.blk_index)
+            .field("n_data_pos", &self.data_offset)
             .finish()
     }
 }
 
-pub fn get_block_index(path: &Path) -> OpResult<Vec<BlockIndexRecord>> {
+pub fn get_block_index(path: &Path) -> OpResult<HashMap<u64, BlockIndexRecord>> {
     info!(target: "index", "Reading index from {} ...", path.display());
 
-    let mut block_index = Vec::with_capacity(800000);
-    let mut db = DB::open(path, Options::default())?;
-    let mut iter = db.new_iter()?;
-    let (mut k, mut v) = (vec![], vec![]);
+    let mut block_index = HashMap::with_capacity(800000);
+    let mut db_iter = DB::open(path, Options::default())?.new_iter()?;
+    let (mut key, mut value) = (vec![], vec![]);
 
-    while iter.advance() {
-        iter.current(&mut k, &mut v);
-        if is_block_index_record(&k) {
-            let record = BlockIndexRecord::from(&k[1..], &v)?;
+    while db_iter.advance() {
+        db_iter.current(&mut key, &mut value);
+        if is_block_index_record(&key) {
+            let record = BlockIndexRecord::from(&key[1..], &value)?;
             if record.status & (BLOCK_VALID_CHAIN | BLOCK_HAVE_DATA | BLOCK_VALID_CHAIN) > 0 {
-                block_index.push(record);
+                block_index.insert(record.height, record);
             }
         }
     }
-    block_index.sort_by_key(|b| b.height);
     info!(target: "index", "Got longest chain with {} blocks ...", block_index.len());
     Ok(block_index)
 }
@@ -90,16 +139,16 @@ fn is_block_index_record(data: &[u8]) -> bool {
 
 /// TODO: this is a wonky 1:1 translation from https://github.com/bitcoin/bitcoin
 /// It is NOT the same as CompactSize.
-fn read_varint(reader: &mut Cursor<&[u8]>) -> OpResult<usize> {
+fn read_varint(reader: &mut Cursor<&[u8]>) -> OpResult<u64> {
     let mut n = 0;
     loop {
         let ch_data = reader.read_u8()?;
-        if n > usize::MAX >> 7 {
+        if n > u64::MAX >> 7 {
             panic!("size too large");
         }
-        n = (n << 7) | (ch_data & 0x7F) as usize;
+        n = (n << 7) | (ch_data & 0x7F) as u64;
         if ch_data & 0x80 > 0 {
-            if n == usize::MAX {
+            if n == u64::MAX {
                 panic!("size too large");
             }
             n += 1;

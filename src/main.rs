@@ -99,7 +99,8 @@ fn main() {
         Ok(storage) => storage,
         Err(e) => {
             error!(
-                "Cannot load blockchain from: '{}'. {}",
+                target: "main",
+                "Cannot load blockchain data from: '{}'. {}",
                 options.blockchain_dir.display(),
                 e
             );

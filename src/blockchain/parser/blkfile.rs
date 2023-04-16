@@ -16,24 +16,44 @@ use crate::errors::{OpError, OpErrorKind, OpResult};
 pub struct BlkFile {
     pub path: PathBuf,
     pub size: u64,
-    reader: BufReader<File>,
+    reader: Option<BufReader<File>>,
 }
 
 impl BlkFile {
-    fn new(path: PathBuf, size: u64) -> OpResult<BlkFile> {
-        let file = File::open(&path)?;
-        let reader = BufReader::new(file);
-        Ok(BlkFile { path, size, reader })
+    fn new(path: PathBuf, size: u64) -> BlkFile {
+        BlkFile {
+            path,
+            size,
+            reader: None,
+        }
+    }
+
+    /// Opens the file handle (does nothing if the file has been opened already)
+    fn open(&mut self) -> OpResult<&mut BufReader<File>> {
+        if self.reader.is_none() {
+            debug!(target: "blkfile", "Opening {} ...", &self.path.display());
+            self.reader = Some(BufReader::new(File::open(&self.path)?));
+        }
+        Ok(self.reader.as_mut().unwrap())
+    }
+
+    /// Closes the file handle
+    pub fn close(&mut self) {
+        debug!(target: "blkfile", "Closing {} ...", &self.path.display());
+        if self.reader.is_some() {
+            self.reader = None;
+        }
     }
 
     pub fn read_block(&mut self, offset: u64, version_id: u8) -> OpResult<Block> {
-        self.reader.seek(SeekFrom::Start(offset - 4))?;
-        let block_size = self.reader.read_u32::<LittleEndian>()?;
-        self.reader.read_block(block_size, version_id)
+        let reader = self.open()?;
+        reader.seek(SeekFrom::Start(offset - 4))?;
+        let block_size = reader.read_u32::<LittleEndian>()?;
+        reader.read_block(block_size, version_id)
     }
 
     /// Collects all blk*.dat paths in the given directory
-    pub fn from_path(path: &Path) -> OpResult<HashMap<usize, BlkFile>> {
+    pub fn from_path(path: &Path) -> OpResult<HashMap<u64, BlkFile>> {
         info!(target: "blkfile", "Reading files from {} ...", path.display());
         let mut collected = HashMap::with_capacity(4000);
 
@@ -51,8 +71,8 @@ impl BlkFile {
                     if let Some(index) = BlkFile::parse_blk_index(&file_name, "blk", ".dat") {
                         // Build BlkFile structures
                         let size = fs::metadata(path.as_path())?.len();
-                        trace!(target: "blkfile", "Adding {}... (index: {}, size: {})", path.display(), index, size);
-                        collected.insert(index, BlkFile::new(path, size)?);
+                        trace!(target: "blkfile", "Adding {} ... (index: {}, size: {})", path.display(), index, size);
+                        collected.insert(index, BlkFile::new(path, size));
                     }
                 }
                 Err(msg) => {
@@ -81,11 +101,11 @@ impl BlkFile {
 
     /// Identifies blk file and parses index
     /// Returns None if this is no blk file
-    fn parse_blk_index(file_name: &str, prefix: &str, ext: &str) -> Option<usize> {
+    fn parse_blk_index(file_name: &str, prefix: &str, ext: &str) -> Option<u64> {
         if file_name.starts_with(prefix) && file_name.ends_with(ext) {
             // Parse blk_index, this means we extract 42 from blk000042.dat
             file_name[prefix.len()..(file_name.len() - ext.len())]
-                .parse::<usize>()
+                .parse::<u64>()
                 .ok()
         } else {
             None
