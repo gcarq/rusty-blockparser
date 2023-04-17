@@ -22,7 +22,6 @@ pub struct CsvDump {
     txout_writer: BufWriter<File>,
 
     start_height: u64,
-    end_height: u64,
     tx_count: u64,
     in_count: u64,
     out_count: u64,
@@ -64,7 +63,6 @@ impl Callback for CsvDump {
             txin_writer: CsvDump::create_writer(cap, dump_folder.join("tx_in.csv.tmp"))?,
             txout_writer: CsvDump::create_writer(cap, dump_folder.join("tx_out.csv.tmp"))?,
             start_height: 0,
-            end_height: 0,
             tx_count: 0,
             in_count: 0,
             out_count: 0,
@@ -109,25 +107,22 @@ impl Callback for CsvDump {
     }
 
     fn on_complete(&mut self, block_height: u64) -> OpResult<()> {
-        self.end_height = block_height;
-
         // Keep in sync with c'tor
         for f in ["blocks", "transactions", "tx_in", "tx_out"] {
             // Rename temp files
             fs::rename(
                 self.dump_folder.as_path().join(format!("{}.csv.tmp", f)),
-                self.dump_folder.as_path().join(format!(
-                    "{}-{}-{}.csv",
-                    f, self.start_height, self.end_height
-                )),
+                self.dump_folder
+                    .as_path()
+                    .join(format!("{}-{}-{}.csv", f, self.start_height, block_height)),
             )?;
         }
 
-        info!(target: "callback", "Done.\nDumped all {} blocks:\n\
+        info!(target: "callback", "Done.\nDumped blocks from height {} to {}:\n\
                                    \t-> transactions: {:9}\n\
                                    \t-> inputs:       {:9}\n\
                                    \t-> outputs:      {:9}",
-             self.end_height, self.tx_count, self.in_count, self.out_count);
+             self.start_height, block_height, self.tx_count, self.in_count, self.out_count);
         Ok(())
     }
 }

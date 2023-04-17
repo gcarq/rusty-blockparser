@@ -120,11 +120,11 @@ impl Callback for UnspentCsvDump {
             )),
         )?;
 
-        info!(target: "callback", "Done.\nDumped all {} blocks:\n\
+        info!(target: "callback", "Done.\nDumped blocks from height {} to {}:\n\
                                    \t-> transactions: {:9}\n\
                                    \t-> inputs:       {:9}\n\
                                    \t-> outputs:      {:9}",
-             block_height, self.tx_count, self.in_count, self.out_count);
+             self.start_height, block_height, self.tx_count, self.in_count, self.out_count);
         Ok(())
     }
 }
