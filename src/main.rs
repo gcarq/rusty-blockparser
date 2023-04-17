@@ -50,6 +50,10 @@ impl BlockHeightRange {
         }
         Ok(Self { start, end })
     }
+
+    pub fn is_default(&self) -> bool {
+        self.start == 0 && self.end.is_none()
+    }
 }
 
 impl fmt::Display for BlockHeightRange {
@@ -94,6 +98,9 @@ fn main() {
     SimpleLogger::init(log_level).expect("Unable to initialize logger!");
     info!(target: "main", "Starting rusty-blockparser v{} ...", env!("CARGO_PKG_VERSION"));
     debug!(target: "main", "Using log level {}", log_level);
+    if options.verify {
+        info!(target: "main", "Configured to verify merkle roots and block hashes");
+    }
 
     let chain_storage = match ChainStorage::new(&options) {
         Ok(storage) => storage,
@@ -136,7 +143,7 @@ fn parse_args() -> OpResult<ParserOptions> {
         // Add flags
         .arg(Arg::with_name("verify")
             .long("verify")
-            .help("Verifies the leveldb index integrity and verifies merkle roots"))
+            .help("Verifies merkle roots and block hashes"))
         .arg(Arg::with_name("verbosity")
             .short("v")
             .multiple(true)

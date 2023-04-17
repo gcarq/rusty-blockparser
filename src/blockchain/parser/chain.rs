@@ -6,7 +6,7 @@ use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::Block;
 use crate::common::utils;
 use crate::errors::OpResult;
-use crate::{BlockHeightRange, ParserOptions};
+use crate::ParserOptions;
 
 /// Manages the index and data of longest valid chain
 pub struct ChainStorage {
@@ -14,7 +14,6 @@ pub struct ChainStorage {
     blk_files: HashMap<u64, BlkFile>, // maps blk_index to BlkFile
     coin_type: CoinType,
     verify: bool,
-    range: BlockHeightRange,
     pub cur_height: u64,
 }
 
@@ -24,7 +23,6 @@ impl ChainStorage {
             chain_index: ChainIndex::new(options)?,
             blk_files: BlkFile::from_path(options.blockchain_dir.as_path())?,
             cur_height: options.range.start,
-            range: options.range,
             coin_type: options.coin_type.clone(),
             verify: options.verify,
         })
@@ -34,11 +32,6 @@ impl ChainStorage {
     pub fn advance(&mut self) -> Option<(Block, u64)> {
         // Check range configured params
         let height = self.cur_height;
-        if let Some(end) = self.range.end {
-            if height == end {
-                return None;
-            }
-        }
 
         // Read block
         let block_meta = self.chain_index.get(height)?;

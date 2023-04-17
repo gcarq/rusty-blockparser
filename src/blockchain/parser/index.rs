@@ -15,15 +15,15 @@ const BLOCK_HAVE_DATA: u64 = 8;
 
 /// Holds the index of longest valid chain
 pub struct ChainIndex {
+    max_height: u64,
     block_index: HashMap<u64, BlockIndexRecord>,
     max_height_blk_index: HashMap<u64, u64>, // Maps blk_index to max_height found in the file
-    max_height: u64,
 }
 
 impl ChainIndex {
     pub fn new(options: &ParserOptions) -> OpResult<Self> {
         let path = options.blockchain_dir.join("index");
-        let block_index = get_block_index(&path)?;
+        let mut block_index = get_block_index(&path)?;
         let mut max_height_blk_index = HashMap::new();
 
         for (height, index_record) in &block_index {
@@ -38,10 +38,27 @@ impl ChainIndex {
             }
         }
 
-        let max_height = *block_index.keys().max().unwrap();
+        let min_height = options.range.start;
+        let max_known_height = *block_index.keys().max().unwrap();
+        let max_height = match options.range.end {
+            Some(height) if height < max_known_height => height,
+            Some(_) | None => max_known_height,
+        };
+
+        // Filter to only keep relevant block index
+        if !options.range.is_default() {
+            info!(target: "index", "Trimming block index from height {} to {} ...", min_height, max_height);
+            block_index = block_index
+                .into_iter()
+                .filter(|(height, _)| {
+                    *height >= min_height.saturating_sub(1) && *height <= max_height
+                })
+                .collect();
+        }
+
         Ok(Self {
-            block_index,
             max_height,
+            block_index,
             max_height_blk_index,
         })
     }

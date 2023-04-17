@@ -15,17 +15,19 @@ pub mod types;
 
 /// Small struct to hold statistics together
 struct WorkerStats {
-    pub t_started: Instant,
-    pub t_last_log: Instant,
-    pub t_measure_frame: Duration,
+    pub started_at: Instant,
+    pub last_log: Instant,
+    pub last_height: u64,
+    pub measure_frame: Duration,
 }
 
-impl Default for WorkerStats {
-    fn default() -> Self {
+impl WorkerStats {
+    fn new(start_range: u64) -> Self {
         Self {
-            t_started: Instant::now(),
-            t_last_log: Instant::now(),
-            t_measure_frame: Duration::from_secs(10),
+            started_at: Instant::now(),
+            last_log: Instant::now(),
+            last_height: start_range,
+            measure_frame: Duration::from_secs(10),
         }
     }
 }
@@ -40,10 +42,10 @@ pub struct BlockchainParser {
 impl BlockchainParser {
     /// Instantiates a new Parser but does not start the workers.
     pub fn new(options: ParserOptions, chain_storage: ChainStorage) -> Self {
-        info!(target: "parser", "Parsing {} blockchain (range={}) ...", options.coin_type.name, options.range);
+        info!(target: "parser", "Parsing {} blockchain ...", options.coin_type.name);
         Self {
             chain_storage,
-            stats: WorkerStats::default(),
+            stats: WorkerStats::new(options.range.start),
             callback: options.callback,
             coin_type: options.coin_type,
         }
@@ -56,15 +58,15 @@ impl BlockchainParser {
         while let Some((block, height)) = self.chain_storage.advance() {
             self.on_block(&block, height)?;
         }
-        self.on_complete(self.chain_storage.cur_height)
+        self.on_complete(self.chain_storage.cur_height.saturating_sub(1))
     }
 
     /// Triggers the on_start() callback and initializes state.
     fn on_start(&mut self, height: u64) -> OpResult<()> {
         let now = Instant::now();
-        self.stats.t_started = now;
-        self.stats.t_last_log = now;
-        info!(target: "parser", "Starting to process blocks starting from height {} ...", height);
+        self.stats.started_at = now;
+        self.stats.last_log = now;
+        info!(target: "parser", "Processing blocks starting from height {} ...", height);
         self.callback.on_start(&self.coin_type, height)?;
         trace!(target: "parser", "on_start() called");
         Ok(())
@@ -83,7 +85,7 @@ impl BlockchainParser {
     /// Triggers the on_complete() callback and updates statistics.
     fn on_complete(&mut self, height: u64) -> OpResult<()> {
         info!(target: "parser", "Done. Processed blocks up to height {} in {:.2} minutes.",
-        height, (Instant::now() - self.stats.t_started).as_secs_f32() / 60.0);
+        height, (Instant::now() - self.stats.started_at).as_secs_f32() / 60.0);
 
         self.callback.on_complete(height)?;
         trace!(target: "parser", "on_complete() called");
@@ -92,14 +94,13 @@ impl BlockchainParser {
 
     fn print_progress(&mut self, height: u64) {
         let now = Instant::now();
-        let blocks_sec = height
-            .checked_div((now - self.stats.t_started).as_secs())
-            .unwrap_or(height);
+        let blocks_speed = (height - self.stats.last_height) / self.stats.measure_frame.as_secs();
 
-        if now - self.stats.t_last_log > self.stats.t_measure_frame {
-            info!(target: "parser", "Status: {:6} Blocks processed. (left: {:6}, avg: {:5.2} blocks/sec)",
-              height, self.chain_storage.remaining(), blocks_sec);
-            self.stats.t_last_log = now;
+        if now - self.stats.last_log > self.stats.measure_frame {
+            info!(target: "parser", "Status: {:7} Blocks processed. (remaining: {:7}, speed: {:5.2} blocks/s)",
+              height, self.chain_storage.remaining(), blocks_speed);
+            self.stats.last_log = now;
+            self.stats.last_height = height;
         }
     }
 }
