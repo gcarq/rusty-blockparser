@@ -8,11 +8,20 @@ use crate::errors::{OpError, OpErrorKind, OpResult};
 /// Trait to specify the underlying coin of a blockchain
 /// Needs a proper magic value and a network id for address prefixes
 pub trait Coin {
-    fn name(&self) -> String; // Human readable coin name
-    fn magic(&self) -> u32; // Magic value to identify blocks
-    fn version_id(&self) -> u8; // https://en.bitcoin.it/wiki/List_of_address_prefixes
-    fn genesis(&self) -> [u8; 32]; // Returns genesis hash
-    fn default_folder(&self) -> PathBuf; // Default working directory, for example .bitcoin
+    // Human readable coin name
+    fn name(&self) -> String;
+    // Magic value to identify blocks
+    fn magic(&self) -> u32;
+    // https://en.bitcoin.it/wiki/List_of_address_prefixes
+    fn version_id(&self) -> u8;
+    // Returns genesis hash
+    fn genesis(&self) -> [u8; 32];
+    // Activates AuxPow for the returned version and above
+    fn aux_pow_activation_version(&self) -> Option<u32> {
+        None
+    }
+    // Default working directory to look for datadir, for example .bitcoin
+    fn default_folder(&self) -> PathBuf;
 }
 
 // Implemented blockchain types.
@@ -84,6 +93,9 @@ impl Coin for Namecoin {
             "000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770",
         )
     }
+    fn aux_pow_activation_version(&self) -> Option<u32> {
+        Some(0x10101)
+    }
     fn default_folder(&self) -> PathBuf {
         PathBuf::from(".namecoin")
     }
@@ -123,6 +135,9 @@ impl Coin for Dogecoin {
         utils::hex_to_arr32_swapped(
             "1a91e3dace36e2be3bf030a65679fe821aa1d6ef92e7c9902eb318182c355691",
         )
+    }
+    fn aux_pow_activation_version(&self) -> Option<u32> {
+        Some(0x620102)
     }
     fn default_folder(&self) -> PathBuf {
         Path::new(".dogecoin").join("blocks")
@@ -205,6 +220,7 @@ pub struct CoinType {
     pub magic: u32,
     pub version_id: u8,
     pub genesis_hash: [u8; 32],
+    pub aux_pow_activation_version: Option<u32>,
     pub default_folder: PathBuf,
 }
 
@@ -221,6 +237,7 @@ impl<T: Coin> From<T> for CoinType {
             magic: coin.magic(),
             version_id: coin.version_id(),
             genesis_hash: coin.genesis(),
+            aux_pow_activation_version: coin.aux_pow_activation_version(),
             default_folder: coin.default_folder(),
         }
     }

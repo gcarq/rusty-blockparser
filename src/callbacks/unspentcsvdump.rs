@@ -6,7 +6,6 @@ use std::path::PathBuf;
 use byteorder::{LittleEndian, ReadBytesExt};
 use clap::{App, Arg, ArgMatches, SubCommand};
 
-use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::Block;
 use crate::callbacks::{common, Callback};
 use crate::common::utils;
@@ -66,7 +65,7 @@ impl Callback for UnspentCsvDump {
         Ok(cb)
     }
 
-    fn on_start(&mut self, _: &CoinType, block_height: u64) -> OpResult<()> {
+    fn on_start(&mut self, block_height: u64) -> OpResult<()> {
         self.start_height = block_height;
         info!(target: "callback", "Executing unspentcsvdump with dump folder: {} ...", &self.dump_folder.display());
         Ok(())

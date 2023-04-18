@@ -1,6 +1,5 @@
 use clap::{App, ArgMatches, SubCommand};
 
-use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::Block;
 use crate::blockchain::proto::script::ScriptPattern;
 use crate::callbacks::Callback;
@@ -28,7 +27,7 @@ impl Callback for OpReturn {
         Ok(OpReturn::default())
     }
 
-    fn on_start(&mut self, _: &CoinType, _: u64) -> OpResult<()> {
+    fn on_start(&mut self, _: u64) -> OpResult<()> {
         info!(target: "callback", "Executing OpReturn ...");
         Ok(())
     }

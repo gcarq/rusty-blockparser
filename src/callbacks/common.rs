@@ -105,7 +105,7 @@ mod tests {
         ];
         let mut reader = BufReader::new(Cursor::new(raw_data));
         let txs = reader.read_txs(1, 0x00).unwrap();
-        let block1 = Block::new(0, header.clone(), VarUint::from(1u8), txs);
+        let block1 = Block::new(0, header.clone(), None, VarUint::from(1u8), txs);
 
         for tx in &block1.txs {
             remove_unspents(&tx, &mut unspents);
@@ -243,7 +243,7 @@ mod tests {
         ];
         let mut reader = BufReader::new(Cursor::new(raw_data));
         let txs = reader.read_txs(1, 0x00).unwrap();
-        let block2 = Block::new(0, header.clone(), VarUint::from(1u8), txs);
+        let block2 = Block::new(0, header.clone(), None, VarUint::from(1u8), txs);
 
         for tx in &block2.txs {
             remove_unspents(&tx, &mut unspents);

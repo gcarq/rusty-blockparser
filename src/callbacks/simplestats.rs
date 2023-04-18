@@ -3,7 +3,6 @@ use std::io::{self, Write};
 
 use clap::{App, ArgMatches, SubCommand};
 
-use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::{self, Block};
 use crate::blockchain::proto::script::ScriptPattern;
 use crate::blockchain::proto::ToRaw;
@@ -183,7 +182,7 @@ impl Callback for SimpleStats {
         Ok(SimpleStats::default())
     }
 
-    fn on_start(&mut self, _: &CoinType, _: u64) -> OpResult<()> {
+    fn on_start(&mut self, _: u64) -> OpResult<()> {
         info!(target: "callback", "Executing simplestats ...");
         Ok(())
     }

@@ -1,7 +1,6 @@
-use crate::blockchain::parser::chain::ChainStorage;
-use crate::blockchain::parser::types::CoinType;
 use std::time::{Duration, Instant};
 
+use crate::blockchain::parser::chain::ChainStorage;
 use crate::blockchain::proto::block::Block;
 use crate::callbacks::Callback;
 use crate::errors::OpResult;
@@ -36,18 +35,16 @@ pub struct BlockchainParser {
     chain_storage: ChainStorage, // Hash storage with the longest chain
     stats: WorkerStats,          // struct for thread management & statistics
     callback: Box<dyn Callback>,
-    coin_type: CoinType,
 }
 
 impl BlockchainParser {
-    /// Instantiates a new Parser but does not start the workers.
+    /// Instantiates a new Parser.
     pub fn new(options: ParserOptions, chain_storage: ChainStorage) -> Self {
-        info!(target: "parser", "Parsing {} blockchain ...", options.coin_type.name);
+        info!(target: "parser", "Parsing {} blockchain ...", options.coin.name);
         Self {
             chain_storage,
             stats: WorkerStats::new(options.range.start),
             callback: options.callback,
-            coin_type: options.coin_type,
         }
     }
 
@@ -67,7 +64,7 @@ impl BlockchainParser {
         self.stats.started_at = now;
         self.stats.last_log = now;
         info!(target: "parser", "Processing blocks starting from height {} ...", height);
-        self.callback.on_start(&self.coin_type, height)?;
+        self.callback.on_start(height)?;
         trace!(target: "parser", "on_start() called");
         Ok(())
     }

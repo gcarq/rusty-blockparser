@@ -48,12 +48,9 @@ impl ChainIndex {
         // Filter to only keep relevant block index
         if !options.range.is_default() {
             info!(target: "index", "Trimming block index from height {} to {} ...", min_height, max_height);
-            block_index = block_index
-                .into_iter()
-                .filter(|(height, _)| {
-                    *height >= min_height.saturating_sub(1) && *height <= max_height
-                })
-                .collect();
+            block_index.retain(|height, _| {
+                *height >= min_height.saturating_sub(1) && *height <= max_height
+            });
         }
 
         Ok(Self {

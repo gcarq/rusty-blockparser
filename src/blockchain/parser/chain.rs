@@ -12,7 +12,7 @@ use crate::ParserOptions;
 pub struct ChainStorage {
     chain_index: ChainIndex,
     blk_files: HashMap<u64, BlkFile>, // maps blk_index to BlkFile
-    coin_type: CoinType,
+    coin: CoinType,
     verify: bool,
     pub cur_height: u64,
 }
@@ -23,7 +23,7 @@ impl ChainStorage {
             chain_index: ChainIndex::new(options)?,
             blk_files: BlkFile::from_path(options.blockchain_dir.as_path())?,
             cur_height: options.range.start,
-            coin_type: options.coin_type.clone(),
+            coin: options.coin.clone(),
             verify: options.verify,
         })
     }
@@ -37,7 +37,7 @@ impl ChainStorage {
         let block_meta = self.chain_index.get(height)?;
         let blk_file = self.blk_files.get_mut(&block_meta.blk_index)?;
         let block = blk_file
-            .read_block(block_meta.data_offset, self.coin_type.version_id)
+            .read_block(block_meta.data_offset, &self.coin)
             .ok()?;
 
         // Check if blk file can be closed
@@ -58,10 +58,10 @@ impl ChainStorage {
     fn verify(&self, block: &Block) {
         block.verify_merkle_root();
         if self.cur_height == 0 {
-            if block.header.hash != self.coin_type.genesis_hash {
+            if block.header.hash != self.coin.genesis_hash {
                 panic!(
                     "Hash of genesis doesn't match!\n  -> expected: {}\n  -> got: {}\n",
-                    utils::arr_to_hex_swapped(&self.coin_type.genesis_hash),
+                    utils::arr_to_hex_swapped(&self.coin.genesis_hash),
                     utils::arr_to_hex_swapped(&block.header.hash),
                 );
             }

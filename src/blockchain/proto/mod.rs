@@ -42,3 +42,19 @@ impl<T: fmt::Debug> fmt::Debug for Hashed<T> {
             .finish()
     }
 }
+
+/// https://en.bitcoin.it/wiki/Merged_mining_specification#Merkle_Branch
+pub struct MerkleBranch {
+    pub hashes: Vec<[u8; 32]>,
+    // Bitmask of which side of the merkle hash function the branch_hash element should go on.
+    // Zero means it goes on the right, One means on the left.
+    // It is equal to the index of the starting hash within the widest level
+    // of the merkle tree for this merkle branch.
+    pub side_mask: u32,
+}
+
+impl MerkleBranch {
+    pub fn new(hashes: Vec<[u8; 32]>, side_mask: u32) -> Self {
+        Self { hashes, side_mask }
+    }
+}

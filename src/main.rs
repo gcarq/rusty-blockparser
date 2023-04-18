@@ -70,8 +70,8 @@ impl fmt::Display for BlockHeightRange {
 pub struct ParserOptions {
     // Name of the callback which gets executed for each block. (See callbacks/mod.rs)
     callback: Box<dyn Callback>,
-    // Holds the name of the coin we want to parse
-    coin_type: CoinType,
+    // Holds the relevant coin parameters we need for parsing
+    coin: CoinType,
     // Enable this if you want to check the chain index integrity and merkle root for each block.
     verify: bool,
     // Path to directory where blk.dat files are stored
@@ -188,10 +188,10 @@ fn parse_args() -> OpResult<ParserOptions> {
         _ => log::LevelFilter::Trace,
     };
 
-    let coin_type = value_t!(matches, "coin", CoinType).unwrap_or_else(|_| CoinType::from(Bitcoin));
+    let coin = value_t!(matches, "coin", CoinType).unwrap_or_else(|_| CoinType::from(Bitcoin));
     let blockchain_dir = match matches.value_of("blockchain-dir") {
         Some(p) => PathBuf::from(p),
-        None => utils::get_absolute_blockchain_dir(&coin_type),
+        None => utils::get_absolute_blockchain_dir(&coin),
     };
     let start = value_t!(matches, "start", u64).unwrap_or(0);
     let end = value_t!(matches, "end", u64).ok();
@@ -221,7 +221,7 @@ fn parse_args() -> OpResult<ParserOptions> {
     }
 
     let options = ParserOptions {
-        coin_type,
+        coin,
         callback,
         verify,
         blockchain_dir,

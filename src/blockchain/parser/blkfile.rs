@@ -8,6 +8,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use seek_bufread::BufReader;
 
 use crate::blockchain::parser::reader::BlockchainRead;
+use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::Block;
 use crate::errors::{OpError, OpErrorKind, OpResult};
 
@@ -45,11 +46,11 @@ impl BlkFile {
         }
     }
 
-    pub fn read_block(&mut self, offset: u64, version_id: u8) -> OpResult<Block> {
+    pub fn read_block(&mut self, offset: u64, coin: &CoinType) -> OpResult<Block> {
         let reader = self.open()?;
         reader.seek(SeekFrom::Start(offset - 4))?;
         let block_size = reader.read_u32::<LittleEndian>()?;
-        reader.read_block(block_size, version_id)
+        reader.read_block(block_size, coin)
     }
 
     /// Collects all blk*.dat paths in the given directory

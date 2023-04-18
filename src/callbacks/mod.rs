@@ -1,6 +1,5 @@
 use clap::{App, ArgMatches};
 
-use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::Block;
 use crate::errors::OpResult;
 
@@ -27,7 +26,7 @@ pub trait Callback {
         Self: Sized;
 
     /// Gets called shortly before the blocks are parsed.
-    fn on_start(&mut self, coin_type: &CoinType, block_height: u64) -> OpResult<()>;
+    fn on_start(&mut self, block_height: u64) -> OpResult<()>;
 
     /// Gets called if a new block is available.
     fn on_block(&mut self, block: &Block, block_height: u64) -> OpResult<()>;

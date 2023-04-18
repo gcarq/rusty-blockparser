@@ -4,7 +4,6 @@ use std::path::PathBuf;
 
 use clap::{App, Arg, ArgMatches, SubCommand};
 
-use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::Block;
 use crate::blockchain::proto::tx::{EvaluatedTx, EvaluatedTxOut, TxInput};
 use crate::blockchain::proto::Hashed;
@@ -70,7 +69,7 @@ impl Callback for CsvDump {
         Ok(cb)
     }
 
-    fn on_start(&mut self, _: &CoinType, block_height: u64) -> OpResult<()> {
+    fn on_start(&mut self, block_height: u64) -> OpResult<()> {
         self.start_height = block_height;
         info!(target: "callback", "Executing csvdump with dump folder: {} ...", &self.dump_folder.display());
         Ok(())

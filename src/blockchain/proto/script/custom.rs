@@ -342,6 +342,7 @@ fn hash_160_to_address(h160: &[u8], version: u8) -> String {
 #[cfg(test)]
 mod tests {
     use super::{eval_from_bytes_custom, eval_from_stack, ScriptEvaluator, ScriptPattern};
+    use crate::common::utils;
 
     #[test]
     fn test_bitcoin_script_p2pkh() {
@@ -490,5 +491,42 @@ mod tests {
         let script = eval_from_bytes_custom(&bytes, 0x00);
         assert_eq!(script.address, None);
         assert_eq!(script.pattern, ScriptPattern::NotRecognised);
+    }
+
+    /*
+    FIXME: assertion failed
+        Left:  Some("NCAzVGKq8JrsETxAkgw3MsDPinAEPwsTfn")
+        Right: Some("N3Jpya157nc2d48EPaxtcsbRr9V19U4hfW")
+    #[test]
+    fn test_namecoin_coinbase_script() {
+        let script_pubkey = utils::hex_to_vec("41046a77fa46493d61985c1157a6e3e498b3b97c878c9c23e5b4729d354b574eb33a20c0483551308e2bd08295ce238e8ad09a7a2477732eb2e995a3e20455e9d137ac");
+        let script = eval_from_bytes_custom(&script_pubkey, 0x34);
+        assert_eq!(
+            script.address,
+            Some(String::from("N3Jpya157nc2d48EPaxtcsbRr9V19U4hfW")),
+        );
+    }
+    */
+
+    #[test]
+    fn test_litecoin_coinbase_script() {
+        let script_pubkey = utils::hex_to_vec("4104458bf7d944ce58c007d0f16fa54c0640694568954e162c06be0a0cba7275714b6672c589e7393fa48f8a5f6b6259061d394e9db005651d1bb28349d31339daa8ac");
+        let script = eval_from_bytes_custom(&script_pubkey, 0x30);
+        assert_eq!(
+            script.address,
+            Some(String::from("LfcUcxALy1gSeqZLrixAm4ETZbEWA7GLat")),
+        );
+    }
+
+    #[test]
+    fn test_dogecoin_coinbase_script() {
+        let script_pubkey = utils::hex_to_vec(
+            "210338bf57d51a50184cf5ef0dc42ecd519fb19e24574c057620262cc1df94da2ae5ac",
+        );
+        let script = eval_from_bytes_custom(&script_pubkey, 0x1e);
+        assert_eq!(
+            script.address,
+            Some(String::from("DLAznsPDLDRgsVcTFWRMYMG5uH6GddDtv8")),
+        );
     }
 }

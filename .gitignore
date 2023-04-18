@@ -1,11 +1,9 @@
 target
 .cargo
-chain.json
-bench.txt
 csvdump
 .project
 .idea
 
-test.sh
+scripts/
 debug.sh
 dump/
