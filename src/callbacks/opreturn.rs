@@ -3,7 +3,6 @@ use clap::{App, ArgMatches, SubCommand};
 use crate::blockchain::proto::block::Block;
 use crate::blockchain::proto::script::ScriptPattern;
 use crate::callbacks::Callback;
-use crate::common::utils;
 use crate::errors::OpResult;
 
 #[derive(Default)]
@@ -41,9 +40,7 @@ impl Callback for OpReturn {
                     }
                     println!(
                         "height: {: <9} txid: {}    data: {}",
-                        block_height,
-                        utils::arr_to_hex_swapped(&tx.hash),
-                        data
+                        block_height, &tx.hash, data
                     );
                 }
             }

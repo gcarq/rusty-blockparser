@@ -1,3 +1,4 @@
+use bitcoin::hashes::{sha256d, Hash};
 use std::borrow::BorrowMut;
 use std::io::{self};
 
@@ -41,14 +42,21 @@ pub trait BlockchainRead: io::Read {
     }
 
     fn read_block_header(&mut self) -> OpResult<BlockHeader> {
-        Ok(BlockHeader::new(
-            self.read_u32::<LittleEndian>()?,
-            self.read_256hash()?,
-            self.read_256hash()?,
-            self.read_u32::<LittleEndian>()?,
-            self.read_u32::<LittleEndian>()?,
-            self.read_u32::<LittleEndian>()?,
-        ))
+        let version = self.read_u32::<LittleEndian>()?;
+        let prev_hash = sha256d::Hash::from_byte_array(self.read_256hash()?);
+        let merkle_root = sha256d::Hash::from_byte_array(self.read_256hash()?);
+        let timestamp = self.read_u32::<LittleEndian>()?;
+        let bits = self.read_u32::<LittleEndian>()?;
+        let nonce = self.read_u32::<LittleEndian>()?;
+
+        Ok(BlockHeader {
+            version,
+            prev_hash,
+            merkle_root,
+            timestamp,
+            bits,
+            nonce,
+        })
     }
 
     fn read_txs(&mut self, tx_count: u64, version_id: u8) -> OpResult<Vec<RawTx>> {
@@ -97,10 +105,10 @@ pub trait BlockchainRead: io::Read {
     }
 
     fn read_tx_outpoint(&mut self) -> OpResult<TxOutpoint> {
-        Ok(TxOutpoint::new(
-            self.read_256hash()?,
-            self.read_u32::<LittleEndian>()?,
-        ))
+        let txid = sha256d::Hash::from_byte_array(self.read_256hash()?);
+        let index = self.read_u32::<LittleEndian>()?;
+
+        Ok(TxOutpoint { txid, index })
     }
 
     fn read_tx_inputs(&mut self, input_count: u64) -> OpResult<Vec<TxInput>> {
@@ -149,20 +157,20 @@ pub trait BlockchainRead: io::Read {
     /// Reads the additional AuxPow fields as specified here https://en.bitcoin.it/wiki/Merged_mining_specification#Aux_proof-of-work_block
     fn read_aux_pow_extension(&mut self, version_id: u8) -> OpResult<AuxPowExtension> {
         let coinbase_tx = self.read_tx(version_id)?;
-        let block_hash = self.read_256hash()?;
+        let block_hash = sha256d::Hash::from_byte_array(self.read_256hash()?);
 
         let coinbase_branch = self.read_merkle_branch()?;
         let blockchain_branch = self.read_merkle_branch()?;
 
         let parent_block = self.read_block_header()?;
 
-        Ok(AuxPowExtension::new(
+        Ok(AuxPowExtension {
             coinbase_tx,
             block_hash,
             coinbase_branch,
             blockchain_branch,
             parent_block,
-        ))
+        })
     }
 }
 
@@ -263,15 +271,15 @@ mod tests {
         assert_eq!(0x00000001, block.header.value.version);
         assert_eq!(
             "0000000000000000000000000000000000000000000000000000000000000000",
-            utils::arr_to_hex_swapped(&block.header.value.prev_hash)
+            format!("{}", &block.header.value.prev_hash)
         );
         assert_eq!(
             "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b",
-            utils::arr_to_hex_swapped(&block.header.value.merkle_root)
+            format!("{}", &block.header.value.merkle_root)
         );
         assert_eq!(
             "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
-            utils::arr_to_hex_swapped(&block.header.hash)
+            format!("{}", &block.header.hash)
         );
 
         // Check against computed merkle root
@@ -291,7 +299,7 @@ mod tests {
         assert_eq!(0x01, block.txs[0].value.in_count.value);
         assert_eq!(
             "0000000000000000000000000000000000000000000000000000000000000000",
-            utils::arr_to_hex_swapped(&block.txs[0].value.inputs[0].outpoint.txid)
+            format!("{}", &block.txs[0].value.inputs[0].outpoint.txid)
         );
         assert_eq!(0xffffffff, block.txs[0].value.inputs[0].outpoint.index);
         assert_eq!(0x4d, block.txs[0].value.inputs[0].script_len.value);
@@ -381,7 +389,7 @@ mod tests {
             0xf2, 0xa2, 0x0d, 0xa7, 0x17, 0xe5, 0x54, 0x84, 0x06, 0xf7, 0xae, 0x8b, 0x4c, 0x81,
             0x10, 0x72, 0xf8, 0x56,
         ];
-        assert_eq!(tx.inputs[0].outpoint.txid, prev_hash);
+        assert_eq!(tx.inputs[0].outpoint.txid.as_ref(), prev_hash);
         assert_eq!(tx.inputs[0].outpoint.index, 3);
         assert_eq!(tx.inputs[0].script_len.value, 23);
         assert_eq!(tx.inputs[0].seq_no, 0xffffffff);
@@ -544,15 +552,15 @@ mod tests {
         assert_eq!(0x00010101, block.header.value.version);
         assert_eq!(
             "000000000000b19f0ad5cd46859fe8c9662e8828d8a75ff6da73167ac09a9036",
-            utils::arr_to_hex_swapped(&block.header.value.prev_hash)
+            format!("{}", &block.header.value.prev_hash)
         );
         assert_eq!(
             "88afdfdcc78f778f701835b62e432d3ba7d55b3e59ac4e7cab08d6bc49655c0f",
-            utils::arr_to_hex_swapped(&block.header.value.merkle_root)
+            format!("{}", &block.header.value.merkle_root)
         );
         assert_eq!(
             "d8a7c3e01e1e95bcee015e6fcc7583a2ca60b79e5a3aa0a171eddd344ada903d",
-            utils::arr_to_hex_swapped(&block.header.hash)
+            format!("{}", &block.header.hash)
         );
 
         // Check against computed merkle root
@@ -568,14 +576,14 @@ mod tests {
         assert_eq!(0x00, aux_pow_block.coinbase_tx.locktime);
         assert_eq!(
             "0000000000003d47277359fb969c43e3c7e7c0306a17f6444b8e91e19def03a9",
-            utils::arr_to_hex_swapped(&aux_pow_block.block_hash)
+            format!("{}", &aux_pow_block.block_hash)
         );
 
         // TODO: verify AuxPowBlock merkle branches
 
         assert_eq!(
             "00000000000004a59b7deb5c4e01b9786ea01ee8da000db77ce6035c2913be08",
-            utils::arr_to_hex_swapped(&aux_pow_block.parent_block.prev_hash)
+            format!("{}", &aux_pow_block.parent_block.prev_hash)
         );
 
         // Tx
@@ -586,7 +594,7 @@ mod tests {
         assert_eq!(0x01, block.txs[0].value.in_count.value);
         assert_eq!(
             "0000000000000000000000000000000000000000000000000000000000000000",
-            utils::arr_to_hex_swapped(&block.txs[0].value.inputs[0].outpoint.txid)
+            format!("{}", &block.txs[0].value.inputs[0].outpoint.txid)
         );
         assert_eq!(0xffffffff, block.txs[0].value.inputs[0].outpoint.index);
         assert_eq!(8, block.txs[0].value.inputs[0].script_len.value);
@@ -838,15 +846,15 @@ mod tests {
         assert_eq!(0x620104, block.header.value.version);
         assert_eq!(
             "204fa085d6ac48f0f4776e158d6c88100d8735d5abd47cbb020f8f59045300ee",
-            utils::arr_to_hex_swapped(&block.header.value.prev_hash)
+            format!("{}", &block.header.value.prev_hash)
         );
         assert_eq!(
             "5c9331172b9256b6a4f538f3f42022a710ac65316e5a75cd02a9527d86ca5bd9",
-            utils::arr_to_hex_swapped(&block.header.value.merkle_root)
+            format!("{}", &block.header.value.merkle_root)
         );
         assert_eq!(
             "038ca8bfebd5d35e9c676b459f2c6ba4c03975ba653414b303d7bc4ac6fa787f",
-            utils::arr_to_hex_swapped(&block.header.hash)
+            format!("{}", &block.header.hash)
         );
 
         // Check against computed merkle root
@@ -865,20 +873,20 @@ mod tests {
         assert_eq!(0x00, aux_pow_block.coinbase_tx.locktime);
         assert_eq!(
             "c5c290df0f691794805e9ccfdc932e5dfee4e440510f0e3cb5e171303239491c",
-            utils::arr_to_hex_swapped(&aux_pow_block.block_hash)
+            format!("{}", &aux_pow_block.block_hash)
         );
 
         // TODO: verify AuxPowBlock merkle branches
 
         assert_eq!(
             "bcf46567b86d599288fe672a913762d7292b461a04b891dee88e52196adefd9e",
-            utils::arr_to_hex_swapped(&aux_pow_block.parent_block.prev_hash)
+            format!("{}", &aux_pow_block.parent_block.prev_hash)
         );
 
         // Tx
         assert_eq!(
             "dc8dbed0461ec54a9524fc12fbed7466e6acb0f0637fcb2a0111174c84753fec",
-            utils::arr_to_hex_swapped(&block.txs[0].hash)
+            format!("{}", &block.txs[0].hash)
         );
         assert_eq!(8, block.tx_count.value);
         assert_eq!(0x00000001, block.txs[0].value.version);
@@ -887,7 +895,7 @@ mod tests {
         assert_eq!(0x01, block.txs[0].value.in_count.value);
         assert_eq!(
             "0000000000000000000000000000000000000000000000000000000000000000",
-            utils::arr_to_hex_swapped(&block.txs[0].value.inputs[0].outpoint.txid)
+            format!("{}", &block.txs[0].value.inputs[0].outpoint.txid)
         );
         assert_eq!(0xffffffff, block.txs[0].value.inputs[0].outpoint.index);
         assert_eq!(6, block.txs[0].value.inputs[0].script_len.value);

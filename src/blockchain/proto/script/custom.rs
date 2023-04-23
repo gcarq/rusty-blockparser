@@ -2,7 +2,7 @@
 use crate::blockchain::proto::script::{EvaluatedScript, ScriptError, ScriptPattern};
 use crate::common::utils;
 use bitcoin::base58;
-use bitcoin::hashes::{hash160, Hash};
+use bitcoin::hashes::{hash160, sha256d, Hash};
 use bitcoin::opcodes::{all, All, Class, ClassifyContext};
 use std::fmt;
 
@@ -326,7 +326,7 @@ fn eval_from_stack(stack: Stack, version_id: u8) -> EvaluatedScript {
 /// Takes full ECDSA public key (65 bytes) and a version id
 fn public_key_to_addr(pub_key: &[u8], version: u8) -> String {
     let hash = hash160::Hash::hash(pub_key);
-    hash_160_to_address(hash.as_ref(), version)
+    hash_160_to_address(hash.as_byte_array(), version)
 }
 
 /// Takes 20 byte public key and version id
@@ -334,7 +334,8 @@ fn hash_160_to_address(h160: &[u8], version: u8) -> String {
     let mut hash = Vec::with_capacity(h160.len() + 5);
     hash.push(version);
     hash.extend_from_slice(h160);
-    let checksum = &utils::sha256(&utils::sha256(&hash))[0..4];
+
+    let checksum = &sha256d::Hash::hash(&hash)[0..4];
     hash.extend_from_slice(checksum);
     base58::encode(&hash)
 }

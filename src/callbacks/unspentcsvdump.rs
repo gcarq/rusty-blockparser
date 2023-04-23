@@ -1,3 +1,4 @@
+use bitcoin::hashes::{sha256d, Hash};
 use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::{BufWriter, Write};
@@ -8,7 +9,6 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 
 use crate::blockchain::proto::block::Block;
 use crate::callbacks::{common, Callback};
-use crate::common::utils;
 use crate::errors::OpResult;
 
 /// Dumps the UTXOs along with address in a csv file
@@ -96,12 +96,12 @@ impl Callback for UnspentCsvDump {
             .as_bytes(),
         )?;
         for (key, value) in self.unspents.iter() {
-            let txid = &key[0..32];
+            let txid = sha256d::Hash::from_slice(&key[0..32]).unwrap();
             let mut index = &key[32..];
             self.writer.write_all(
                 format!(
                     "{};{};{};{};{}\n",
-                    utils::arr_to_hex_swapped(txid),
+                    txid,
                     index.read_u32::<LittleEndian>()?,
                     value.block_height,
                     value.value,

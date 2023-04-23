@@ -1,3 +1,4 @@
+use bitcoin::hashes::{sha256d, Hash};
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fmt;
@@ -79,7 +80,7 @@ impl ChainIndex {
 /// Holds the metadata where the block data is stored,
 /// See https://bitcoin.stackexchange.com/questions/28168/what-are-the-keys-used-in-the-blockchain-leveldb-ie-what-are-the-keyvalue-pair
 pub struct BlockIndexRecord {
-    pub block_hash: [u8; 32],
+    pub block_hash: sha256d::Hash,
     pub blk_index: u64,
     pub data_offset: u64, // offset within the blk file
     version: u64,
@@ -101,7 +102,7 @@ impl BlockIndexRecord {
         let data_offset = read_varint(&mut reader)?;
 
         Ok(BlockIndexRecord {
-            block_hash,
+            block_hash: sha256d::Hash::from_byte_array(block_hash),
             version,
             height,
             status,

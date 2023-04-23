@@ -4,8 +4,7 @@ use crate::blockchain::parser::blkfile::BlkFile;
 use crate::blockchain::parser::index::ChainIndex;
 use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::Block;
-use crate::common::utils;
-use crate::errors::OpResult;
+use crate::errors::{OpError, OpErrorKind, OpResult};
 use crate::ParserOptions;
 
 /// Manages the index and data of longest valid chain
@@ -46,7 +45,7 @@ impl ChainStorage {
         }
 
         if self.verify {
-            self.verify(&block);
+            self.verify(&block).unwrap();
         }
 
         self.cur_height += 1;
@@ -55,31 +54,31 @@ impl ChainStorage {
 
     /// Verifies the given block in a chain.
     /// Panics if not valid
-    fn verify(&self, block: &Block) {
-        block.verify_merkle_root();
+    fn verify(&self, block: &Block) -> OpResult<()> {
+        block.verify_merkle_root()?;
         if self.cur_height == 0 {
             if block.header.hash != self.coin.genesis_hash {
-                panic!(
-                    "Hash of genesis doesn't match!\n  -> expected: {}\n  -> got: {}\n",
-                    utils::arr_to_hex_swapped(&self.coin.genesis_hash),
-                    utils::arr_to_hex_swapped(&block.header.hash),
+                let msg = format!(
+                    "Genesis block hash doesn't match!\n  -> expected: {}\n  -> got: {}\n",
+                    &self.coin.genesis_hash, &block.header.hash,
                 );
+                return Err(OpError::new(OpErrorKind::ValidationError).join_msg(&msg));
             }
         } else {
             let prev_hash = self
                 .chain_index
                 .get(self.cur_height - 1)
-                .unwrap()
+                .expect("unable to fetch prev block in chain index")
                 .block_hash;
             if block.header.value.prev_hash != prev_hash {
-                panic!(
+                let msg = format!(
                     "prev_hash for block {} doesn't match!\n  -> expected: {}\n  -> got: {}\n",
-                    utils::arr_to_hex_swapped(&block.header.hash),
-                    utils::arr_to_hex_swapped(&block.header.value.prev_hash),
-                    utils::arr_to_hex_swapped(&prev_hash)
+                    &block.header.hash, &block.header.value.prev_hash, &prev_hash
                 );
+                return Err(OpError::new(OpErrorKind::ValidationError).join_msg(&msg));
             }
         }
+        Ok(())
     }
 
     /// Returns number of remaining blocks

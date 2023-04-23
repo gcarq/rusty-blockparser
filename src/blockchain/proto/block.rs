@@ -1,3 +1,4 @@
+use bitcoin::hashes::sha256d;
 use std::fmt;
 
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -7,6 +8,7 @@ use crate::blockchain::proto::tx::{EvaluatedTx, RawTx};
 use crate::blockchain::proto::varuint::VarUint;
 use crate::blockchain::proto::{Hashed, MerkleBranch};
 use crate::common::utils;
+use crate::errors::{OpError, OpErrorKind, OpResult};
 
 /// Basic block structure which holds all information
 pub struct Block {
@@ -39,20 +41,28 @@ impl Block {
     }
 
     /// Computes merkle root for all containing transactions
-    pub fn compute_merkle_root(&self) -> [u8; 32] {
-        utils::merkle_root(&self.txs.iter().map(|tx| tx.hash).collect::<Vec<[u8; 32]>>())
+    pub fn compute_merkle_root(&self) -> sha256d::Hash {
+        let hashes = self
+            .txs
+            .iter()
+            .map(|tx| tx.hash)
+            .collect::<Vec<sha256d::Hash>>();
+        utils::merkle_root(hashes)
     }
 
     /// Calculates merkle root and verifies it against the field in BlockHeader.
     /// panics if not valid.
-    pub fn verify_merkle_root(&self) {
+    pub fn verify_merkle_root(&self) -> OpResult<()> {
         let merkle_root = self.compute_merkle_root();
-        if merkle_root != self.header.value.merkle_root {
-            panic!(
+
+        if merkle_root == self.header.value.merkle_root {
+            Ok(())
+        } else {
+            let msg = format!(
                 "Invalid merkle_root!\n  -> expected: {}\n  -> got: {}\n",
-                &utils::arr_to_hex_swapped(&self.header.value.merkle_root),
-                &utils::arr_to_hex_swapped(&merkle_root)
+                &self.header.value.merkle_root, &merkle_root
             );
+            Err(OpError::new(OpErrorKind::ValidationError).join_msg(&msg))
         }
     }
 }
@@ -70,28 +80,10 @@ impl fmt::Debug for Block {
 /// see https://en.bitcoin.it/wiki/Merged_mining_specification
 pub struct AuxPowExtension {
     pub coinbase_tx: RawTx,
-    pub block_hash: [u8; 32],
+    pub block_hash: sha256d::Hash,
     pub coinbase_branch: MerkleBranch,
     pub blockchain_branch: MerkleBranch,
     pub parent_block: BlockHeader,
-}
-
-impl AuxPowExtension {
-    pub fn new(
-        coinbase_tx: RawTx,
-        block_hash: [u8; 32],
-        coinbase_branch: MerkleBranch,
-        blockchain_branch: MerkleBranch,
-        parent_block: BlockHeader,
-    ) -> Self {
-        Self {
-            coinbase_tx,
-            block_hash,
-            coinbase_branch,
-            blockchain_branch,
-            parent_block,
-        }
-    }
 }
 
 /// Get block reward for given height

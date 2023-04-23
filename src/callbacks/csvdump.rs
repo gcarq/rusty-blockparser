@@ -81,11 +81,11 @@ impl Callback for CsvDump {
             .write_all(block.as_csv(block_height).as_bytes())?;
 
         // serialize transaction
-        let block_hash = utils::arr_to_hex_swapped(&block.header.hash);
+        let block_hash = format!("{}", &block.header.hash);
         for tx in &block.txs {
             self.tx_writer
                 .write_all(tx.as_csv(&block_hash).as_bytes())?;
-            let txid_str = utils::arr_to_hex_swapped(&tx.hash);
+            let txid_str = format!("{}", &tx.hash);
 
             // serialize inputs
             for input in &tx.value.inputs {
@@ -131,12 +131,12 @@ impl Block {
         // (@hash, height, version, blocksize, @hashPrev, @hashMerkleRoot, nTime, nBits, nNonce)
         format!(
             "{};{};{};{};{};{};{};{};{}\n",
-            &utils::arr_to_hex_swapped(&self.header.hash),
+            &self.header.hash,
             &block_height,
             &self.header.value.version,
             &self.size,
-            &utils::arr_to_hex_swapped(&self.header.value.prev_hash),
-            &utils::arr_to_hex_swapped(&self.header.value.merkle_root),
+            &self.header.value.prev_hash,
+            &self.header.value.merkle_root,
             &self.header.value.timestamp,
             &self.header.value.bits,
             &self.header.value.nonce
@@ -149,10 +149,7 @@ impl Hashed<EvaluatedTx> {
         // (@txid, @hashBlock, version, lockTime)
         format!(
             "{};{};{};{}\n",
-            &utils::arr_to_hex_swapped(&self.hash),
-            &block_hash,
-            &self.value.version,
-            &self.value.locktime
+            &self.hash, &block_hash, &self.value.version, &self.value.locktime
         )
     }
 }
@@ -163,7 +160,7 @@ impl TxInput {
         format!(
             "{};{};{};{};{}\n",
             &txid,
-            &utils::arr_to_hex_swapped(&self.outpoint.txid),
+            &self.outpoint.txid,
             &self.outpoint.index,
             &utils::arr_to_hex(&self.script_sig),
             &self.seq_no

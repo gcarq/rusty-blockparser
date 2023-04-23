@@ -1,3 +1,4 @@
+use bitcoin::hashes::{sha256d, Hash};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::fmt;
 
@@ -55,7 +56,7 @@ impl EvaluatedTx {
     pub fn is_coinbase(&self) -> bool {
         if self.in_count.value == 1 {
             let input = self.inputs.first().unwrap();
-            return input.outpoint.txid == [0u8; 32] && input.outpoint.index == 0xFFFFFFFF;
+            return input.outpoint.txid.as_ref() == [0u8; 32] && input.outpoint.index == 0xFFFFFFFF;
         }
         false
     }
@@ -112,12 +113,12 @@ impl ToRaw for EvaluatedTx {
 /// TxOutpoint references an existing transaction output
 #[derive(PartialEq, Eq, Hash)]
 pub struct TxOutpoint {
-    pub txid: [u8; 32],
+    pub txid: sha256d::Hash,
     pub index: u32, // 0-based offset within tx
 }
 
 impl TxOutpoint {
-    pub fn new(txid: [u8; 32], index: u32) -> Self {
+    pub fn new(txid: sha256d::Hash, index: u32) -> Self {
         Self { txid, index }
     }
 }
@@ -125,7 +126,7 @@ impl TxOutpoint {
 impl ToRaw for TxOutpoint {
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(32 + 4);
-        bytes.extend_from_slice(&self.txid);
+        bytes.extend_from_slice(self.txid.as_byte_array());
         bytes.extend_from_slice(&self.index.to_le_bytes());
         bytes
     }
@@ -134,7 +135,7 @@ impl ToRaw for TxOutpoint {
 impl fmt::Debug for TxOutpoint {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("TxOutpoint")
-            .field("txid", &utils::arr_to_hex_swapped(&self.txid))
+            .field("txid", &self.txid)
             .field("index", &self.index)
             .finish()
     }

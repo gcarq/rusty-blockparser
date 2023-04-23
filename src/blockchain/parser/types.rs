@@ -1,8 +1,8 @@
+use bitcoin::hashes::sha256d;
 use std::convert::From;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
-use crate::common::utils;
 use crate::errors::{OpError, OpErrorKind, OpResult};
 
 /// Trait to specify the underlying coin of a blockchain
@@ -15,7 +15,7 @@ pub trait Coin {
     // https://en.bitcoin.it/wiki/List_of_address_prefixes
     fn version_id(&self) -> u8;
     // Returns genesis hash
-    fn genesis(&self) -> [u8; 32];
+    fn genesis(&self) -> sha256d::Hash;
     // Activates AuxPow for the returned version and above
     fn aux_pow_activation_version(&self) -> Option<u32> {
         None
@@ -47,10 +47,9 @@ impl Coin for Bitcoin {
     fn version_id(&self) -> u8 {
         0x00
     }
-    fn genesis(&self) -> [u8; 32] {
-        utils::hex_to_arr32_swapped(
-            "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
-        )
+    fn genesis(&self) -> sha256d::Hash {
+        sha256d::Hash::from_str("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
+            .unwrap()
     }
     fn default_folder(&self) -> PathBuf {
         Path::new(".bitcoin").join("blocks")
@@ -68,10 +67,9 @@ impl Coin for TestNet3 {
     fn version_id(&self) -> u8 {
         0x6f
     }
-    fn genesis(&self) -> [u8; 32] {
-        utils::hex_to_arr32_swapped(
-            "000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943",
-        )
+    fn genesis(&self) -> sha256d::Hash {
+        sha256d::Hash::from_str("000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943")
+            .unwrap()
     }
     fn default_folder(&self) -> PathBuf {
         Path::new(".bitcoin").join("testnet3")
@@ -88,10 +86,9 @@ impl Coin for Namecoin {
     fn version_id(&self) -> u8 {
         0x34
     }
-    fn genesis(&self) -> [u8; 32] {
-        utils::hex_to_arr32_swapped(
-            "000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770",
-        )
+    fn genesis(&self) -> sha256d::Hash {
+        sha256d::Hash::from_str("000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770")
+            .unwrap()
     }
     fn aux_pow_activation_version(&self) -> Option<u32> {
         Some(0x10101)
@@ -111,10 +108,9 @@ impl Coin for Litecoin {
     fn version_id(&self) -> u8 {
         0x30
     }
-    fn genesis(&self) -> [u8; 32] {
-        utils::hex_to_arr32_swapped(
-            "12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2",
-        )
+    fn genesis(&self) -> sha256d::Hash {
+        sha256d::Hash::from_str("12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2")
+            .unwrap()
     }
     fn default_folder(&self) -> PathBuf {
         Path::new(".litecoin").join("blocks")
@@ -131,10 +127,9 @@ impl Coin for Dogecoin {
     fn version_id(&self) -> u8 {
         0x1e
     }
-    fn genesis(&self) -> [u8; 32] {
-        utils::hex_to_arr32_swapped(
-            "1a91e3dace36e2be3bf030a65679fe821aa1d6ef92e7c9902eb318182c355691",
-        )
+    fn genesis(&self) -> sha256d::Hash {
+        sha256d::Hash::from_str("1a91e3dace36e2be3bf030a65679fe821aa1d6ef92e7c9902eb318182c355691")
+            .unwrap()
     }
     fn aux_pow_activation_version(&self) -> Option<u32> {
         Some(0x620102)
@@ -154,10 +149,9 @@ impl Coin for Myriadcoin {
     fn version_id(&self) -> u8 {
         0x32
     }
-    fn genesis(&self) -> [u8; 32] {
-        utils::hex_to_arr32_swapped(
-            "00000ffde4c020b5938441a0ea3d314bf619eff0b38f32f78f7583cffa1ea485",
-        )
+    fn genesis(&self) -> sha256d::Hash {
+        sha256d::Hash::from_str("00000ffde4c020b5938441a0ea3d314bf619eff0b38f32f78f7583cffa1ea485")
+            .unwrap()
     }
     fn default_folder(&self) -> PathBuf {
         Path::new(".myriadcoin").join("blocks")
@@ -174,10 +168,9 @@ impl Coin for Unobtanium {
     fn version_id(&self) -> u8 {
         0x82
     }
-    fn genesis(&self) -> [u8; 32] {
-        utils::hex_to_arr32_swapped(
-            "000004c2fc5fffb810dccc197d603690099a68305232e552d96ccbe8e2c52b75",
-        )
+    fn genesis(&self) -> sha256d::Hash {
+        sha256d::Hash::from_str("000004c2fc5fffb810dccc197d603690099a68305232e552d96ccbe8e2c52b75")
+            .unwrap()
     }
     fn default_folder(&self) -> PathBuf {
         Path::new(".unobtanium").join("blocks")
@@ -194,10 +187,9 @@ impl Coin for NoteBlockchain {
     fn version_id(&self) -> u8 {
         0x35
     }
-    fn genesis(&self) -> [u8; 32] {
-        utils::hex_to_arr32_swapped(
-            "270f3e7b185c412d57ba913d10658df54f15201a67d736cb4071a4ec4eb54836",
-        )
+    fn genesis(&self) -> sha256d::Hash {
+        sha256d::Hash::from_str("270f3e7b185c412d57ba913d10658df54f15201a67d736cb4071a4ec4eb54836")
+            .unwrap()
     }
     fn default_folder(&self) -> PathBuf {
         Path::new(".notecoin").join("blocks")
@@ -219,7 +211,7 @@ pub struct CoinType {
     pub name: String,
     pub magic: u32,
     pub version_id: u8,
-    pub genesis_hash: [u8; 32],
+    pub genesis_hash: sha256d::Hash,
     pub aux_pow_activation_version: Option<u32>,
     pub default_folder: PathBuf,
 }

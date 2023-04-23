@@ -1,4 +1,4 @@
-use std::convert::{self, From};
+use std::convert::From;
 use std::error;
 use std::fmt;
 use std::io;
@@ -79,7 +79,7 @@ pub enum OpErrorKind {
     ScriptError(script::ScriptError),
     InvalidArgsError,
     CallbackError,
-    ValidateError,
+    ValidationError,
     RuntimeError,
     PoisonError,
     SendError,
@@ -98,7 +98,7 @@ impl fmt::Display for OpErrorKind {
             ref err @ OpErrorKind::SendError => write!(f, "Sync: {}", err),
             ref err @ OpErrorKind::InvalidArgsError => write!(f, "InvalidArgs: {}", err),
             ref err @ OpErrorKind::CallbackError => write!(f, "Callback: {}", err),
-            ref err @ OpErrorKind::ValidateError => write!(f, "Validation: {}", err),
+            ref err @ OpErrorKind::ValidationError => write!(f, "Validation: {}", err),
             ref err @ OpErrorKind::RuntimeError => write!(f, "RuntimeError: {}", err),
             OpErrorKind::None => write!(f, ""),
         }
@@ -125,37 +125,37 @@ impl From<io::Error> for OpError {
     }
 }
 
-impl convert::From<i32> for OpError {
+impl From<i32> for OpError {
     fn from(err_code: i32) -> Self {
         Self::from(io::Error::from_raw_os_error(err_code))
     }
 }
 
-impl convert::From<String> for OpError {
+impl From<String> for OpError {
     fn from(err: String) -> Self {
         Self::new(OpErrorKind::None).join_msg(&err)
     }
 }
 
-impl<T> convert::From<sync::PoisonError<T>> for OpError {
+impl<T> From<sync::PoisonError<T>> for OpError {
     fn from(_: sync::PoisonError<T>) -> Self {
         Self::new(OpErrorKind::PoisonError)
     }
 }
 
-impl<T> convert::From<sync::mpsc::SendError<T>> for OpError {
+impl<T> From<sync::mpsc::SendError<T>> for OpError {
     fn from(_: sync::mpsc::SendError<T>) -> Self {
         Self::new(OpErrorKind::SendError)
     }
 }
 
-impl convert::From<string::FromUtf8Error> for OpError {
+impl From<string::FromUtf8Error> for OpError {
     fn from(err: string::FromUtf8Error) -> Self {
         Self::new(OpErrorKind::Utf8Error(err))
     }
 }
 
-impl convert::From<rusty_leveldb::Status> for OpError {
+impl From<rusty_leveldb::Status> for OpError {
     fn from(status: Status) -> Self {
         Self::new(OpErrorKind::LevelDBError(status.err))
     }
