@@ -9,7 +9,7 @@ and UTXO dumps from Bitcoin based blockchains.
 
  `Bitcoin`, `Namecoin`, `Litecoin`, `Dogecoin`, `Myriadcoin`, `Unobtanium` and `NoteBlockchain`.
 
-**IMPORANT:** It assumes a local unpruned copy of the blockchain with intact block index,
+**IMPORANT:** It assumes a local unpruned copy of the blockchain with intact block index and blk files,
 downloaded with [Bitcoin Core](https://github.com/bitcoin/bitcoin) 0.15.1+ or similar clients.
 If you are not sure whether your local copy is valid you can apply `--verify` to validate the chain and block merkle trees.
 If something doesn't match the parser exits.
@@ -156,6 +156,7 @@ Callbacks are built on top of the core parser. They can be implemented to extrac
     tx_out.csv
     txid ; indexOut ; height ; value ; scriptPubKey ; address
     ```
+    If unclear what some of these fields are, see the [block](https://en.bitcoin.it/wiki/Protocol_documentation#block) and [transaction](https://en.bitcoin.it/wiki/Protocol_documentation#tx) specifications.
     If you want to insert the files into MySql see [sql/schema.sql](sql/schema.sql).
     It contains all table structures and SQL statements for bulk inserting. Also see [sql/views.sql](sql/views.sql) for some query examples.
     NOTE: The total size of the csv dump is at least to 731 GiB (height 635000).
