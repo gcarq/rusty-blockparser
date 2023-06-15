@@ -181,7 +181,7 @@ The tool can easily be customized to your coin. This section outlines the change
 * The main change is `src/blockchain/parser/types.rs`.
 * Add a new entry `pub struct NoCoinium` above the line `//pub struct Dash`(The case you use here is to be carried in all subsequent references, except when noted)
 * You will then need to add a `impl Coin for NoCoinium`. You could easily copy a previous block e.g. Bitcoin. The changes you need to do are highlighted below as comments
-```
+```rust
 //The name here should be the same case as defined in the pub struct line
 impl Coin for NoCoinium {
     fn name(&self) -> String {
@@ -214,7 +214,7 @@ impl Coin for NoCoinium {
 }
 ```
 * Finally, tie these changes within `impl FromStr for CoinType` under `match coin`. The first part will be the case passed as argument to the program (see bullet point below) and the name within `from()` will be the name used above.
-```
+```rust
 "nocoinium" => Ok(CoinType::from(NoCoinium)),
 ```
 
