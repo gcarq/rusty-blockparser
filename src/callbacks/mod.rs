@@ -1,4 +1,4 @@
-use clap::{App, ArgMatches};
+use clap::{ArgMatches, Command};
 
 use crate::blockchain::proto::block::Block;
 use crate::errors::OpResult;
@@ -14,9 +14,9 @@ pub mod unspentcsvdump;
 /// The parser ensures that the blocks arrive in the correct order.
 /// At this stage the main chain is already determined and orphans/stales are removed.
 pub trait Callback {
-    /// Builds SubCommand to specify callback name and required args,
+    /// Builds Command to specify callback name and required args,
     /// exits if some required args are missing.
-    fn build_subcommand<'a, 'b>() -> App<'a, 'b>
+    fn build_subcommand() -> Command
     where
         Self: Sized;
 

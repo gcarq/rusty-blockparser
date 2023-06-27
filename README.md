@@ -17,31 +17,33 @@ If something doesn't match the parser exits.
 
 ## Usage
 ```
-USAGE:
-    rusty-blockparser [FLAGS] [OPTIONS] [SUBCOMMAND]
+Usage: rusty-blockparser [OPTIONS] [COMMAND]
 
-FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
-    -v               Increases verbosity level. Info=0, Debug=1, Trace=2 (default: 0)
-        --verify     Verifies the leveldb index integrity and verifies merkle roots
+Commands:
+  unspentcsvdump  Dumps the unspent outputs to CSV file
+  csvdump         Dumps the whole blockchain into CSV files
+  simplestats     Shows various Blockchain stats
+  balances        Dumps all addresses with non-zero balance to CSV file
+  opreturn        Shows embedded OP_RETURN data that is representable as UTF8
+  help            Print this message or the help of the given subcommand(s)
 
-OPTIONS:
-    -d, --blockchain-dir <blockchain-dir>    Sets blockchain directory which contains blk.dat files (default:
-                                             ~/.bitcoin/blocks)
-    -c, --coin <NAME>                        Specify blockchain coin (default: bitcoin) [possible values: bitcoin,
-                                             testnet3, namecoin, litecoin, dogecoin, myriadcoin, unobtanium,
-                                             noteblockchain]
-    -e, --end <HEIGHT>                       Specify last block for parsing (inclusive) (default: all known blocks)
-    -s, --start <HEIGHT>                     Specify starting block for parsing (inclusive)
-
-SUBCOMMANDS:
-    balances          Dumps all addresses with non-zero balance to CSV file
-    csvdump           Dumps the whole blockchain into CSV files
-    help              Prints this message or the help of the given subcommand(s)
-    opreturn          Shows embedded OP_RETURN data that is representable as UTF8
-    simplestats       Shows various Blockchain stats
-    unspentcsvdump    Dumps the unspent outputs to CSV file
+Options:
+      --verify
+          Verifies merkle roots and block hashes
+  -v...
+          Increases verbosity level. Info=0, Debug=1, Trace=2 (default: 0)
+  -c, --coin <NAME>
+          Specify blockchain coin (default: bitcoin) [possible values: bitcoin, testnet3, namecoin, litecoin, dogecoin, myriadcoin, unobtanium, noteblockchain]
+  -d, --blockchain-dir <blockchain-dir>
+          Sets blockchain directory which contains blk.dat files (default: ~/.bitcoin/blocks)
+  -s, --start <HEIGHT>
+          Specify starting block for parsing (inclusive)
+  -e, --end <HEIGHT>
+          Specify last block for parsing (inclusive) (default: all known blocks)
+  -h, --help
+          Print help
+  -V, --version
+          Print version
 ```
 ### Example
 

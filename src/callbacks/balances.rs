@@ -3,7 +3,7 @@ use std::fs::{self, File};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 
-use clap::{App, Arg, ArgMatches, SubCommand};
+use clap::{Arg, ArgMatches, Command};
 
 use crate::blockchain::proto::block::Block;
 use crate::callbacks::{common, Callback};
@@ -28,16 +28,16 @@ impl Balances {
 }
 
 impl Callback for Balances {
-    fn build_subcommand<'a, 'b>() -> App<'a, 'b>
+    fn build_subcommand() -> Command
     where
         Self: Sized,
     {
-        SubCommand::with_name("balances")
+        Command::new("balances")
             .about("Dumps all addresses with non-zero balance to CSV file")
             .version("0.1")
             .author("gcarq <egger.m@protonmail.com>")
             .arg(
-                Arg::with_name("dump-folder")
+                Arg::new("dump-folder")
                     .help("Folder to store csv file")
                     .index(1)
                     .required(true),
@@ -48,7 +48,7 @@ impl Callback for Balances {
     where
         Self: Sized,
     {
-        let dump_folder = &PathBuf::from(matches.value_of("dump-folder").unwrap());
+        let dump_folder = &PathBuf::from(matches.get_one::<String>("dump-folder").unwrap());
         let cb = Balances {
             dump_folder: PathBuf::from(dump_folder),
             writer: Balances::create_writer(4000000, dump_folder.join("balances.csv.tmp"))?,
