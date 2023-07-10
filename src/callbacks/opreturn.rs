@@ -1,4 +1,4 @@
-use clap::{App, ArgMatches, SubCommand};
+use clap::{ArgMatches, Command};
 
 use crate::blockchain::proto::block::Block;
 use crate::blockchain::proto::script::ScriptPattern;
@@ -9,11 +9,11 @@ use crate::errors::OpResult;
 pub struct OpReturn;
 
 impl Callback for OpReturn {
-    fn build_subcommand<'a, 'b>() -> App<'a, 'b>
+    fn build_subcommand() -> Command
     where
         Self: Sized,
     {
-        SubCommand::with_name("opreturn")
+        Command::new("opreturn")
             .about("Shows embedded OP_RETURN data that is representable as UTF8")
             .version("0.1")
             .author("gcarq <egger.m@protonmail.com>")

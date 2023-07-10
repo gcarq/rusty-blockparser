@@ -5,7 +5,7 @@ use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 
 use byteorder::{LittleEndian, ReadBytesExt};
-use clap::{App, Arg, ArgMatches, SubCommand};
+use clap::{Arg, ArgMatches, Command};
 
 use crate::blockchain::proto::block::Block;
 use crate::callbacks::{common, Callback};
@@ -32,16 +32,16 @@ impl UnspentCsvDump {
 }
 
 impl Callback for UnspentCsvDump {
-    fn build_subcommand<'a, 'b>() -> App<'a, 'b>
+    fn build_subcommand() -> Command
     where
         Self: Sized,
     {
-        SubCommand::with_name("unspentcsvdump")
+        Command::new("unspentcsvdump")
             .about("Dumps the unspent outputs to CSV file")
             .version("0.1")
             .author("fsvm88 <fsvm88@gmail.com>")
             .arg(
-                Arg::with_name("dump-folder")
+                Arg::new("dump-folder")
                     .help("Folder to store csv file")
                     .index(1)
                     .required(true),
@@ -52,7 +52,7 @@ impl Callback for UnspentCsvDump {
     where
         Self: Sized,
     {
-        let dump_folder = &PathBuf::from(matches.value_of("dump-folder").unwrap());
+        let dump_folder = &PathBuf::from(matches.get_one::<String>("dump-folder").unwrap());
         let cb = UnspentCsvDump {
             dump_folder: PathBuf::from(dump_folder),
             writer: UnspentCsvDump::create_writer(4000000, dump_folder.join("unspent.csv.tmp"))?,

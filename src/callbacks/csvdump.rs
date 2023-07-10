@@ -2,7 +2,7 @@ use std::fs::{self, File};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 
-use clap::{App, Arg, ArgMatches, SubCommand};
+use clap::{Arg, ArgMatches, Command};
 
 use crate::blockchain::proto::block::Block;
 use crate::blockchain::proto::tx::{EvaluatedTx, EvaluatedTxOut, TxInput};
@@ -33,16 +33,16 @@ impl CsvDump {
 }
 
 impl Callback for CsvDump {
-    fn build_subcommand<'a, 'b>() -> App<'a, 'b>
+    fn build_subcommand() -> Command
     where
         Self: Sized,
     {
-        SubCommand::with_name("csvdump")
+        Command::new("csvdump")
             .about("Dumps the whole blockchain into CSV files")
             .version("0.1")
             .author("gcarq <egger.m@protonmail.com>")
             .arg(
-                Arg::with_name("dump-folder")
+                Arg::new("dump-folder")
                     .help("Folder to store csv files")
                     .index(1)
                     .required(true),
@@ -53,7 +53,7 @@ impl Callback for CsvDump {
     where
         Self: Sized,
     {
-        let dump_folder = &PathBuf::from(matches.value_of("dump-folder").unwrap());
+        let dump_folder = &PathBuf::from(matches.get_one::<String>("dump-folder").unwrap());
         let cap = 4000000;
         let cb = CsvDump {
             dump_folder: PathBuf::from(dump_folder),

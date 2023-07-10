@@ -2,7 +2,7 @@ use bitcoin::hashes::{sha256d, Hash};
 use std::collections::HashMap;
 use std::io::{self, Write};
 
-use clap::{App, ArgMatches, SubCommand};
+use clap::{ArgMatches, Command};
 
 use crate::blockchain::proto::block::{self, Block};
 use crate::blockchain::proto::script::ScriptPattern;
@@ -182,11 +182,11 @@ impl SimpleStats {
 }
 
 impl Callback for SimpleStats {
-    fn build_subcommand<'a, 'b>() -> App<'a, 'b>
+    fn build_subcommand() -> Command
     where
         Self: Sized,
     {
-        SubCommand::with_name("simplestats")
+        Command::new("simplestats")
             .about("Shows various Blockchain stats")
             .version("0.1")
             .author("gcarq <egger.m@protonmail.com>")
