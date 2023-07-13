@@ -35,6 +35,7 @@ pub struct BlockchainParser {
     chain_storage: ChainStorage, // Hash storage with the longest chain
     stats: WorkerStats,          // struct for thread management & statistics
     callback: Box<dyn Callback>,
+    cur_height: u64,
 }
 
 impl BlockchainParser {
@@ -45,17 +46,26 @@ impl BlockchainParser {
             chain_storage,
             stats: WorkerStats::new(options.range.start),
             callback: options.callback,
+            cur_height: options.range.start,
         }
     }
 
     pub fn start(&mut self) -> OpResult<()> {
         debug!(target: "parser", "Starting worker ...");
 
-        self.on_start(self.chain_storage.cur_height)?;
-        while let Some((block, height)) = self.chain_storage.advance() {
-            self.on_block(&block, height)?;
+        self.on_start(self.cur_height)?;
+        while let Some(block) = self.chain_storage.get_block(self.cur_height) {
+            self.on_block(&block, self.cur_height)?;
+            self.cur_height += 1;
         }
-        self.on_complete(self.chain_storage.cur_height.saturating_sub(1))
+        self.on_complete(self.cur_height.saturating_sub(1))
+    }
+
+    /// Returns number of remaining blocks
+    pub fn remaining(&self) -> u64 {
+        self.chain_storage
+            .max_height()
+            .saturating_sub(self.cur_height)
     }
 
     /// Triggers the on_start() callback and initializes state.
@@ -95,7 +105,7 @@ impl BlockchainParser {
 
         if now - self.stats.last_log > self.stats.measure_frame {
             info!(target: "parser", "Status: {:7} Blocks processed. (remaining: {:7}, speed: {:5.2} blocks/s)",
-              height, self.chain_storage.remaining(), blocks_speed);
+              height, self.remaining(), blocks_speed);
             self.stats.last_log = now;
             self.stats.last_height = height;
         }

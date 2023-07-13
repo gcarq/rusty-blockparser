@@ -13,7 +13,6 @@ pub struct ChainStorage {
     blk_files: HashMap<u64, BlkFile>, // maps blk_index to BlkFile
     coin: CoinType,
     verify: bool,
-    pub cur_height: u64,
 }
 
 impl ChainStorage {
@@ -21,17 +20,13 @@ impl ChainStorage {
         Ok(Self {
             chain_index: ChainIndex::new(options)?,
             blk_files: BlkFile::from_path(options.blockchain_dir.as_path())?,
-            cur_height: options.range.start,
             coin: options.coin.clone(),
             verify: options.verify,
         })
     }
 
     /// Returns the next block and its height
-    pub fn advance(&mut self) -> Option<(Block, u64)> {
-        // Check range configured params
-        let height = self.cur_height;
-
+    pub fn get_block(&mut self, height: u64) -> Option<Block> {
         // Read block
         let block_meta = self.chain_index.get(height)?;
         let blk_file = self.blk_files.get_mut(&block_meta.blk_index)?;
@@ -45,18 +40,17 @@ impl ChainStorage {
         }
 
         if self.verify {
-            self.verify(&block).unwrap();
+            self.verify(&block, height).unwrap();
         }
 
-        self.cur_height += 1;
-        Some((block, height))
+        Some(block)
     }
 
     /// Verifies the given block in a chain.
     /// Panics if not valid
-    fn verify(&self, block: &Block) -> OpResult<()> {
+    fn verify(&self, block: &Block, height: u64) -> OpResult<()> {
         block.verify_merkle_root()?;
-        if self.cur_height == 0 {
+        if height == 0 {
             if block.header.hash != self.coin.genesis_hash {
                 let msg = format!(
                     "Genesis block hash doesn't match!\n  -> expected: {}\n  -> got: {}\n",
@@ -67,7 +61,7 @@ impl ChainStorage {
         } else {
             let prev_hash = self
                 .chain_index
-                .get(self.cur_height - 1)
+                .get(height - 1)
                 .expect("unable to fetch prev block in chain index")
                 .block_hash;
             if block.header.value.prev_hash != prev_hash {
@@ -81,10 +75,7 @@ impl ChainStorage {
         Ok(())
     }
 
-    /// Returns number of remaining blocks
-    pub fn remaining(&self) -> u64 {
-        self.chain_index
-            .max_height()
-            .saturating_sub(self.cur_height)
+    pub(crate) fn max_height(&self) -> u64 {
+        self.chain_index.max_height()
     }
 }
