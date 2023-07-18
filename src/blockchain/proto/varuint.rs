@@ -66,6 +66,17 @@ impl From<u64> for VarUint {
     }
 }
 
+impl From<usize> for VarUint {
+    fn from(value: usize) -> Self {
+        match value {
+            0..=255 => VarUint::from(value as u8),
+            256..=65535 => VarUint::from(value as u16),
+            65536..=4294967295 => VarUint::from(value as u32),
+            _ => VarUint::from(value as u64),
+        }
+    }
+}
+
 impl ToRaw for VarUint {
     #[inline]
     fn to_bytes(&self) -> Vec<u8> {

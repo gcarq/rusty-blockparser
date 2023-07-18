@@ -5,7 +5,6 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::blockchain::proto::header::BlockHeader;
 use crate::blockchain::proto::tx::{EvaluatedTx, RawTx};
-use crate::blockchain::proto::varuint::VarUint;
 use crate::blockchain::proto::{Hashed, MerkleBranch};
 use crate::common::utils;
 use crate::errors::{OpError, OpErrorKind, OpResult};
@@ -15,7 +14,6 @@ pub struct Block {
     pub size: u32,
     pub header: Hashed<BlockHeader>,
     pub aux_pow_extension: Option<AuxPowExtension>,
-    pub tx_count: VarUint,
     pub txs: Vec<Hashed<EvaluatedTx>>,
 }
 
@@ -24,7 +22,6 @@ impl Block {
         size: u32,
         header: BlockHeader,
         aux_pow_extension: Option<AuxPowExtension>,
-        tx_count: VarUint,
         txs: Vec<RawTx>,
     ) -> Block {
         let txs = txs
@@ -35,7 +32,6 @@ impl Block {
             size,
             header: Hashed::double_sha256(header),
             aux_pow_extension,
-            tx_count,
             txs,
         }
     }
@@ -71,7 +67,7 @@ impl fmt::Debug for Block {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("Block")
             .field("header", &self.header)
-            .field("tx_count", &self.tx_count)
+            .field("tx_count", &self.txs.len())
             .finish()
     }
 }

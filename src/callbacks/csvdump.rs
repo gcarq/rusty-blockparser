@@ -21,9 +21,9 @@ pub struct CsvDump {
     txout_writer: BufWriter<File>,
 
     start_height: u64,
-    tx_count: u64,
-    in_count: u64,
-    out_count: u64,
+    tx_count: usize,
+    in_count: usize,
+    out_count: usize,
 }
 
 impl CsvDump {
@@ -92,16 +92,16 @@ impl Callback for CsvDump {
                 self.txin_writer
                     .write_all(input.as_csv(&txid_str).as_bytes())?;
             }
-            self.in_count += tx.value.in_count.value;
+            self.in_count += tx.value.inputs.len();
 
             // serialize outputs
             for (i, output) in tx.value.outputs.iter().enumerate() {
                 self.txout_writer
                     .write_all(output.as_csv(&txid_str, i as u32).as_bytes())?;
             }
-            self.out_count += tx.value.out_count.value;
+            self.out_count += tx.value.outputs.len();
         }
-        self.tx_count += block.tx_count.value;
+        self.tx_count += block.txs.len();
         Ok(())
     }
 

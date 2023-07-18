@@ -15,9 +15,9 @@ pub struct SimpleStats {
     n_valid_blocks: u64,
     block_sizes: Vec<u32>,
 
-    n_tx: u64,
-    n_tx_inputs: u64,
-    n_tx_outputs: u64,
+    n_tx: usize,
+    n_tx_inputs: usize,
+    n_tx_outputs: usize,
     n_tx_total_fee: u64,
     n_tx_total_volume: u64,
 
@@ -206,7 +206,7 @@ impl Callback for SimpleStats {
 
     fn on_block(&mut self, block: &Block, block_height: u64) -> OpResult<()> {
         self.n_valid_blocks += 1;
-        self.n_tx += block.tx_count.value;
+        self.n_tx += block.txs.len();
         self.block_sizes.push(block.size);
 
         for tx in &block.txs {
@@ -219,8 +219,8 @@ impl Callback for SimpleStats {
                     .unwrap_or_default();
             }
 
-            self.n_tx_inputs += tx.value.in_count.value;
-            self.n_tx_outputs += tx.value.out_count.value;
+            self.n_tx_inputs += tx.value.inputs.len();
+            self.n_tx_outputs += tx.value.outputs.len();
 
             let mut tx_value = 0;
             for (i, o) in tx.value.outputs.iter().enumerate() {

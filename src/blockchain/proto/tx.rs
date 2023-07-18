@@ -9,9 +9,7 @@ use crate::common::utils;
 
 pub struct RawTx {
     pub version: u32,
-    pub in_count: VarUint,
     pub inputs: Vec<TxInput>,
-    pub out_count: VarUint,
     pub outputs: Vec<TxOutput>,
     pub locktime: u32,
     pub version_id: u8,
@@ -21,9 +19,7 @@ pub struct RawTx {
 /// Please note: The txid is not stored here. See Hashed.
 pub struct EvaluatedTx {
     pub version: u32,
-    pub in_count: VarUint,
     pub inputs: Vec<TxInput>,
-    pub out_count: VarUint,
     pub outputs: Vec<EvaluatedTxOut>,
     pub locktime: u32,
 }
@@ -31,9 +27,7 @@ pub struct EvaluatedTx {
 impl EvaluatedTx {
     pub fn new(
         version: u32,
-        in_count: VarUint,
         inputs: Vec<TxInput>,
-        out_count: VarUint,
         outputs: Vec<TxOutput>,
         locktime: u32,
         version_id: u8,
@@ -45,16 +39,14 @@ impl EvaluatedTx {
             .collect();
         EvaluatedTx {
             version,
-            in_count,
             inputs,
-            out_count,
             outputs,
             locktime,
         }
     }
 
     pub fn is_coinbase(&self) -> bool {
-        if self.in_count.value == 1 {
+        if self.inputs.len() == 1 {
             let input = self.inputs.first().unwrap();
             return input.outpoint.txid.as_ref() == [0u8; 32] && input.outpoint.index == 0xFFFFFFFF;
         }
@@ -66,8 +58,8 @@ impl fmt::Debug for EvaluatedTx {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("Tx")
             .field("version", &self.version)
-            .field("in_count", &self.in_count)
-            .field("out_count", &self.out_count)
+            .field("in_count", &self.inputs.len())
+            .field("out_count", &self.outputs.len())
             .field("locktime", &self.locktime)
             .finish()
     }
@@ -77,9 +69,7 @@ impl From<RawTx> for EvaluatedTx {
     fn from(tx: RawTx) -> Self {
         Self::new(
             tx.version,
-            tx.in_count,
             tx.inputs,
-            tx.out_count,
             tx.outputs,
             tx.locktime,
             tx.version_id,
@@ -89,18 +79,17 @@ impl From<RawTx> for EvaluatedTx {
 
 impl ToRaw for EvaluatedTx {
     fn to_bytes(&self) -> Vec<u8> {
-        let mut bytes =
-            Vec::with_capacity((4 + self.in_count.value + self.out_count.value + 4) as usize);
+        let mut bytes = Vec::with_capacity(4 + self.inputs.len() + self.outputs.len() + 4);
 
         // Serialize version
         bytes.extend_from_slice(&self.version.to_le_bytes());
         // Serialize all TxInputs
-        bytes.extend_from_slice(&self.in_count.to_bytes());
+        bytes.extend_from_slice(&VarUint::from(self.inputs.len()).to_bytes());
         for i in &self.inputs {
             bytes.extend_from_slice(&i.to_bytes());
         }
         // Serialize all TxOutputs
-        bytes.extend_from_slice(&self.out_count.to_bytes());
+        bytes.extend_from_slice(&VarUint::from(self.outputs.len()).to_bytes());
         for o in &self.outputs {
             bytes.extend_from_slice(&o.out.to_bytes());
         }

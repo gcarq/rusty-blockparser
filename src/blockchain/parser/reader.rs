@@ -38,7 +38,7 @@ pub trait BlockchainRead: io::Read {
         };
         let tx_count = VarUint::read_from(self)?;
         let txs = self.read_txs(tx_count.value, coin.version_id)?;
-        Ok(Block::new(size, header, aux_pow_extension, tx_count, txs))
+        Ok(Block::new(size, header, aux_pow_extension, txs))
     }
 
     fn read_block_header(&mut self) -> OpResult<BlockHeader> {
@@ -94,9 +94,7 @@ pub trait BlockchainRead: io::Read {
         let locktime = self.read_u32::<LittleEndian>()?;
         let tx = RawTx {
             version,
-            in_count,
             inputs,
-            out_count,
             outputs,
             locktime,
             version_id,
@@ -292,11 +290,11 @@ mod tests {
         assert_eq!(2083236893, block.header.value.nonce);
 
         // Tx
-        assert_eq!(0x01, block.tx_count.value);
+        assert_eq!(0x01, block.txs.len());
         assert_eq!(0x00000001, block.txs[0].value.version);
 
         // Tx Inputs
-        assert_eq!(0x01, block.txs[0].value.in_count.value);
+        assert_eq!(0x01, block.txs[0].value.inputs.len());
         assert_eq!(
             "0000000000000000000000000000000000000000000000000000000000000000",
             format!("{}", &block.txs[0].value.inputs[0].outpoint.txid)
@@ -308,7 +306,7 @@ mod tests {
         assert_eq!(0xffffffff, block.txs[0].value.inputs[0].seq_no);
 
         // Tx Outputs
-        assert_eq!(0x01, block.txs[0].value.out_count.value);
+        assert_eq!(0x01, block.txs[0].value.outputs.len());
         assert_eq!(
             u64::from_be(0x00f2052a01000000),
             block.txs[0].value.outputs[0].out.value
@@ -382,7 +380,6 @@ mod tests {
         assert_eq!(tx.version, 1);
 
         // Assert inputs
-        assert_eq!(tx.in_count.value, 1);
         assert_eq!(tx.inputs.len(), 1);
         let prev_hash = [
             0x15, 0xe1, 0x80, 0xdc, 0x28, 0xa2, 0x32, 0x7e, 0x68, 0x7f, 0xac, 0xc3, 0x3f, 0x10,
@@ -395,7 +392,6 @@ mod tests {
         assert_eq!(tx.inputs[0].seq_no, 0xffffffff);
 
         // Assert outputs
-        assert_eq!(tx.out_count.value, 1);
         assert_eq!(tx.outputs.len(), 1);
         assert_eq!(tx.outputs[0].out.value, 99987100);
         assert_eq!(tx.outputs[0].out.script_len.value, 25);
@@ -587,11 +583,11 @@ mod tests {
         );
 
         // Tx
-        assert_eq!(0x01, block.tx_count.value);
+        assert_eq!(0x01, block.txs.len());
         assert_eq!(0x00000001, block.txs[0].value.version);
 
         // Tx Inputs
-        assert_eq!(0x01, block.txs[0].value.in_count.value);
+        assert_eq!(0x01, block.txs[0].value.inputs.len());
         assert_eq!(
             "0000000000000000000000000000000000000000000000000000000000000000",
             format!("{}", &block.txs[0].value.inputs[0].outpoint.txid)
@@ -605,7 +601,7 @@ mod tests {
         assert_eq!(0xffffffff, block.txs[0].value.inputs[0].seq_no);
 
         // Tx Outputs
-        assert_eq!(0x01, block.txs[0].value.out_count.value);
+        assert_eq!(0x01, block.txs[0].value.outputs.len());
         assert_eq!(
             u64::from_be(0x00f2052a01000000),
             block.txs[0].value.outputs[0].out.value
@@ -888,11 +884,11 @@ mod tests {
             "dc8dbed0461ec54a9524fc12fbed7466e6acb0f0637fcb2a0111174c84753fec",
             format!("{}", &block.txs[0].hash)
         );
-        assert_eq!(8, block.tx_count.value);
+        assert_eq!(8, block.txs.len());
         assert_eq!(0x00000001, block.txs[0].value.version);
 
         // Tx Inputs
-        assert_eq!(0x01, block.txs[0].value.in_count.value);
+        assert_eq!(0x01, block.txs[0].value.inputs.len());
         assert_eq!(
             "0000000000000000000000000000000000000000000000000000000000000000",
             format!("{}", &block.txs[0].value.inputs[0].outpoint.txid)
@@ -906,7 +902,7 @@ mod tests {
         assert_eq!(0xffffffff, block.txs[0].value.inputs[0].seq_no);
 
         // Tx Outputs
-        assert_eq!(0x01, block.txs[0].value.out_count.value);
+        assert_eq!(0x01, block.txs[0].value.outputs.len());
         assert_eq!(1000201725200, block.txs[0].value.outputs[0].out.value);
         assert_eq!(0x23, block.txs[0].value.outputs[0].out.script_len.value);
 

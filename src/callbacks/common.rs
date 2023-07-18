@@ -16,12 +16,12 @@ pub struct UnspentValue {
 pub fn remove_unspents(
     tx: &Hashed<EvaluatedTx>,
     unspents: &mut HashMap<Vec<u8>, UnspentValue>,
-) -> u64 {
+) -> usize {
     for input in &tx.value.inputs {
         let key = input.outpoint.to_bytes();
         unspents.remove(&key);
     }
-    tx.value.in_count.value
+    tx.value.inputs.len()
 }
 
 /// Iterates over transaction outputs and adds valid unspents to HashMap.
@@ -30,7 +30,7 @@ pub fn insert_unspents(
     tx: &Hashed<EvaluatedTx>,
     block_height: u64,
     unspents: &mut HashMap<Vec<u8>, UnspentValue>,
-) -> u64 {
+) -> usize {
     let mut count = 0;
     for (i, output) in tx.value.outputs.iter().enumerate() {
         match &output.script.address {
@@ -63,7 +63,6 @@ mod tests {
     use crate::blockchain::parser::reader::BlockchainRead;
     use crate::blockchain::proto::block::Block;
     use crate::blockchain::proto::header::BlockHeader;
-    use crate::blockchain::proto::varuint::VarUint;
 
     use bitcoin::hashes::{sha256d, Hash};
     use std::io::{BufReader, Cursor};
@@ -105,7 +104,7 @@ mod tests {
         ];
         let mut reader = BufReader::new(Cursor::new(raw_data));
         let txs = reader.read_txs(1, 0x00).unwrap();
-        let block1 = Block::new(0, header.clone(), None, VarUint::from(1u8), txs);
+        let block1 = Block::new(0, header.clone(), None, txs);
 
         for tx in &block1.txs {
             remove_unspents(&tx, &mut unspents);
@@ -243,7 +242,7 @@ mod tests {
         ];
         let mut reader = BufReader::new(Cursor::new(raw_data));
         let txs = reader.read_txs(1, 0x00).unwrap();
-        let block2 = Block::new(0, header.clone(), None, VarUint::from(1u8), txs);
+        let block2 = Block::new(0, header.clone(), None, txs);
 
         for tx in &block2.txs {
             remove_unspents(&tx, &mut unspents);

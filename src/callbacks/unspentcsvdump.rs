@@ -20,9 +20,9 @@ pub struct UnspentCsvDump {
     unspents: HashMap<Vec<u8>, common::UnspentValue>,
 
     start_height: u64,
-    tx_count: u64,
-    in_count: u64,
-    out_count: u64,
+    tx_count: usize,
+    in_count: usize,
+    out_count: usize,
 }
 
 impl UnspentCsvDump {
@@ -83,7 +83,7 @@ impl Callback for UnspentCsvDump {
             self.in_count += common::remove_unspents(tx, &mut self.unspents);
             self.out_count += common::insert_unspents(tx, block_height, &mut self.unspents);
         }
-        self.tx_count += block.tx_count.value;
+        self.tx_count += block.txs.len();
         Ok(())
     }
 
