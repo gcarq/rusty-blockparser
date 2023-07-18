@@ -43,7 +43,7 @@ impl From<u16> for VarUint {
     fn from(value: u16) -> Self {
         let mut buf: Vec<u8> = Vec::with_capacity(3);
         buf.push(0xfd);
-        buf.extend_from_slice(&value.to_le_bytes());
+        buf.extend(&value.to_le_bytes());
         VarUint::new(value as u64, buf)
     }
 }
@@ -52,7 +52,7 @@ impl From<u32> for VarUint {
     fn from(value: u32) -> Self {
         let mut buf: Vec<u8> = Vec::with_capacity(5);
         buf.push(0xfe);
-        buf.extend_from_slice(&value.to_le_bytes());
+        buf.extend(&value.to_le_bytes());
         VarUint::new(value as u64, buf)
     }
 }
@@ -61,7 +61,7 @@ impl From<u64> for VarUint {
     fn from(value: u64) -> Self {
         let mut buf: Vec<u8> = Vec::with_capacity(9);
         buf.push(0xff);
-        buf.extend_from_slice(&value.to_le_bytes());
+        buf.extend(&value.to_le_bytes());
         VarUint::new(value, buf)
     }
 }

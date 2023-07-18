@@ -95,19 +95,19 @@ impl ToRaw for EvaluatedTx {
             Vec::with_capacity((4 + self.in_count.value + self.out_count.value + 4) as usize);
 
         // Serialize version
-        bytes.extend_from_slice(&self.version.to_le_bytes());
+        bytes.extend(&self.version.to_le_bytes());
         // Serialize all TxInputs
-        bytes.extend_from_slice(&self.in_count.to_bytes());
+        bytes.extend(&self.in_count.to_bytes());
         for i in &self.inputs {
-            bytes.extend_from_slice(&i.to_bytes());
+            bytes.extend(&i.to_bytes());
         }
         // Serialize all TxOutputs
-        bytes.extend_from_slice(&self.out_count.to_bytes());
+        bytes.extend(&self.out_count.to_bytes());
         for o in &self.outputs {
-            bytes.extend_from_slice(&o.out.to_bytes());
+            bytes.extend(&o.out.to_bytes());
         }
         // Serialize locktime
-        bytes.extend_from_slice(&self.locktime.to_le_bytes());
+        bytes.extend(&self.locktime.to_le_bytes());
         bytes
     }
 }
@@ -129,8 +129,8 @@ impl TxOutpoint {
 impl ToRaw for TxOutpoint {
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(32 + 4);
-        bytes.extend_from_slice(self.txid.as_byte_array());
-        bytes.extend_from_slice(&self.index.to_le_bytes());
+        bytes.extend(self.txid.as_byte_array());
+        bytes.extend(&self.index.to_le_bytes());
         bytes
     }
 }
@@ -155,10 +155,10 @@ pub struct TxInput {
 impl ToRaw for TxInput {
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(36 + 5 + self.script_len.value as usize + 4);
-        bytes.extend_from_slice(&self.outpoint.to_bytes());
-        bytes.extend_from_slice(&self.script_len.to_bytes());
-        bytes.extend_from_slice(&self.script_sig);
-        bytes.extend_from_slice(&self.seq_no.to_le_bytes());
+        bytes.extend(&self.outpoint.to_bytes());
+        bytes.extend(&self.script_len.to_bytes());
+        bytes.extend(&self.script_sig);
+        bytes.extend(&self.seq_no.to_le_bytes());
         bytes
     }
 }
@@ -200,9 +200,9 @@ pub struct TxOutput {
 impl ToRaw for TxOutput {
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(8 + 5 + self.script_len.value as usize);
-        bytes.extend_from_slice(&self.value.to_le_bytes());
-        bytes.extend_from_slice(&self.script_len.to_bytes());
-        bytes.extend_from_slice(&self.script_pubkey);
+        bytes.extend(&self.value.to_le_bytes());
+        bytes.extend(&self.script_len.to_bytes());
+        bytes.extend(&self.script_pubkey);
         bytes
     }
 }

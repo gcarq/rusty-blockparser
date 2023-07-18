@@ -333,10 +333,10 @@ fn public_key_to_addr(pub_key: &[u8], version: u8) -> String {
 fn hash_160_to_address(h160: &[u8], version: u8) -> String {
     let mut hash = Vec::with_capacity(h160.len() + 5);
     hash.push(version);
-    hash.extend_from_slice(h160);
+    hash.extend(h160);
 
     let checksum = &sha256d::Hash::hash(&hash)[0..4];
-    hash.extend_from_slice(checksum);
+    hash.extend(checksum);
     base58::encode(&hash)
 }
 
