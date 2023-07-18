@@ -83,7 +83,8 @@ pub struct AuxPowExtension {
 }
 
 /// Get block reward for given height
-pub fn get_base_reward(block_height: u64) -> u64 {
+#[inline]
+pub const fn get_base_reward(block_height: u64) -> u64 {
     (50 * 100000000) >> (block_height / 210000)
 }
 

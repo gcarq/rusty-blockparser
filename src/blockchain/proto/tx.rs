@@ -45,6 +45,7 @@ impl EvaluatedTx {
         }
     }
 
+    #[inline]
     pub fn is_coinbase(&self) -> bool {
         if self.inputs.len() == 1 {
             let input = self.inputs.first().unwrap();
@@ -66,6 +67,7 @@ impl fmt::Debug for EvaluatedTx {
 }
 
 impl From<RawTx> for EvaluatedTx {
+    #[inline]
     fn from(tx: RawTx) -> Self {
         Self::new(
             tx.version,
@@ -107,6 +109,7 @@ pub struct TxOutpoint {
 }
 
 impl TxOutpoint {
+    #[inline]
     pub fn new(txid: sha256d::Hash, index: u32) -> Self {
         Self { txid, index }
     }
@@ -167,6 +170,7 @@ pub struct EvaluatedTxOut {
 }
 
 impl EvaluatedTxOut {
+    #[inline]
     pub fn eval_script(out: TxOutput, version_id: u8) -> EvaluatedTxOut {
         EvaluatedTxOut {
             script: script::eval_from_bytes(&out.script_pubkey, version_id),

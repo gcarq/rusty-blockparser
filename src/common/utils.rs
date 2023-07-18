@@ -53,6 +53,7 @@ pub fn get_absolute_blockchain_dir(coin: &CoinType) -> PathBuf {
 }
 
 /// Get mean value from u32 slice
+#[inline]
 pub fn get_mean(slice: &[u32]) -> f64 {
     if slice.is_empty() {
         return 0.00;

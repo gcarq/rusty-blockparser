@@ -21,6 +21,7 @@ pub struct BlkFile {
 }
 
 impl BlkFile {
+    #[inline]
     fn new(path: PathBuf, size: u64) -> BlkFile {
         BlkFile {
             path,

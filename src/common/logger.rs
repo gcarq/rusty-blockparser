@@ -29,6 +29,7 @@ impl SimpleLogger {
 }
 
 impl log::Log for SimpleLogger {
+    #[inline]
     fn enabled(&self, metadata: &Metadata) -> bool {
         metadata.level() <= self.level_filter
     }
@@ -47,5 +48,6 @@ impl log::Log for SimpleLogger {
         }
     }
 
+    #[inline]
     fn flush(&self) {}
 }
