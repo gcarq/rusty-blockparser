@@ -13,6 +13,8 @@ use crate::blockchain::proto::block::Block;
 use crate::common::utils::arr_to_hex;
 use crate::errors::{OpError, OpErrorKind, OpResult};
 
+const READER_BUFSIZE: usize = 32 * 1024;
+
 /// Holds all necessary data about a raw blk file
 pub struct BlkFile {
     pub path: PathBuf,
@@ -35,7 +37,7 @@ impl BlkFile {
     fn open(&mut self) -> OpResult<&mut XorReader<BufReader<File>>> {
         if self.reader.is_none() {
             debug!(target: "blkfile", "Opening {} ...", &self.path.display());
-            let buf_reader = BufReader::new(File::open(&self.path)?);
+            let buf_reader = BufReader::with_capacity(READER_BUFSIZE, File::open(&self.path)?);
             self.reader = Some(XorReader::new(buf_reader, self.xor_key.clone()));
         }
         Ok(self.reader.as_mut().unwrap())
