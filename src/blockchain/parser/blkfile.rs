@@ -12,6 +12,8 @@ use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::Block;
 use crate::errors::{OpError, OpErrorKind, OpResult};
 
+const READER_BUFSIZE: usize = 32 * 1024;
+
 /// Holds all necessary data about a raw blk file
 #[derive(Debug)]
 pub struct BlkFile {
@@ -34,7 +36,10 @@ impl BlkFile {
     fn open(&mut self) -> OpResult<&mut BufReader<File>> {
         if self.reader.is_none() {
             debug!(target: "blkfile", "Opening {} ...", &self.path.display());
-            self.reader = Some(BufReader::new(File::open(&self.path)?));
+            self.reader = Some(BufReader::with_capacity(
+                READER_BUFSIZE,
+                File::open(&self.path)?,
+            ));
         }
         Ok(self.reader.as_mut().unwrap())
     }
