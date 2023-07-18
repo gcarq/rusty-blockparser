@@ -74,6 +74,7 @@ impl ToRaw for VarUint {
 }
 
 impl fmt::Display for VarUint {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.value)
     }

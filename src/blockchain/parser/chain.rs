@@ -91,7 +91,8 @@ impl ChainStorage {
         Ok(())
     }
 
-    pub(crate) fn max_height(&self) -> u64 {
+    #[inline]
+    pub(crate) const fn max_height(&self) -> u64 {
         self.chain_index.max_height()
     }
 }

@@ -62,16 +62,19 @@ impl ChainIndex {
     }
 
     /// Returns the `BlockIndexRecord` for the given height
+    #[inline]
     pub fn get(&self, height: u64) -> Option<&BlockIndexRecord> {
         self.block_index.get(&height)
     }
 
     /// Returns the maximum height known
-    pub fn max_height(&self) -> u64 {
+    #[inline]
+    pub const fn max_height(&self) -> u64 {
         self.max_height
     }
 
     /// Returns the maximum height that can be found in the given blk_index
+    #[inline]
     pub fn max_height_by_blk(&self, blk_index: u64) -> u64 {
         *self.max_height_blk_index.get(&blk_index).unwrap()
     }

@@ -217,6 +217,7 @@ pub struct CoinType {
 }
 
 impl Default for CoinType {
+    #[inline]
     fn default() -> Self {
         CoinType::from(Bitcoin)
     }

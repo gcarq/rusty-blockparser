@@ -24,6 +24,7 @@ pub struct BlkFile {
 }
 
 impl BlkFile {
+    #[inline]
     fn new(path: PathBuf, size: u64, xor_key: Option<Vec<u8>>) -> BlkFile {
         BlkFile {
             path,

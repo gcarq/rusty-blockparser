@@ -103,12 +103,14 @@ pub struct EvaluatedScript {
 }
 
 impl EvaluatedScript {
+    #[inline]
     pub fn new(address: Option<String>, pattern: ScriptPattern) -> Self {
         Self { address, pattern }
     }
 }
 
 /// Extracts evaluated address from ScriptPubKey
+#[inline]
 pub fn eval_from_bytes(bytes: &[u8], version_id: u8) -> EvaluatedScript {
     match version_id {
         0x00 | 0x6f => eval_from_bytes_bitcoin(bytes, version_id),

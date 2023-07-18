@@ -20,6 +20,7 @@ pub struct Hashed<T> {
 
 impl<T: ToRaw> Hashed<T> {
     /// encapsulates T and creates double sha256 as hash
+    #[inline]
     pub fn double_sha256(value: T) -> Hashed<T> {
         let hash = sha256d::Hash::hash(&value.to_bytes());
         Hashed { hash, value }
@@ -46,6 +47,7 @@ pub struct MerkleBranch {
 }
 
 impl MerkleBranch {
+    #[inline]
     pub fn new(hashes: Vec<[u8; 32]>, side_mask: u32) -> Self {
         Self { hashes, side_mask }
     }

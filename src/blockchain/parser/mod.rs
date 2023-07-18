@@ -75,7 +75,8 @@ impl BlockchainParser {
     }
 
     /// Returns number of remaining blocks
-    pub fn remaining(&self) -> u64 {
+    #[inline]
+    pub const fn remaining(&self) -> u64 {
         self.chain_storage
             .max_height()
             .saturating_sub(self.cur_height)
