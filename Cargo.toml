@@ -6,7 +6,6 @@ include = ["src/*", "sql/*", "LICENSE", "README.md", "Cargo.toml"]
 description = "Blockchain Parser for most common Cryptocurrencies based on Bitcoin"
 documentation = "https://github.com/gcarq/rusty-blockparser/blob/master/README.md"
 homepage = "https://github.com/gcarq/rusty-blockparser/"
-readme = "README.md"
 keywords = ["Cryptocurrency", "Bitcoin", "Litecoin", "Blockchain", "Parser"]
 license = "GPL-3.0"
 edition = "2021"
