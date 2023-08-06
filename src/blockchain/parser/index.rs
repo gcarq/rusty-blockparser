@@ -138,7 +138,7 @@ pub fn get_block_index(path: &Path) -> OpResult<HashMap<u64, BlockIndexRecord>> 
         db_iter.current(&mut key, &mut value);
         if is_block_index_record(&key) {
             let record = BlockIndexRecord::from(&key[1..], &value)?;
-            if record.status & (BLOCK_VALID_CHAIN | BLOCK_HAVE_DATA | BLOCK_VALID_CHAIN) > 0 {
+            if record.status & (BLOCK_VALID_CHAIN | BLOCK_HAVE_DATA) > 0 {
                 block_index.insert(record.height, record);
             }
         }
