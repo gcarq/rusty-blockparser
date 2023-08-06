@@ -32,7 +32,6 @@ extern crate seek_bufread;
 pub mod errors;
 pub mod blockchain;
 pub mod common;
-#[macro_use]
 pub mod callbacks;
 
 #[derive(Copy, Clone)]
