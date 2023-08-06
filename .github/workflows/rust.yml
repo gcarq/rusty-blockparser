@@ -2,9 +2,9 @@ name: Rust
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ master ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ master ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -16,7 +16,18 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
+    - name: Install crates
+      run: |
+        cargo install --debug cargo-quickinstall
+        cargo quickinstall cargo-sort cargo-rdme cargo-audit cargo-udeps
+    - name: Lint
+      run: |
+        cargo fmt -- --check --config format_code_in_doc_comments=true
+        cargo rdme --check
+        cargo sort --check
+        cargo audit -D warnings
+        cargo check
+        cargo clippy --all --all-targets --all-features -- -Dwarnings -D clippy::pedantic -D clippy::nursery -D clippy::dbg-macro -A clippy::missing-panics-doc
+        cargo build
+        cargo test
+        export RUSTC_BOOTSTRAP=1 && cargo udeps && cd fuzz && cargo udeps
