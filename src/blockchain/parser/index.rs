@@ -130,7 +130,7 @@ impl fmt::Debug for BlockIndexRecord {
 pub fn get_block_index(path: &Path) -> OpResult<HashMap<u64, BlockIndexRecord>> {
     info!(target: "index", "Reading index from {} ...", path.display());
 
-    let mut block_index = HashMap::with_capacity(800000);
+    let mut block_index = HashMap::with_capacity(900000);
     let mut db_iter = DB::open(path, Options::default())?.new_iter()?;
     let (mut key, mut value) = (vec![], vec![]);
 
