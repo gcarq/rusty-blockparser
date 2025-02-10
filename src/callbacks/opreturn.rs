@@ -23,7 +23,7 @@ impl Callback for OpReturn {
     where
         Self: Sized,
     {
-        Ok(OpReturn::default())
+        Ok(OpReturn)
     }
 
     fn on_start(&mut self, _: u64) -> OpResult<()> {

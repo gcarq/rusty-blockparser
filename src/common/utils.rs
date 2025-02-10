@@ -1,4 +1,5 @@
 use bitcoin::hashes::{sha256d, Hash};
+use std::fmt::Write;
 use std::path::PathBuf;
 
 use crate::blockchain::parser::types::CoinType;
@@ -31,7 +32,11 @@ pub fn merkle_root(hashes: Vec<sha256d::Hash>) -> sha256d::Hash {
 }
 
 pub fn arr_to_hex(data: &[u8]) -> String {
-    data.iter().map(|b| format!("{:02x?}", b)).collect()
+    data.iter()
+        .fold(String::with_capacity(data.len() * 2), |mut output, b| {
+            write!(output, "{b:02x?}").unwrap();
+            output
+        })
 }
 
 pub fn hex_to_vec(hex_str: &str) -> Vec<u8> {
@@ -75,6 +80,17 @@ mod tests {
         ];
         let expected = "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f";
         assert_eq!(arr_to_hex(&test), expected);
+    }
+
+    #[test]
+    fn test_hex_to_vec() {
+        let test = "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f";
+        let expected = [
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x19, 0xd6, 0x68, 0x9c, 0x08, 0x5a, 0xe1, 0x65, 0x83,
+            0x1e, 0x93, 0x4f, 0xf7, 0x63, 0xae, 0x46, 0xa2, 0xa6, 0xc1, 0x72, 0xb3, 0xf1, 0xb6,
+            0x0a, 0x8c, 0xe2, 0x6f,
+        ];
+        assert_eq!(hex_to_vec(&test), expected);
     }
 
     #[test]

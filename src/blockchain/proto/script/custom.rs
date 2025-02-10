@@ -74,7 +74,7 @@ struct ScriptEvaluator<'a> {
 }
 
 impl<'a> ScriptEvaluator<'a> {
-    pub fn new(bytes: &'a [u8]) -> ScriptEvaluator {
+    pub fn new(bytes: &'a [u8]) -> ScriptEvaluator<'a> {
         ScriptEvaluator {
             bytes,
             n_bytes: bytes.len(),
