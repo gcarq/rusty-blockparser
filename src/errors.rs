@@ -16,11 +16,11 @@ macro_rules! line_mark {
     };
 }
 
-/// Transforms a Option to Result
+/// Transforms an Option to a Result
 /// If the Option contains None, a line mark will be placed along with OpErrorKind::None
 macro_rules! transform {
     ($e:expr) => {{
-        $e.ok_or(OpError::new(OpErrorKind::None).join_msg(&line_mark!()))?
+        $e.ok_or(OpError::with_message(OpErrorKind::None, line_mark!()))?
     }};
 }
 
@@ -39,6 +39,10 @@ impl OpError {
             kind,
             message: String::new(),
         }
+    }
+
+    pub fn with_message(kind: OpErrorKind, message: String) -> Self {
+        OpError { kind, message }
     }
 
     /// Joins the Error with a new message and returns it
@@ -80,7 +84,7 @@ pub enum OpErrorKind {
     InvalidArgsError,
     CallbackError,
     ValidationError,
-    RuntimeError,
+    RuntimeError(String),
     PoisonError,
     SendError,
     LevelDBError(String),
@@ -94,12 +98,12 @@ impl fmt::Display for OpErrorKind {
             OpErrorKind::Utf8Error(ref err) => write!(f, "Utf8 Conversion: {}", err),
             OpErrorKind::ScriptError(ref err) => write!(f, "Script: {}", err),
             OpErrorKind::LevelDBError(ref err) => write!(f, "LevelDB: {}", err),
+            OpErrorKind::RuntimeError(ref err) => write!(f, "{}", err),
             ref err @ OpErrorKind::PoisonError => write!(f, "Threading Error: {}", err),
             ref err @ OpErrorKind::SendError => write!(f, "Sync: {}", err),
             ref err @ OpErrorKind::InvalidArgsError => write!(f, "InvalidArgs: {}", err),
             ref err @ OpErrorKind::CallbackError => write!(f, "Callback: {}", err),
             ref err @ OpErrorKind::ValidationError => write!(f, "Validation: {}", err),
-            ref err @ OpErrorKind::RuntimeError => write!(f, "RuntimeError: {}", err),
             OpErrorKind::None => write!(f, ""),
         }
     }
@@ -133,7 +137,7 @@ impl From<i32> for OpError {
 
 impl From<String> for OpError {
     fn from(err: String) -> Self {
-        Self::new(OpErrorKind::None).join_msg(&err)
+        Self::with_message(OpErrorKind::None, err)
     }
 }
 

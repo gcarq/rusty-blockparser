@@ -1,3 +1,4 @@
+use std::process;
 use std::time::{Duration, Instant};
 
 use crate::blockchain::parser::chain::ChainStorage;
@@ -54,10 +55,22 @@ impl BlockchainParser {
         debug!(target: "parser", "Starting worker ...");
 
         self.on_start(self.cur_height)?;
-        while let Some(block) = self.chain_storage.get_block(self.cur_height) {
-            self.on_block(&block, self.cur_height)?;
-            self.cur_height += 1;
+
+        for height in self.cur_height..self.chain_storage.max_height() {
+            let block = match self.chain_storage.get_block(height) {
+                Ok(block) => match block {
+                    Some(block) => block,
+                    None => break,
+                },
+                Err(e) => {
+                    error!(target: "parser", "Error at height {}: {}", height, e);
+                    process::exit(1);
+                }
+            };
+            self.on_block(&block, height)?;
+            self.cur_height = height + 1;
         }
+
         self.on_complete(self.cur_height.saturating_sub(1))
     }
 

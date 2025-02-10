@@ -31,8 +31,8 @@ extern crate seek_bufread;
 #[macro_use]
 pub mod errors;
 pub mod blockchain;
-pub mod common;
 pub mod callbacks;
+pub mod common;
 
 #[derive(Copy, Clone)]
 #[cfg_attr(test, derive(PartialEq, Debug))]
@@ -154,6 +154,15 @@ fn main() {
     debug!(target: "main", "Using log level {}", log_level);
     if options.verify {
         info!(target: "main", "Configured to verify merkle roots and block hashes");
+    }
+
+    if !options.blockchain_dir.exists() {
+        error!(
+            target: "main",
+            "Blockchain directory '{}' does not exist!",
+            options.blockchain_dir.display()
+        );
+        process::exit(1);
     }
 
     let chain_storage = match ChainStorage::new(&options) {

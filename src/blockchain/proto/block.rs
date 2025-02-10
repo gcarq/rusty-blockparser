@@ -62,7 +62,7 @@ impl Block {
                 "Invalid merkle_root!\n  -> expected: {}\n  -> got: {}\n",
                 &self.header.value.merkle_root, &merkle_root
             );
-            Err(OpError::new(OpErrorKind::ValidationError).join_msg(&msg))
+            Err(OpError::with_message(OpErrorKind::ValidationError, msg))
         }
     }
 }

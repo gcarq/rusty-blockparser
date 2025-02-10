@@ -248,8 +248,10 @@ impl FromStr for CoinType {
             "unobtanium" => Ok(CoinType::from(Unobtanium)),
             "noteblockchain" => Ok(CoinType::from(NoteBlockchain)),
             n => {
-                let e = OpError::new(OpErrorKind::InvalidArgsError)
-                    .join_msg(&format!("There is no impl for `{}`!", n));
+                let e = OpError::with_message(
+                    OpErrorKind::InvalidArgsError,
+                    format!("There is no impl for `{}`!", n),
+                );
                 Err(e)
             }
         }

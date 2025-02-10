@@ -1,19 +1,18 @@
 use bitcoin::hashes::{sha256d, Hash};
 use std::borrow::BorrowMut;
-use std::io::{self};
+use std::io::{self, Read, Seek};
 
 use crate::blockchain::parser::types::CoinType;
-use byteorder::{LittleEndian, ReadBytesExt};
-
 use crate::blockchain::proto::block::{AuxPowExtension, Block};
 use crate::blockchain::proto::header::BlockHeader;
 use crate::blockchain::proto::tx::{RawTx, TxInput, TxOutpoint, TxOutput};
 use crate::blockchain::proto::varuint::VarUint;
 use crate::blockchain::proto::MerkleBranch;
 use crate::errors::OpResult;
+use byteorder::{LittleEndian, ReadBytesExt};
 
 /// Trait for structured reading of blockchain data
-pub trait BlockchainRead: io::Read {
+pub trait BlockchainRead: Read {
     fn read_256hash(&mut self) -> OpResult<[u8; 32]> {
         let mut arr = [0u8; 32];
         self.read_exact(arr.borrow_mut())?;
@@ -174,9 +173,49 @@ pub trait BlockchainRead: io::Read {
     }
 }
 
-/// All types that implement `Read` get methods defined in `BlockchainRead`
+/// All types that implement `Read` and `Seek` get methods defined in `BlockchainRead`
 /// for free.
-impl<R: io::Read + ?Sized> BlockchainRead for R {}
+impl<R: Read + Seek + ?Sized> BlockchainRead for R {}
+
+/// Reader that XORs the data with a given key.
+/// The block storage data is encrypted with a simple XOR operation
+/// since Bitcoin Core 28.0.
+/// See https://github.com/bitcoin/bitcoin/pull/28052
+pub struct XorReader<R> {
+    reader: R,
+    xor_key: Option<Vec<u8>>,
+    absolute_pos: u64,
+}
+
+impl<R: Seek + Read> XorReader<R> {
+    pub fn new(reader: R, xor_key: Option<Vec<u8>>) -> XorReader<R> {
+        Self {
+            reader,
+            xor_key,
+            absolute_pos: 0,
+        }
+    }
+}
+
+impl<R: Read> Read for XorReader<R> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let n = self.reader.read(buf)?;
+        if let Some(ref xor_key) = self.xor_key {
+            for i in 0..n {
+                buf[i] ^= xor_key[((i as u64 + self.absolute_pos) % xor_key.len() as u64) as usize];
+            }
+        }
+        self.absolute_pos += n as u64;
+        Ok(n)
+    }
+}
+
+impl<R: Seek> Seek for XorReader<R> {
+    fn seek(&mut self, pos: io::SeekFrom) -> io::Result<u64> {
+        self.absolute_pos = self.reader.seek(pos)?;
+        Ok(self.absolute_pos)
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -920,6 +959,38 @@ mod tests {
         assert_eq!(
             Some(String::from("DEfXb18bE8RoC6edc9jXaMpEpuvVkcjJFq")),
             script::eval_from_bytes(script_pubkey, Dogecoin.version_id()).address
+        );
+    }
+
+    #[test]
+    fn test_xor_reader_with_key() {
+        let data = Cursor::new(vec![
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+        ]);
+        let mut reader = XorReader::new(
+            data,
+            Some(vec![0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08]),
+        );
+
+        let mut buf = vec![0; 14];
+        reader.read_exact(&mut buf).unwrap();
+        assert_eq!(buf, vec![0; 14]);
+    }
+
+    #[test]
+    fn test_xor_reader_without_key() {
+        let data = Cursor::new(vec![
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+        ]);
+        let mut reader = XorReader::new(data, None);
+
+        let mut buf = vec![0; 14];
+        reader.read_exact(&mut buf).unwrap();
+        assert_eq!(
+            buf,
+            vec![
+                0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+            ]
         );
     }
 }
