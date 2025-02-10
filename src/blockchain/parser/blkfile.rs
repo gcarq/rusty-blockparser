@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::convert::From;
 use std::fs::{self, DirEntry, File};
 use std::io::{self, Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
@@ -11,31 +10,29 @@ use crate::blockchain::parser::reader::{BlockchainRead, XorReader};
 use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::Block;
 use crate::common::utils::arr_to_hex;
-use crate::errors::{OpError, OpErrorKind, OpResult};
+use crate::common::{Error, Result};
 
 const READER_BUFSIZE: usize = 32 * 1024;
 
 /// Holds all necessary data about a raw blk file
 pub struct BlkFile {
     pub path: PathBuf,
-    pub size: u64,
     xor_key: Option<Vec<u8>>,
     reader: Option<XorReader<BufReader<File>>>,
 }
 
 impl BlkFile {
     #[inline]
-    fn new(path: PathBuf, size: u64, xor_key: Option<Vec<u8>>) -> BlkFile {
+    fn new(path: PathBuf, xor_key: Option<Vec<u8>>) -> BlkFile {
         BlkFile {
             path,
-            size,
             xor_key,
             reader: None,
         }
     }
 
     /// Opens the file handle (does nothing if the file has been opened already)
-    fn open(&mut self) -> OpResult<&mut XorReader<BufReader<File>>> {
+    fn open(&mut self) -> Result<&mut XorReader<BufReader<File>>> {
         if self.reader.is_none() {
             debug!(target: "blkfile", "Opening {} ...", &self.path.display());
             let buf_reader = BufReader::with_capacity(READER_BUFSIZE, File::open(&self.path)?);
@@ -52,7 +49,7 @@ impl BlkFile {
         }
     }
 
-    pub fn read_block(&mut self, offset: u64, coin: &CoinType) -> OpResult<Block> {
+    pub fn read_block(&mut self, offset: u64, coin: &CoinType) -> Result<Block> {
         let reader = self.open()?;
         reader.seek(SeekFrom::Start(offset - 4))?;
         let block_size = reader.read_u32::<LittleEndian>()?;
@@ -60,7 +57,7 @@ impl BlkFile {
     }
 
     /// Collects all blk*.dat paths in the given directory
-    pub fn from_path(path: &Path) -> OpResult<HashMap<u64, BlkFile>> {
+    pub fn from_path(path: &Path) -> Result<HashMap<u64, BlkFile>> {
         info!(target: "blkfile", "Reading files from {} ...", path.display());
         let mut collected = HashMap::with_capacity(4000);
 
@@ -73,14 +70,18 @@ impl BlkFile {
                         continue;
                     }
 
-                    let file_name =
-                        String::from(transform!(path.as_path().file_name().unwrap().to_str()));
+                    let file_name = path
+                        .file_name()
+                        .ok_or::<Error>("Unable to get filename from path".into())?
+                        .to_str()
+                        .ok_or::<Error>("Unable to convert filename to string".into())?;
+
                     // Check if it's a valid blk file
-                    if let Some(index) = BlkFile::parse_blk_index(&file_name, "blk", ".dat") {
+                    if let Some(index) = BlkFile::parse_blk_index(file_name, "blk", ".dat") {
                         // Build BlkFile structures
-                        let size = fs::metadata(path.as_path())?.len();
+                        let size = fs::metadata(&path)?.len();
                         trace!(target: "blkfile", "Adding {} (index: {}, size: {})", path.display(), index, size);
-                        collected.insert(index, BlkFile::new(path, size, xor_key.clone()));
+                        collected.insert(index, BlkFile::new(path, xor_key.clone()));
                     }
                 }
                 Err(msg) => {
@@ -91,9 +92,7 @@ impl BlkFile {
 
         trace!(target: "blkfile", "Found {} blk files", collected.len());
         if collected.is_empty() {
-            Err(OpError::new(OpErrorKind::RuntimeError(
-                "No blk files found!".into(),
-            )))
+            Err("No blk files found!".into())
         } else {
             Ok(collected)
         }
@@ -101,14 +100,14 @@ impl BlkFile {
 
     /// Reads the XOR key to decrypt the blk files
     /// See https://github.com/bitcoin/bitcoin/pull/28052
-    fn read_xor_key(path: &Path) -> OpResult<Option<Vec<u8>>> {
+    fn read_xor_key(path: &Path) -> Result<Option<Vec<u8>>> {
         if !path.exists() {
             debug!(target: "blkfile", "No xor.dat found");
             return Ok(None);
         }
         let mut xor_file = File::open(path)?;
         let metadata = fs::metadata(path)?;
-        let mut buffer = Vec::with_capacity(metadata.len() as usize);
+        let mut buffer = vec![0u8; metadata.len() as usize];
         xor_file.read_exact(&mut buffer)?;
         debug!(target: "blkfile", "using key 0x{} from xor.dat", arr_to_hex(&buffer));
         Ok(Some(buffer))

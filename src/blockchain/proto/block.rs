@@ -7,8 +7,7 @@ use crate::blockchain::proto::header::BlockHeader;
 use crate::blockchain::proto::tx::{EvaluatedTx, RawTx};
 use crate::blockchain::proto::varuint::VarUint;
 use crate::blockchain::proto::{Hashed, MerkleBranch};
-use crate::common::utils;
-use crate::errors::{OpError, OpErrorKind, OpResult};
+use crate::common::{utils, Result};
 
 /// Basic block structure which holds all information
 pub struct Block {
@@ -52,7 +51,7 @@ impl Block {
 
     /// Calculates merkle root and verifies it against the field in BlockHeader.
     /// panics if not valid.
-    pub fn verify_merkle_root(&self) -> OpResult<()> {
+    pub fn verify_merkle_root(&self) -> Result<()> {
         let merkle_root = self.compute_merkle_root();
 
         if merkle_root == self.header.value.merkle_root {
@@ -62,7 +61,7 @@ impl Block {
                 "Invalid merkle_root!\n  -> expected: {}\n  -> got: {}\n",
                 &self.header.value.merkle_root, &merkle_root
             );
-            Err(OpError::with_message(OpErrorKind::ValidationError, msg))
+            Err(msg.into())
         }
     }
 }

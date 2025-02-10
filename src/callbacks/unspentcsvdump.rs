@@ -9,7 +9,7 @@ use clap::{Arg, ArgMatches, Command};
 
 use crate::blockchain::proto::block::Block;
 use crate::callbacks::{common, Callback};
-use crate::errors::OpResult;
+use crate::common::Result;
 
 /// Dumps the UTXOs along with address in a csv file
 pub struct UnspentCsvDump {
@@ -26,7 +26,7 @@ pub struct UnspentCsvDump {
 }
 
 impl UnspentCsvDump {
-    fn create_writer(cap: usize, path: PathBuf) -> OpResult<BufWriter<File>> {
+    fn create_writer(cap: usize, path: PathBuf) -> Result<BufWriter<File>> {
         Ok(BufWriter::with_capacity(cap, File::create(path)?))
     }
 }
@@ -48,7 +48,7 @@ impl Callback for UnspentCsvDump {
             )
     }
 
-    fn new(matches: &ArgMatches) -> OpResult<Self>
+    fn new(matches: &ArgMatches) -> Result<Self>
     where
         Self: Sized,
     {
@@ -65,7 +65,7 @@ impl Callback for UnspentCsvDump {
         Ok(cb)
     }
 
-    fn on_start(&mut self, block_height: u64) -> OpResult<()> {
+    fn on_start(&mut self, block_height: u64) -> Result<()> {
         self.start_height = block_height;
         info!(target: "callback", "Executing unspentcsvdump with dump folder: {} ...", &self.dump_folder.display());
         Ok(())
@@ -78,7 +78,7 @@ impl Callback for UnspentCsvDump {
     ///   * block height as "last modified"
     ///   * output_val
     ///   * address
-    fn on_block(&mut self, block: &Block, block_height: u64) -> OpResult<()> {
+    fn on_block(&mut self, block: &Block, block_height: u64) -> Result<()> {
         for tx in &block.txs {
             self.in_count += common::remove_unspents(tx, &mut self.unspents);
             self.out_count += common::insert_unspents(tx, block_height, &mut self.unspents);
@@ -87,7 +87,7 @@ impl Callback for UnspentCsvDump {
         Ok(())
     }
 
-    fn on_complete(&mut self, block_height: u64) -> OpResult<()> {
+    fn on_complete(&mut self, block_height: u64) -> Result<()> {
         self.writer.write_all(
             format!(
                 "{};{};{};{};{}\n",

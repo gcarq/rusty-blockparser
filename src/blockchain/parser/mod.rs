@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 use crate::blockchain::parser::chain::ChainStorage;
 use crate::blockchain::proto::block::Block;
 use crate::callbacks::Callback;
-use crate::errors::OpResult;
+use crate::common::Result;
 use crate::ParserOptions;
 
 mod blkfile;
@@ -51,7 +51,7 @@ impl BlockchainParser {
         }
     }
 
-    pub fn start(&mut self) -> OpResult<()> {
+    pub fn start(&mut self) -> Result<()> {
         debug!(target: "parser", "Starting worker ...");
 
         self.on_start(self.cur_height)?;
@@ -83,7 +83,7 @@ impl BlockchainParser {
     }
 
     /// Triggers the on_start() callback and initializes state.
-    fn on_start(&mut self, height: u64) -> OpResult<()> {
+    fn on_start(&mut self, height: u64) -> Result<()> {
         let now = Instant::now();
         self.stats.started_at = now;
         self.stats.last_log = now;
@@ -94,7 +94,7 @@ impl BlockchainParser {
     }
 
     /// Triggers the on_block() callback and updates statistics.
-    fn on_block(&mut self, block: &Block, height: u64) -> OpResult<()> {
+    fn on_block(&mut self, block: &Block, height: u64) -> Result<()> {
         self.callback.on_block(block, height)?;
         trace!(target: "parser", "on_block(height={}) called", height);
         if self.callback.show_progress() {
@@ -104,7 +104,7 @@ impl BlockchainParser {
     }
 
     /// Triggers the on_complete() callback and updates statistics.
-    fn on_complete(&mut self, height: u64) -> OpResult<()> {
+    fn on_complete(&mut self, height: u64) -> Result<()> {
         info!(target: "parser", "Done. Processed blocks up to height {} in {:.2} minutes.",
         height, (Instant::now() - self.stats.started_at).as_secs_f32() / 60.0);
 

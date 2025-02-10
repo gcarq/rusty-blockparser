@@ -2,7 +2,7 @@ use crate::blockchain::parser::blkfile::BlkFile;
 use crate::blockchain::parser::index::ChainIndex;
 use crate::blockchain::parser::types::CoinType;
 use crate::blockchain::proto::block::Block;
-use crate::errors::{OpError, OpErrorKind, OpResult};
+use crate::common::Result;
 use crate::ParserOptions;
 use std::collections::HashMap;
 
@@ -15,7 +15,7 @@ pub struct ChainStorage {
 }
 
 impl ChainStorage {
-    pub fn new(options: &ParserOptions) -> OpResult<Self> {
+    pub fn new(options: &ParserOptions) -> Result<Self> {
         Ok(Self {
             chain_index: ChainIndex::new(options)?,
             blk_files: BlkFile::from_path(options.blockchain_dir.as_path())?,
@@ -25,7 +25,7 @@ impl ChainStorage {
     }
 
     /// Returns the block at the given height
-    pub fn get_block(&mut self, height: u64) -> OpResult<Option<Block>> {
+    pub fn get_block(&mut self, height: u64) -> Result<Option<Block>> {
         // Read block
         let block_meta = match self.chain_index.get(height) {
             Some(block_meta) => block_meta,
@@ -35,18 +35,13 @@ impl ChainStorage {
         let blk_file = match self.blk_files.get_mut(&block_meta.blk_index) {
             Some(blk_file) => blk_file,
             None => {
-                return Err(OpError::new(OpErrorKind::RuntimeError(
-                    "Block file for block not found".into(),
-                )));
+                return Err("Block file for block not found".into());
             }
         };
         let block = match blk_file.read_block(block_meta.data_offset, &self.coin) {
             Ok(block) => block,
             Err(e) => {
-                return Err(OpError::new(OpErrorKind::RuntimeError(format!(
-                    "Unable to read block: {}",
-                    e
-                ))));
+                return Err(format!("Unable to read block: {}", e).into());
             }
         };
 
@@ -64,7 +59,7 @@ impl ChainStorage {
 
     /// Verifies the given block in a chain.
     /// Panics if not valid
-    fn verify(&self, block: &Block, height: u64) -> OpResult<()> {
+    fn verify(&self, block: &Block, height: u64) -> Result<()> {
         block.verify_merkle_root()?;
         if height == 0 {
             if block.header.hash != self.coin.genesis_hash {
@@ -72,7 +67,7 @@ impl ChainStorage {
                     "Genesis block hash doesn't match!\n  -> expected: {}\n  -> got: {}\n",
                     &self.coin.genesis_hash, &block.header.hash,
                 );
-                return Err(OpError::with_message(OpErrorKind::ValidationError, msg));
+                return Err(msg.into());
             }
         } else {
             let prev_hash = self
@@ -85,7 +80,7 @@ impl ChainStorage {
                     "prev_hash for block {} doesn't match!\n  -> expected: {}\n  -> got: {}\n",
                     &block.header.hash, &block.header.value.prev_hash, &prev_hash
                 );
-                return Err(OpError::with_message(OpErrorKind::ValidationError, msg));
+                return Err(msg.into());
             }
         }
         Ok(())

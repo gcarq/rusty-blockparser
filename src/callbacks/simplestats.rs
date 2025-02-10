@@ -8,8 +8,7 @@ use crate::blockchain::proto::block::{self, Block};
 use crate::blockchain::proto::script::ScriptPattern;
 use crate::blockchain::proto::ToRaw;
 use crate::callbacks::Callback;
-use crate::common::utils;
-use crate::errors::OpResult;
+use crate::common::{utils, Result};
 
 pub struct SimpleStats {
     n_valid_blocks: u64,
@@ -192,19 +191,19 @@ impl Callback for SimpleStats {
             .author("gcarq <egger.m@protonmail.com>")
     }
 
-    fn new(_: &ArgMatches) -> OpResult<Self>
+    fn new(_: &ArgMatches) -> Result<Self>
     where
         Self: Sized,
     {
         Ok(SimpleStats::default())
     }
 
-    fn on_start(&mut self, _: u64) -> OpResult<()> {
+    fn on_start(&mut self, _: u64) -> Result<()> {
         info!(target: "callback", "Executing simplestats ...");
         Ok(())
     }
 
-    fn on_block(&mut self, block: &Block, block_height: u64) -> OpResult<()> {
+    fn on_block(&mut self, block: &Block, block_height: u64) -> Result<()> {
         self.n_valid_blocks += 1;
         self.n_tx += block.tx_count.value;
         self.block_sizes.push(block.size);
@@ -255,7 +254,7 @@ impl Callback for SimpleStats {
         Ok(())
     }
 
-    fn on_complete(&mut self, _: u64) -> OpResult<()> {
+    fn on_complete(&mut self, _: u64) -> Result<()> {
         let mut buffer = Vec::with_capacity(4096);
         self.print_simple_stats(&mut buffer)?;
         writeln!(&mut buffer)?;

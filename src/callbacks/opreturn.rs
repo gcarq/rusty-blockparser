@@ -3,7 +3,7 @@ use clap::{ArgMatches, Command};
 use crate::blockchain::proto::block::Block;
 use crate::blockchain::proto::script::ScriptPattern;
 use crate::callbacks::Callback;
-use crate::errors::OpResult;
+use crate::common::Result;
 
 #[derive(Default)]
 pub struct OpReturn;
@@ -19,19 +19,19 @@ impl Callback for OpReturn {
             .author("gcarq <egger.m@protonmail.com>")
     }
 
-    fn new(_: &ArgMatches) -> OpResult<Self>
+    fn new(_: &ArgMatches) -> Result<Self>
     where
         Self: Sized,
     {
         Ok(OpReturn)
     }
 
-    fn on_start(&mut self, _: u64) -> OpResult<()> {
+    fn on_start(&mut self, _: u64) -> Result<()> {
         info!(target: "callback", "Executing OpReturn ...");
         Ok(())
     }
 
-    fn on_block(&mut self, block: &Block, block_height: u64) -> OpResult<()> {
+    fn on_block(&mut self, block: &Block, block_height: u64) -> Result<()> {
         for tx in &block.txs {
             for out in tx.value.outputs.iter() {
                 if let ScriptPattern::OpReturn(data) = &out.script.pattern {
@@ -48,7 +48,7 @@ impl Callback for OpReturn {
         Ok(())
     }
 
-    fn on_complete(&mut self, _: u64) -> OpResult<()> {
+    fn on_complete(&mut self, _: u64) -> Result<()> {
         Ok(())
     }
 

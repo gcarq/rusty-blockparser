@@ -8,7 +8,7 @@ use std::path::Path;
 use byteorder::ReadBytesExt;
 use rusty_leveldb::{LdbIterator, Options, DB};
 
-use crate::errors::OpResult;
+use crate::common::Result;
 use crate::ParserOptions;
 
 const BLOCK_VALID_CHAIN: u64 = 4;
@@ -22,7 +22,7 @@ pub struct ChainIndex {
 }
 
 impl ChainIndex {
-    pub fn new(options: &ParserOptions) -> OpResult<Self> {
+    pub fn new(options: &ParserOptions) -> Result<Self> {
         let path = options.blockchain_dir.join("index");
         let mut block_index = get_block_index(&path)?;
         let mut max_height_blk_index = HashMap::new();
@@ -93,7 +93,7 @@ pub struct BlockIndexRecord {
 }
 
 impl BlockIndexRecord {
-    fn from(key: &[u8], values: &[u8]) -> OpResult<Self> {
+    fn from(key: &[u8], values: &[u8]) -> Result<Self> {
         let mut reader = Cursor::new(values);
 
         let block_hash: [u8; 32] = key.try_into().expect("leveldb: malformed blockhash");
@@ -130,7 +130,7 @@ impl fmt::Debug for BlockIndexRecord {
     }
 }
 
-pub fn get_block_index(path: &Path) -> OpResult<HashMap<u64, BlockIndexRecord>> {
+pub fn get_block_index(path: &Path) -> Result<HashMap<u64, BlockIndexRecord>> {
     info!(target: "index", "Reading index from {} ...", path.display());
 
     let mut block_index = HashMap::with_capacity(900000);
@@ -157,7 +157,7 @@ fn is_block_index_record(data: &[u8]) -> bool {
 
 /// TODO: this is a wonky 1:1 translation from https://github.com/bitcoin/bitcoin
 /// It is NOT the same as CompactSize.
-fn read_varint(reader: &mut Cursor<&[u8]>) -> OpResult<u64> {
+fn read_varint(reader: &mut Cursor<&[u8]>) -> Result<u64> {
     let mut n = 0;
     loop {
         let ch_data = reader.read_u8()?;

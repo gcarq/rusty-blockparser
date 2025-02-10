@@ -8,27 +8,27 @@ use crate::blockchain::proto::header::BlockHeader;
 use crate::blockchain::proto::tx::{RawTx, TxInput, TxOutpoint, TxOutput};
 use crate::blockchain::proto::varuint::VarUint;
 use crate::blockchain::proto::MerkleBranch;
-use crate::errors::OpResult;
+use crate::common::Result;
 use byteorder::{LittleEndian, ReadBytesExt};
 
 /// Trait for structured reading of blockchain data
 pub trait BlockchainRead: Read {
     #[inline]
-    fn read_256hash(&mut self) -> OpResult<[u8; 32]> {
+    fn read_256hash(&mut self) -> Result<[u8; 32]> {
         let mut arr = [0u8; 32];
         self.read_exact(arr.borrow_mut())?;
         Ok(arr)
     }
 
     #[inline]
-    fn read_u8_vec(&mut self, count: u32) -> OpResult<Vec<u8>> {
+    fn read_u8_vec(&mut self, count: u32) -> Result<Vec<u8>> {
         let mut arr = vec![0u8; count as usize];
         self.read_exact(arr.borrow_mut())?;
         Ok(arr)
     }
 
     /// Reads a block as specified here: https://en.bitcoin.it/wiki/Protocol_specification#block
-    fn read_block(&mut self, size: u32, coin: &CoinType) -> OpResult<Block> {
+    fn read_block(&mut self, size: u32, coin: &CoinType) -> Result<Block> {
         let header = self.read_block_header()?;
         // Parse AuxPow data if present
         let aux_pow_extension = match coin.aux_pow_activation_version {
@@ -42,7 +42,7 @@ pub trait BlockchainRead: Read {
         Ok(Block::new(size, header, aux_pow_extension, tx_count, txs))
     }
 
-    fn read_block_header(&mut self) -> OpResult<BlockHeader> {
+    fn read_block_header(&mut self) -> Result<BlockHeader> {
         let version = self.read_u32::<LittleEndian>()?;
         let prev_hash = sha256d::Hash::from_byte_array(self.read_256hash()?);
         let merkle_root = sha256d::Hash::from_byte_array(self.read_256hash()?);
@@ -60,12 +60,12 @@ pub trait BlockchainRead: Read {
         })
     }
 
-    fn read_txs(&mut self, tx_count: u64, version_id: u8) -> OpResult<Vec<RawTx>> {
+    fn read_txs(&mut self, tx_count: u64, version_id: u8) -> Result<Vec<RawTx>> {
         (0..tx_count).map(|_| self.read_tx(version_id)).collect()
     }
 
     /// Reads a transaction as specified here: https://en.bitcoin.it/wiki/Protocol_specification#tx
-    fn read_tx(&mut self, version_id: u8) -> OpResult<RawTx> {
+    fn read_tx(&mut self, version_id: u8) -> Result<RawTx> {
         let mut flags = 0u8;
         let version = self.read_u32::<LittleEndian>()?;
 
@@ -105,14 +105,14 @@ pub trait BlockchainRead: Read {
         Ok(tx)
     }
 
-    fn read_tx_outpoint(&mut self) -> OpResult<TxOutpoint> {
+    fn read_tx_outpoint(&mut self) -> Result<TxOutpoint> {
         let txid = sha256d::Hash::from_byte_array(self.read_256hash()?);
         let index = self.read_u32::<LittleEndian>()?;
 
         Ok(TxOutpoint { txid, index })
     }
 
-    fn read_tx_inputs(&mut self, input_count: u64) -> OpResult<Vec<TxInput>> {
+    fn read_tx_inputs(&mut self, input_count: u64) -> Result<Vec<TxInput>> {
         let mut inputs = Vec::with_capacity(input_count as usize);
         for _ in 0..input_count {
             let outpoint = self.read_tx_outpoint()?;
@@ -129,7 +129,7 @@ pub trait BlockchainRead: Read {
         Ok(inputs)
     }
 
-    fn read_tx_outputs(&mut self, output_count: u64) -> OpResult<Vec<TxOutput>> {
+    fn read_tx_outputs(&mut self, output_count: u64) -> Result<Vec<TxOutput>> {
         let mut outputs = Vec::with_capacity(output_count as usize);
         for _ in 0..output_count {
             let value = self.read_u64::<LittleEndian>()?;
@@ -146,17 +146,17 @@ pub trait BlockchainRead: Read {
 
     /// Reads a merkle branch as specified here https://en.bitcoin.it/wiki/Merged_mining_specification#Merkle_Branch
     /// This is mainly used for merged mining (AuxPoW).
-    fn read_merkle_branch(&mut self) -> OpResult<MerkleBranch> {
+    fn read_merkle_branch(&mut self) -> Result<MerkleBranch> {
         let branch_length = VarUint::read_from(self)?;
         let hashes = (0..branch_length.value)
             .map(|_| self.read_256hash())
-            .collect::<OpResult<Vec<[u8; 32]>>>()?;
+            .collect::<Result<Vec<[u8; 32]>>>()?;
         let side_mask = self.read_u32::<LittleEndian>()?;
         Ok(MerkleBranch::new(hashes, side_mask))
     }
 
     /// Reads the additional AuxPow fields as specified here https://en.bitcoin.it/wiki/Merged_mining_specification#Aux_proof-of-work_block
-    fn read_aux_pow_extension(&mut self, version_id: u8) -> OpResult<AuxPowExtension> {
+    fn read_aux_pow_extension(&mut self, version_id: u8) -> Result<AuxPowExtension> {
         let coinbase_tx = self.read_tx(version_id)?;
         let block_hash = sha256d::Hash::from_byte_array(self.read_256hash()?);
 

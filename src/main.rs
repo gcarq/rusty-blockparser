@@ -14,8 +14,7 @@ use crate::callbacks::simplestats::SimpleStats;
 use crate::callbacks::unspentcsvdump::UnspentCsvDump;
 use crate::callbacks::Callback;
 use crate::common::logger::SimpleLogger;
-use crate::common::utils;
-use crate::errors::{OpError, OpResult};
+use crate::common::{utils, Result};
 
 #[macro_use]
 extern crate log;
@@ -28,8 +27,6 @@ extern crate rayon;
 extern crate rusty_leveldb;
 extern crate seek_bufread;
 
-#[macro_use]
-pub mod errors;
 pub mod blockchain;
 pub mod callbacks;
 pub mod common;
@@ -42,11 +39,9 @@ pub struct BlockHeightRange {
 }
 
 impl BlockHeightRange {
-    pub fn new(start: u64, end: Option<u64>) -> OpResult<Self> {
+    pub fn new(start: u64, end: Option<u64>) -> Result<Self> {
         if end.is_some() && start >= end.unwrap() {
-            return Err(OpError::from(String::from(
-                "--start value must be lower than --end value",
-            )));
+            return Err("--start value must be lower than --end value".into());
         }
         Ok(Self { start, end })
     }
@@ -189,7 +184,7 @@ fn main() {
 }
 
 /// Parses args or panics if some requirements are not met.
-fn parse_args(matches: clap::ArgMatches) -> OpResult<ParserOptions> {
+fn parse_args(matches: clap::ArgMatches) -> Result<ParserOptions> {
     let verify = matches.get_flag("verify");
     let log_level_filter = match matches.get_count("verbosity") {
         0 => log::LevelFilter::Info,
