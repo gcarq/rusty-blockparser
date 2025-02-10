@@ -108,7 +108,7 @@ impl BlkFile {
         }
         let mut xor_file = File::open(path)?;
         let metadata = fs::metadata(path)?;
-        let mut buffer = vec![0u8; metadata.len() as usize];
+        let mut buffer = Vec::with_capacity(metadata.len() as usize);
         xor_file.read_exact(&mut buffer)?;
         debug!(target: "blkfile", "using key 0x{} from xor.dat", arr_to_hex(&buffer));
         Ok(Some(buffer))
