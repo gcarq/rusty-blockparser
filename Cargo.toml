@@ -1,6 +1,6 @@
 [package]
 name = "rusty-blockparser"
-version = "0.11.0"
+version = "0.12.0"
 authors = ["gcarq <egger.m@protonmail.com>"]
 include = ["src/*", "sql/*", "LICENSE", "README.md", "Cargo.toml"]
 description = "Blockchain Parser for most common Cryptocurrencies based on Bitcoin"
