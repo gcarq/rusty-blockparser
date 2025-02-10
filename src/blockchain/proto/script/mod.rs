@@ -5,10 +5,10 @@ use std::error::Error;
 use std::fmt;
 
 use crate::blockchain::proto::script::custom::eval_from_bytes_custom;
-use bitcoin::address::Payload;
+use bitcoin::address::FromScriptError::UnrecognizedScript;
 use bitcoin::blockdata::script::Instruction;
-use bitcoin::hashes::{hash160, Hash};
-use bitcoin::{address, Address, Network, PubkeyHash, Script};
+use bitcoin::hashes::Hash;
+use bitcoin::{Address, Network, PubkeyHash, Script};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ScriptError {
@@ -141,7 +141,7 @@ pub fn eval_from_bytes_bitcoin(bytes: &[u8], version_id: u8) -> EvaluatedScript 
     let address = match Address::from_script(script, network) {
         Ok(address) => Some(format!("{}", address)),
         Err(err) => {
-            if err != address::Error::UnrecognizedScript {
+            if err != UnrecognizedScript {
                 warn!(target: "script", "Unable to extract evaluated address: {}", err)
             }
             None
@@ -157,11 +157,11 @@ pub fn eval_from_bytes_bitcoin(bytes: &[u8], version_id: u8) -> EvaluatedScript 
         EvaluatedScript::new(address, ScriptPattern::Pay2PublicKeyHash)
     } else if script.is_p2sh() {
         EvaluatedScript::new(address, ScriptPattern::Pay2ScriptHash)
-    } else if script.is_v0_p2wpkh() {
+    } else if script.is_p2wpkh() {
         EvaluatedScript::new(address, ScriptPattern::Pay2WitnessPublicKeyHash)
-    } else if script.is_v0_p2wsh() {
+    } else if script.is_p2wsh() {
         EvaluatedScript::new(address, ScriptPattern::Pay2WitnessScriptHash)
-    } else if script.is_v1_p2tr() {
+    } else if script.is_p2tr() {
         EvaluatedScript::new(address, ScriptPattern::Pay2Taproot)
     } else if script.is_witness_program() {
         EvaluatedScript::new(address, ScriptPattern::WitnessProgram)
@@ -183,8 +183,10 @@ fn p2pk_to_string(script: &Script, network: Network) -> Option<String> {
         _ => unreachable!(),
     };
 
-    let pkh = PubkeyHash::from_raw_hash(hash160::Hash::hash(pk.as_bytes()));
-    let address = Address::new(network, Payload::PubkeyHash(pkh));
+    let address = Address::p2pkh(
+        PubkeyHash::from_raw_hash(Hash::hash(pk.as_bytes())),
+        network,
+    );
     Some(address.to_string())
 }
 

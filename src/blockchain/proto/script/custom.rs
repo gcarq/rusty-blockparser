@@ -1,18 +1,18 @@
 /// This custom Script implementation is for all networks other than Bitcoin and Bitcoin Testnet
 use crate::blockchain::proto::script::{EvaluatedScript, ScriptError, ScriptPattern};
 use crate::common::utils;
-use bitcoin::base58;
 use bitcoin::hashes::{hash160, sha256d, Hash};
-use bitcoin::opcodes::{all, All, Class, ClassifyContext};
+use bitcoin::opcodes::{all, Class, ClassifyContext};
+use bitcoin::{base58, Opcode};
 use std::fmt;
 
 pub enum StackElement {
-    Op(All),
+    Op(Opcode),
     Data(Vec<u8>),
 }
 
 impl StackElement {
-    /// Extracts underlyling byte array.
+    /// Extracts underlying byte array.
     /// If the element contains an OpCode, InvalidFormat Error is returned.
     pub fn data(&self) -> Result<Vec<u8>, ScriptError> {
         match *self {
@@ -87,7 +87,7 @@ impl<'a> ScriptEvaluator<'a> {
         let mut elements = Vec::with_capacity(10);
         //print!("Script(");
         while self.ip < self.n_bytes {
-            let opcode = All::from(self.bytes[self.ip]);
+            let opcode = Opcode::from(self.bytes[self.ip]);
             let class = opcode.classify(ClassifyContext::Legacy);
             let data_len = self.maybe_push_data(opcode, class)?;
             self.ip += 1;
@@ -113,9 +113,13 @@ impl<'a> ScriptEvaluator<'a> {
         Ok(Stack { elements, pattern })
     }
 
-    /// Checks Opcode if should to push some bytes
+    /// Checks Opcode if we should push some bytes
     /// Especially opcodes between 0x00 and 0x4e
-    fn maybe_push_data(&mut self, opcode: All, opcode_class: Class) -> Result<usize, ScriptError> {
+    fn maybe_push_data(
+        &mut self,
+        opcode: Opcode,
+        opcode_class: Class,
+    ) -> Result<usize, ScriptError> {
         let data_len = if let Class::PushBytes(n) = opcode_class {
             n as usize
         } else {
