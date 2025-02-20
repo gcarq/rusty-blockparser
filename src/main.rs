@@ -4,17 +4,17 @@ use std::fmt;
 use std::path::PathBuf;
 use std::process;
 
+use crate::blockchain::parser::BlockchainParser;
 use crate::blockchain::parser::chain::ChainStorage;
 use crate::blockchain::parser::types::{Bitcoin, CoinType};
-use crate::blockchain::parser::BlockchainParser;
+use crate::callbacks::Callback;
 use crate::callbacks::balances::Balances;
 use crate::callbacks::csvdump::CsvDump;
 use crate::callbacks::opreturn::OpReturn;
 use crate::callbacks::simplestats::SimpleStats;
 use crate::callbacks::unspentcsvdump::UnspentCsvDump;
-use crate::callbacks::Callback;
 use crate::common::logger::SimpleLogger;
-use crate::common::{utils, Result};
+use crate::common::{Result, utils};
 
 #[macro_use]
 extern crate log;
@@ -203,25 +203,20 @@ fn parse_args(matches: clap::ArgMatches) -> Result<ParserOptions> {
     let end = matches.get_one::<u64>("end").copied();
     let range = BlockHeightRange::new(start, end)?;
 
-    // Set callback
-    let callback: Box<dyn Callback>;
-    if let Some(matches) = matches.subcommand_matches("simplestats") {
-        callback = Box::new(SimpleStats::new(matches)?);
-    } else if let Some(matches) = matches.subcommand_matches("csvdump") {
-        callback = Box::new(CsvDump::new(matches)?);
-    } else if let Some(matches) = matches.subcommand_matches("unspentcsvdump") {
-        callback = Box::new(UnspentCsvDump::new(matches)?);
-    } else if let Some(matches) = matches.subcommand_matches("balances") {
-        callback = Box::new(Balances::new(matches)?);
-    } else if let Some(matches) = matches.subcommand_matches("opreturn") {
-        callback = Box::new(OpReturn::new(matches)?);
-    } else {
-        clap::error::Error::<clap::error::DefaultFormatter>::raw(
-            clap::error::ErrorKind::MissingSubcommand,
-            "error: No valid callback specified.\nFor more information try --help",
-        )
-        .exit();
-    }
+    let callback: Box<dyn Callback> = match matches.subcommand() {
+        Some(("simplestats", matches)) => Box::new(SimpleStats::new(matches)?),
+        Some(("csvdump", matches)) => Box::new(CsvDump::new(matches)?),
+        Some(("unspentcsvdump", matches)) => Box::new(UnspentCsvDump::new(matches)?),
+        Some(("balances", matches)) => Box::new(Balances::new(matches)?),
+        Some(("opreturn", matches)) => Box::new(OpReturn::new(matches)?),
+        _ => {
+            clap::error::Error::<clap::error::DefaultFormatter>::raw(
+                clap::error::ErrorKind::MissingSubcommand,
+                "error: No valid callback specified.\nFor more information try --help",
+            )
+            .exit();
+        }
+    };
 
     let options = ParserOptions {
         coin,
