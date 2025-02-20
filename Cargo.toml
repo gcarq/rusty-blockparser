@@ -8,7 +8,7 @@ documentation = "https://github.com/gcarq/rusty-blockparser/blob/master/README.m
 homepage = "https://github.com/gcarq/rusty-blockparser/"
 keywords = ["Cryptocurrency", "Bitcoin", "Litecoin", "Blockchain", "Parser"]
 license = "GPL-3.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 log = { version = "^0.4", default-features = false, features = ["std"] }
