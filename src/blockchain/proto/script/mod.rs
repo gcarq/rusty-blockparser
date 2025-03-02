@@ -8,7 +8,8 @@ use crate::blockchain::proto::script::custom::eval_from_bytes_custom;
 use bitcoin::address::FromScriptError::UnrecognizedScript;
 use bitcoin::blockdata::script::Instruction;
 use bitcoin::hashes::Hash;
-use bitcoin::{Address, Network, PubkeyHash, Script};
+use bitcoin::opcodes::Class::{IllegalOp, ReturnOp};
+use bitcoin::{Address, Network, Opcode, PubkeyHash, Script, opcodes};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ScriptError {
@@ -133,7 +134,7 @@ pub fn eval_from_bytes_bitcoin(bytes: &[u8], version_id: u8) -> EvaluatedScript 
         let data = String::from_utf8(script.to_bytes().into_iter().skip(2).collect());
         let pattern = ScriptPattern::OpReturn(data.unwrap_or_else(|_| String::from("")));
         return EvaluatedScript::new(None, pattern);
-    } else if script.is_provably_unspendable() {
+    } else if is_provable_unspendable(script) {
         return EvaluatedScript::new(None, ScriptPattern::Unspendable);
     }
 
@@ -189,6 +190,20 @@ fn p2pk_to_string(script: &Script, network: Network) -> Option<String> {
         network,
     );
     Some(address.to_string())
+}
+
+/// Checks whether a script is trivially known to have no satisfying input.
+#[inline]
+fn is_provable_unspendable(script: &Script) -> bool {
+    match script.as_bytes().first() {
+        Some(b) => {
+            let first = Opcode::from(*b);
+            let class = first.classify(opcodes::ClassifyContext::Legacy);
+
+            class == ReturnOp || class == IllegalOp
+        }
+        None => false,
+    }
 }
 
 #[cfg(test)]
