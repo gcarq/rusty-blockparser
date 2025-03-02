@@ -38,7 +38,6 @@ pub enum ScriptPattern {
     /// Pay to Multisig [BIP11]
     /// Pubkey script: <m> <A pubkey>[B pubkey][C pubkey...] <n> OP_CHECKMULTISIG
     /// Signature script: OP_0 <A sig>[B sig][C sig...]
-    /// TODO: Implement Pay2MultiSig: For now only 2n3 MultiSigs are detected
     Pay2MultiSig,
 
     /// Pay to Public Key (p2pk) scripts are a simplified form of the p2pkh,
@@ -165,6 +164,8 @@ pub fn eval_from_bytes_bitcoin(bytes: &[u8], version_id: u8) -> EvaluatedScript 
         EvaluatedScript::new(address, ScriptPattern::Pay2Taproot)
     } else if script.is_witness_program() {
         EvaluatedScript::new(address, ScriptPattern::WitnessProgram)
+    } else if script.is_multisig() {
+        EvaluatedScript::new(address, ScriptPattern::Pay2MultiSig)
     } else {
         EvaluatedScript::new(address, ScriptPattern::NotRecognised)
     }
@@ -232,8 +233,6 @@ mod tests {
         assert_eq!(result.pattern, ScriptPattern::Pay2PublicKey);
     }
 
-    /*
-    // FIXME: See https://github.com/rust-bitcoin/rust-bitcoin/pull/657/files
     #[test]
     fn test_bitcoin_script_p2ms() {
         // 2-of-3 Multi sig output
@@ -254,7 +253,6 @@ mod tests {
         let result = eval_from_bytes_bitcoin(&bytes, 0x00);
         assert_eq!(result.pattern, ScriptPattern::Pay2MultiSig);
     }
-    */
 
     #[test]
     fn test_bitcoin_script_p2sh() {

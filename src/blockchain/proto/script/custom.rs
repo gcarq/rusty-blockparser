@@ -1,9 +1,9 @@
 /// This custom Script implementation is for all networks other than Bitcoin and Bitcoin Testnet
 use crate::blockchain::proto::script::{EvaluatedScript, ScriptError, ScriptPattern};
 use crate::common::utils;
-use bitcoin::hashes::{hash160, sha256d, Hash};
-use bitcoin::opcodes::{all, Class, ClassifyContext};
-use bitcoin::{base58, Opcode};
+use bitcoin::hashes::{Hash, hash160, sha256d};
+use bitcoin::opcodes::{Class, ClassifyContext, all};
+use bitcoin::{Opcode, base58};
 use std::fmt;
 
 pub enum StackElement {
@@ -346,7 +346,7 @@ fn hash_160_to_address(h160: &[u8], version: u8) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{eval_from_bytes_custom, eval_from_stack, ScriptEvaluator, ScriptPattern};
+    use super::{ScriptEvaluator, ScriptPattern, eval_from_bytes_custom, eval_from_stack};
     use crate::common::utils;
 
     #[test]
@@ -387,8 +387,11 @@ mod tests {
         ]; // OP_CHECKSIG
         let mut script = ScriptEvaluator::new(&bytes);
         let stack = script.eval().unwrap();
-        assert_eq!("044bca633a91de10df85a63d0a24cb09783148fe0e16c92e937fc4491580c860757148effa0595a955f44078b48ba67fa198782e8bb68115da0daa8fde5301f7f9 OP_CHECKSIG",
-            format!("{:?}", stack));
+        assert_eq!(
+            "044bca633a91de10df85a63d0a24cb09783148fe0e16c92e937fc4491580c8607\
+            57148effa0595a955f44078b48ba67fa198782e8bb68115da0daa8fde5301f7f9 OP_CHECKSIG",
+            format!("{:?}", stack)
+        );
 
         let script = eval_from_stack(stack, 0x00);
         assert_eq!(
@@ -404,7 +407,6 @@ mod tests {
         // OP_2 33 0x022df8750480ad5b26950b25c7ba79d3e37d75f640f8e5d9bcd5b150a0f85014da
         // 33 0x03e3818b65bcc73a7d64064106a859cc1a5a728c4345ff0b641209fba0d90de6e9
         // 33 0x021f2f6e1e50cb6a953935c3601284925decd3fd21bc445712576873fb8c6ebc18 OP_3 OP_CHECKMULTISIG
-        //TODO: complete this test
         let bytes = [
             0x52, 0x21, 0x02, 0x2d, 0xf8, 0x75, 0x04, 0x80, 0xad, 0x5b, 0x26, 0x95, 0x0b, 0x25,
             0xc7, 0xba, 0x79, 0xd3, 0xe3, 0x7d, 0x75, 0xf6, 0x40, 0xf8, 0xe5, 0xd9, 0xbc, 0xd5,
@@ -419,10 +421,12 @@ mod tests {
         let mut script = ScriptEvaluator::new(&bytes);
         let stack = script.eval().unwrap();
 
-        assert_eq!("OP_PUSHNUM_2 022df8750480ad5b26950b25c7ba79d3e37d75f640f8e5d9bcd5b150a0f85014da \
-                   03e3818b65bcc73a7d64064106a859cc1a5a728c4345ff0b641209fba0d90de6e9 \
-                   021f2f6e1e50cb6a953935c3601284925decd3fd21bc445712576873fb8c6ebc18 OP_PUSHNUM_3 OP_CHECKMULTISIG",
-                   format!("{:?}", stack));
+        assert_eq!(
+            "OP_PUSHNUM_2 022df8750480ad5b26950b25c7ba79d3e37d75f640f8e5d9bcd5b150a0f85014da \
+             03e3818b65bcc73a7d64064106a859cc1a5a728c4345ff0b641209fba0d90de6e9 \
+             021f2f6e1e50cb6a953935c3601284925decd3fd21bc445712576873fb8c6ebc18 OP_PUSHNUM_3 OP_CHECKMULTISIG",
+            format!("{:?}", stack)
+        );
         assert_eq!(stack.pattern, ScriptPattern::Pay2MultiSig);
     }
 
@@ -515,7 +519,10 @@ mod tests {
 
     #[test]
     fn test_litecoin_coinbase_script() {
-        let script_pubkey = utils::hex_to_vec("4104458bf7d944ce58c007d0f16fa54c0640694568954e162c06be0a0cba7275714b6672c589e7393fa48f8a5f6b6259061d394e9db005651d1bb28349d31339daa8ac");
+        let script_pubkey = utils::hex_to_vec(
+            "4104458bf7d944ce58c007d0f16fa54c0640694568954e162c06be0a0cba7275714\
+            b6672c589e7393fa48f8a5f6b6259061d394e9db005651d1bb28349d31339daa8ac",
+        );
         let script = eval_from_bytes_custom(&script_pubkey, 0x30);
         assert_eq!(
             script.address,

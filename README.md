@@ -103,7 +103,7 @@ It is important to build with `--release`, otherwise you will get a horrible per
 ## Supported Transaction Types
 
 Bitcoin and Bitcoin Testnet transactions are parsed using [rust-bitcoin](https://github.com/rust-bitcoin/rust-bitcoin),
-this includes transactions of type P2SH, P2PKH, P2PK, P2WSH, P2WPKH, P2TR, OP_RETURN and SegWit.
+this includes transactions of type P2SH, P2PKH, P2PK, P2WSH, P2WPKH, P2TR, P2MS, OP_RETURN and SegWit.
 
 Bitcoin forks (e.g.: Dogecoin, Litecoin, ...) are evaluated via a custom script implementation which includes P2PK,
 [P2PKH](https://en.bitcoin.it/wiki/Transaction#Pay-to-PubkeyHash), [P2SH](https://github.com/bitcoin/bips/blob/master/bip-0016.mediawiki)
@@ -234,10 +234,6 @@ impl Coin for NoCoinium {
 * The next change is in `src/main.rs`. Under the fn `parse_args()` add your coin to the array of coins. The case you use
   here will be the same value as you pass in the arguments when executing the blockchain (using the `-c` argument)
 * Finally, add your coin name in the README.md file so others know your coin is supported
-
-## TODO
-
-* Implement Pay2MultiSig script evaluation
 
 If you find this project helpful, please consider making a donation:
 `1LFidBTeg5joAqjw35ksebiNkVM8azFM1K`
