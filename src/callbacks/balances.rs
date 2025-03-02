@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use clap::{Arg, ArgMatches, Command};
 
 use crate::blockchain::proto::block::Block;
-use crate::callbacks::{common, Callback};
+use crate::callbacks::{Callback, common};
 use crate::common::Result;
 
 /// Dumps all addresses with non-zero balance in a csv file
@@ -68,6 +68,7 @@ impl Callback for Balances {
     /// For each transaction in the block
     ///   1. apply input transactions (remove (TxID == prevTxIDOut and prevOutID == spentOutID))
     ///   2. apply output transactions (add (TxID + curOutID -> HashMapVal))
+    ///
     /// For each address, retain:
     ///   * block height as "last modified"
     ///   * output_val
