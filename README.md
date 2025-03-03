@@ -3,7 +3,7 @@
 **rusty-blockparser** is a Bitcoin Blockchain Parser that enables data extraction of various types (e.g.:
 blocks, transactions, scripts, public keys / hashes, balances) and full UTXO dumps.
 
-## Currently Supported Blockchains
+### Supported Blockchains
 
 `Bitcoin`, `Namecoin`, `Litecoin`, `Dogecoin`, `Myriadcoin`, `Unobtanium` and `NoteBlockchain`.
 
@@ -12,7 +12,7 @@ with [Bitcoin Core](https://github.com/bitcoin/bitcoin) 0.15.1+ or similar clien
 If you are not sure whether your local copy is valid you can apply `--verify` to validate the blockdata and block merkle
 trees.
 
-## Supported Transaction Types
+### Supported Transaction Types
 
 Bitcoin and Bitcoin Testnet transactions are parsed using [rust-bitcoin](https://github.com/rust-bitcoin/rust-bitcoin),
 this includes transactions of
@@ -28,7 +28,7 @@ Data is being extracted via callbacks which are built on top of the core parser.
 They can be easily extended to extract specific types of information and can be
 found [here](https://github.com/gcarq/rusty-blockparser/tree/master/src/callbacks).
 
-### Extract Balances of all known addresses
+#### Extract Balances of all known addresses
 
 The command `balances` extracts the balance of all known addresses and dumps it to a csv file called `balances.csv` with
 the following format:
@@ -37,7 +37,7 @@ the following format:
 balances.csv: address ; balance
 ```
 
-### Extract all UTXOs along with their corresponding address balances
+#### Extract all UTXOs along with their corresponding address balances
 
 The command `unspentcsvdump` can be used to dump all [UTXOs](https://learnmeabitcoin.com/technical/transaction/utxo/)
 with their corresponding address balance to a csv file called `unspent.csv`.
@@ -49,11 +49,11 @@ unspent.csv: txid ; indexOut ; height ; value ; address
 
 NOTE: The total size of the csv dump is at least 8 GiB (height 635000).
 
-### Show OP_RETURN data
+#### Show OP_RETURN data
 
 The command `opreturn` can be used to show all embedded OP_RETURN data in the terminal that contains valid UTF8.
 
-### Extract full CSV dump
+#### Extract full CSV dump
 
 The command `csvdump` dumps all data to csv files. This data can be imported to a database for further analysis.
 **NOTE**: The total size of the csv dump is at least 731 GiB (height 635,000).
@@ -83,7 +83,7 @@ If you want to insert the files into MySql see [sql/schema.sql](sql/schema.sql) 
 and used for quite some time now). It contains all table structures and SQL statements for bulk inserting. Also
 see [sql/views.sql](sql/views.sql) for some query examples.
 
-### Show blockchain statistics
+#### Show blockchain statistics
 
 The command `simplestats` can be used to show blockchain statistics, e.g.:
 
@@ -154,16 +154,6 @@ Dumped all 639626 blocks:
 
 This tool should run on Windows, OS X and Linux.
 All you need is `rust` and `cargo`.
-
-### Latest Release
-
-You can download the latest release from crates.io:
-
-```bash
-cargo install rusty-blockparser
-```
-
-### Build from source
 
 ```bash
 git clone https://github.com/gcarq/rusty-blockparser.git
