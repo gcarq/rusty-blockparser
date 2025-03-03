@@ -1,18 +1,95 @@
 # rusty-blockparser
 
-rusty-blockparser is a Bitcoin Blockchain Parser written in **Rust language**.
+**rusty-blockparser** is a Bitcoin Blockchain Parser that enables data extraction of various types (e.g.:
+blocks, transactions, scripts, public keys / hashes, balances) and full UTXO dumps.
 
-It allows extraction of various data types (blocks, transactions, scripts, public keys/hashes, balances, ...)
-and UTXO dumps from Bitcoin based blockchains.
-
-##### **Currently Supported Blockchains:**
+## Currently Supported Blockchains
 
 `Bitcoin`, `Namecoin`, `Litecoin`, `Dogecoin`, `Myriadcoin`, `Unobtanium` and `NoteBlockchain`.
 
-**IMPORANT:** It assumes a local unpruned copy of the blockchain with intact block index and blk files,
-downloaded with [Bitcoin Core](https://github.com/bitcoin/bitcoin) 0.15.1+ or similar clients.
+**IMPORTANT:** A local unpruned copy of the blockchain with intact block index and blk files, downloaded
+with [Bitcoin Core](https://github.com/bitcoin/bitcoin) 0.15.1+ or similar clients is required.
 If you are not sure whether your local copy is valid you can apply `--verify` to validate the blockdata and block merkle
 trees.
+
+## Supported Transaction Types
+
+Bitcoin and Bitcoin Testnet transactions are parsed using [rust-bitcoin](https://github.com/rust-bitcoin/rust-bitcoin),
+this includes transactions of
+type [P2SH](https://learnmeabitcoin.com/technical/script/p2sh/), [P2PKH](https://learnmeabitcoin.com/technical/script/p2pkh/), [P2PK](https://learnmeabitcoin.com/technical/script/p2pk/), [P2WSH](https://learnmeabitcoin.com/technical/script/p2wsh/), [P2WPKH](https://learnmeabitcoin.com/technical/script/p2wpkh/), [P2TR](https://learnmeabitcoin.com/technical/script/p2tr/), [P2MS](https://learnmeabitcoin.com/technical/script/p2ms/),  [OP_RETURN](https://learnmeabitcoin.com/technical/script/return/)
+and [SegWit](https://learnmeabitcoin.com/beginners/guide/segwit/).
+
+Bitcoin forks (e.g.: Dogecoin, Litecoin, etc.) are evaluated via a custom script implementation which includes P2PK,
+P2PKH, P2SH, P2MS and OP_RETURN.
+
+## Analysis and Data Extraction
+
+Data is being extracted via callbacks which are built on top of the core parser.
+They can be easily extended to extract specific types of information and can be
+found [here](https://github.com/gcarq/rusty-blockparser/tree/master/src/callbacks).
+
+### Extract Balances of all known addresses
+
+The command `balances` extracts the balance of all known addresses and dumps it to a csv file called `balances.csv` with
+the following format:
+
+```
+balances.csv: address ; balance
+```
+
+### Extract all UTXOs along with their corresponding address balances
+
+The command `unspentcsvdump` can be used to dump all [UTXOs](https://learnmeabitcoin.com/technical/transaction/utxo/)
+with their corresponding address balance to a csv file called `unspent.csv`.
+The csv file is in the following format:
+
+```csv
+unspent.csv: txid ; indexOut ; height ; value ; address
+```
+
+NOTE: The total size of the csv dump is at least 8 GiB (height 635000).
+
+### Show OP_RETURN data
+
+The command `opreturn` can be used to show all embedded OP_RETURN data in the terminal that contains valid UTF8.
+
+### Extract full CSV dump
+
+The command `csvdump` dumps all data to csv files. This data can be imported to a database for further analysis.
+**NOTE**: The total size of the csv dump is at least 731 GiB (height 635,000).
+
+The files are in the following format:
+
+```
+blocks.csv: block_hash ; height ; version ; blocksize ; hashPrev ; hashMerkleRoot ; nTime ; nBits ; nNonce
+```
+
+```
+transactions.csv: txid ; hashBlock ; version ; lockTime
+```
+
+```
+tx_in.csv: txid ; hashPrevOut ; indexPrevOut ; scriptSig ; sequence
+```
+
+```
+tx_out.csv: txid ; indexOut ; height ; value ; scriptPubKey ; address
+```
+
+See the [block](https://en.bitcoin.it/wiki/Protocol_documentation#block)
+and [transaction](https://en.bitcoin.it/wiki/Protocol_documentation#tx) specifications if some of the fields are
+unclear.
+If you want to insert the files into MySql see [sql/schema.sql](sql/schema.sql) (but be aware this hasn't been tested
+and used for quite some time now). It contains all table structures and SQL statements for bulk inserting. Also
+see [sql/views.sql](sql/views.sql) for some query examples.
+
+### Show blockchain statistics
+
+The command `simplestats` can be used to show blockchain statistics, e.g.:
+
+* Show the txid of transactions that contain specific script types
+* Total numbers like number of blocks, number of transactions, biggest tx in value or size
+* Averages like block size, time between blocks, txs, inputs and outputs
 
 ## Usage
 
@@ -46,7 +123,7 @@ Options:
           Print version
 ```
 
-### Example
+## Example Usage
 
 To make a `unspentcsvdump` of the Bitcoin blockchain your command would look like this:
 
@@ -96,18 +173,9 @@ cargo test
 ./target/release/rusty-blockparser --help
 ```
 
-It is important to build with `--release`, otherwise you will get a horrible performance!
+**IMPORTANT:** Building with `--release` is essential for performance.
 
-*Tested on Gentoo Linux with rust-stable 1.44.1*
-
-## Supported Transaction Types
-
-Bitcoin and Bitcoin Testnet transactions are parsed using [rust-bitcoin](https://github.com/rust-bitcoin/rust-bitcoin),
-this includes transactions of type P2SH, P2PKH, P2PK, P2WSH, P2WPKH, P2TR, P2MS, OP_RETURN and SegWit.
-
-Bitcoin forks (e.g.: Dogecoin, Litecoin, ...) are evaluated via a custom script implementation which includes P2PK,
-[P2PKH](https://en.bitcoin.it/wiki/Transaction#Pay-to-PubkeyHash), [P2SH](https://github.com/bitcoin/bips/blob/master/bip-0016.mediawiki)
-and some non-standard transactions.
+*Tested on Gentoo Linux with rust-stable 1.85.0*
 
 ## Memory Usage
 
@@ -118,76 +186,23 @@ The required memory usage depends on the used callback:
 * unspentcsvdump: ~18GB
 * balances: ~18GB
 
-NOTE: Those values are taken from parsing to block height 639631 (17.07.2020).
-
-## Callbacks
-
-Callbacks are built on top of the core parser. They can be implemented to extract specific types of information.
-
-* `balances`: dumps all addresses with a non-zero balance.
-  The csv file is in the following format:
-    ```
-    balances.csv
-    address ; balance
-    ```
-
-* `unspentcsvdump`: dumps all UTXOs along with the address balance.
-  The csv file is in the following format:
-    ```
-    unspent.csv
-    txid ; indexOut ; height ; value ; address
-    ```
-  NOTE: The total size of the csv dump is at least 8 GiB (height 635000).
-
-* `opreturn`: shows transactions with embedded OP_RETURN data that is representable as UTF8.
-
-* `csvdump`: dumps all parsed data as CSV files into the specified `folder`. See [Usage](#Usage) for an example. I chose
-  CSV dumps instead of an active db-connection because `LOAD DATA INFILE` is the most performant way for bulk inserts.
-  The files are in the following format:
-    ```
-    blocks.csv
-    block_hash ; height ; version ; blocksize ; hashPrev ; hashMerkleRoot ; nTime ; nBits ; nNonce
-    ```
-    ```
-    transactions.csv
-    txid ; hashBlock ; version ; lockTime
-    ```
-    ```
-    tx_in.csv
-    txid ; hashPrevOut ; indexPrevOut ; scriptSig ; sequence
-    ```
-    ```
-    tx_out.csv
-    txid ; indexOut ; height ; value ; scriptPubKey ; address
-    ```
-  If unclear what some of these fields are, see the [block](https://en.bitcoin.it/wiki/Protocol_documentation#block)
-  and [transaction](https://en.bitcoin.it/wiki/Protocol_documentation#tx) specifications.
-  If you want to insert the files into MySql see [sql/schema.sql](sql/schema.sql).
-  It contains all table structures and SQL statements for bulk inserting. Also see [sql/views.sql](sql/views.sql) for
-  some query examples.
-  NOTE: The total size of the csv dump is at least to 731 GiB (height 635000).
-
-
-* `simplestats`: prints some blockchain statistics like block count, transaction count, avg transactions per block,
-  largest transaction, transaction types etc.
-
-You can also define custom callbacks. A callback gets called at startup, on each block and at the end.
-See [src/callbacks/mod.rs](src/callbacks/mod.rs) for more information.
+**NOTE:** Those values are taken from parsing to block height 639,631 (17.07.2020).
 
 ## Contributing
 
 Use the issue tracker to report problems, suggestions and questions. You may also contribute by submitting pull
 requests.
 
+If you find this project helpful, please consider making a donation:
+`1LFidBTeg5joAqjw35ksebiNkVM8azFM1K`
+
 ## Customizing the tool for your coin
 
-The tool can easily be customized to your coin. This section outlines the changes that need to be made and is for a
-beginner user (both with Rust and Blockchain). (This guide is made possible by reviewing the commits made by
-MerlinMagic2018). During this example the coin name used is NoCoinium.
+The tool can easily be customized to your coin. This section outlines the changes that need to be made and is for users
+not familiar with Rust and Blockchain. During this example the coin name used is NoCoinium.
 
 * The main change is `src/blockchain/parser/types.rs`.
-* Add a new entry `pub struct NoCoinium` above the line `//pub struct Dash`(The case you use here is to be carried in
-  all subsequent references, except when noted)
+* Add a new entry `pub struct NoCoinium` similar to other definitions.
 * You will then need to add a `impl Coin for NoCoinium`. You could easily copy a previous block e.g. Bitcoin. The
   changes you need to do are highlighted below as comments
 
@@ -195,7 +210,7 @@ MerlinMagic2018). During this example the coin name used is NoCoinium.
 //The name here should be the same case as defined in the pub struct line
 impl Coin for NoCoinium {
     fn name(&self) -> String {
-        //This is primarily for display. Use same case as before
+        // This is primarily for display. Use same case as before
         String::from("NoCoinium")
     }
     fn magic(&self) -> u32 {
@@ -224,16 +239,18 @@ impl Coin for NoCoinium {
 }
 ```
 
-* Finally, tie these changes within `impl FromStr for CoinType` under `match coin`. The first part will be the case
-  passed as argument to the program (see bullet point below) and the name within `from()` will be the name used above.
+* Finally, tie these changes within `impl FromStr for CoinType` under `match coin_name`. The first part will be the
+  string passed as argument to the program (see bullet point below) and the name within `from()` will be the name used
+  above.
 
 ```rust
+    "bitcoin" => Ok(CoinType::from(Bitcoin)),
+...
 "nocoinium" => Ok(CoinType::from(NoCoinium)),
+...
 ```
 
 * The next change is in `src/main.rs`. Under the fn `parse_args()` add your coin to the array of coins. The case you use
   here will be the same value as you pass in the arguments when executing the blockchain (using the `-c` argument)
 * Finally, add your coin name in the README.md file so others know your coin is supported
 
-If you find this project helpful, please consider making a donation:
-`1LFidBTeg5joAqjw35ksebiNkVM8azFM1K`
