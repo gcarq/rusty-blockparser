@@ -3,7 +3,8 @@ target
 csvdump
 .project
 .idea
-
+.claude
 scripts/
 debug.sh
 dump/
+Cargo.lock
