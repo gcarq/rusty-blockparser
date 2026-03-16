@@ -10,7 +10,7 @@ use log::info;
 use crate::blockchain::proto::block::Block;
 use crate::blockchain::proto::tx::EvaluatedTx;
 use crate::callbacks::Callback;
-use crate::common::Result;
+use crate::common::{utils, Result};
 
 pub struct SigDump {
     dump_folder: PathBuf,
@@ -26,11 +26,6 @@ impl SigDump {
         let file = File::create(dump_folder.join("signatures.csv"))?;
         Ok(BufWriter::new(file))
     }
-}
-
-/// Encode bytes as lowercase hex — no external crate needed.
-fn to_hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
 /// Parse a P2PKH scriptSig (raw bytes) → (sig_bytes_with_hashtype, pubkey_bytes).
@@ -174,8 +169,8 @@ impl Callback for SigDump {
     {
         Command::new("sigdump")
             .about("Dumps ECDSA signatures and original messages from P2PKH inputs to CSV")
-            .version("0.1")
-            .author("kudelskisecurity")
+            .version("0.15")
+            .author("sebasa")
             .arg(
                 Arg::new("dump-folder")
                     .help("Folder to store csv files")
@@ -247,11 +242,11 @@ impl Callback for SigDump {
                 writeln!(
                     writer,
                     "{};{};{};{};{};{}",
-                    to_hex(r_bytes),
-                    to_hex(s_bytes),
-                    to_hex(&pubkey_bytes),
+                    utils::arr_to_hex(r_bytes),
+                    utils::arr_to_hex(s_bytes),
+                    utils::arr_to_hex(&pubkey_bytes),
                     tx.hash,
-                    to_hex(&sighash),
+                    utils::arr_to_hex(&sighash),
                     block_time,
                 )?;
             }

@@ -130,8 +130,8 @@ pub fn eval_from_bytes_bitcoin(bytes: &[u8], version_id: u8) -> EvaluatedScript 
 
     // For OP_RETURN and provably unspendable scripts there is no point in parsing the address
     if script.is_op_return() {
-        // OP_RETURN 13 <data>
-        let data = String::from_utf8(script.to_bytes().into_iter().skip(2).collect());
+        // OP_RETURN <len> <data> — skip the first 2 bytes without cloning the whole script
+        let data = String::from_utf8(script.as_bytes().get(2..).unwrap_or(&[]).to_vec());
         let pattern = ScriptPattern::OpReturn(data.unwrap_or_else(|_| String::from("")));
         return EvaluatedScript::new(None, pattern);
     } else if is_provable_unspendable(script) {

@@ -115,9 +115,11 @@ impl BlockchainParser {
 
     fn print_progress(&mut self, height: u64) {
         let now = Instant::now();
-        let blocks_speed = (height - self.stats.last_height) / self.stats.measure_frame.as_secs();
+        let elapsed = now - self.stats.last_log;
 
-        if now - self.stats.last_log > self.stats.measure_frame {
+        if elapsed > self.stats.measure_frame {
+            let blocks_speed =
+                (height - self.stats.last_height) as f64 / elapsed.as_secs_f64();
             info!(target: "parser", "Status: {:7} Blocks processed. (remaining: {:7}, speed: {:5.2} blocks/s)",
               height, self.remaining(), blocks_speed);
             self.stats.last_log = now;

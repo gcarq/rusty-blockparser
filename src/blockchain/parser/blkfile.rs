@@ -12,7 +12,7 @@ use crate::blockchain::proto::block::Block;
 use crate::common::utils::arr_to_hex;
 use crate::common::{Error, Result};
 
-const READER_BUFSIZE: usize = 32 * 1024;
+const READER_BUFSIZE: usize = 256 * 1024;
 
 /// Holds all necessary data about a raw blk file
 pub struct BlkFile {
