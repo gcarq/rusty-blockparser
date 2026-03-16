@@ -9,6 +9,7 @@ pub mod csvdump;
 pub mod opreturn;
 pub mod simplestats;
 pub mod unspentcsvdump;
+pub mod sigdump;
 
 /// Implement this trait for a custom Callback.
 /// The parser ensures that the blocks arrive in the correct order.

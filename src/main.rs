@@ -10,6 +10,7 @@ use crate::blockchain::parser::types::{Bitcoin, CoinType};
 use crate::callbacks::Callback;
 use crate::callbacks::balances::Balances;
 use crate::callbacks::csvdump::CsvDump;
+use crate::callbacks::sigdump::SigDump;
 use crate::callbacks::opreturn::OpReturn;
 use crate::callbacks::simplestats::SimpleStats;
 use crate::callbacks::unspentcsvdump::UnspentCsvDump;
@@ -126,6 +127,7 @@ fn command() -> Command {
     // Add callbacks
     .subcommand(UnspentCsvDump::build_subcommand())
     .subcommand(CsvDump::build_subcommand())
+    .subcommand(SigDump::build_subcommand())
     .subcommand(SimpleStats::build_subcommand())
     .subcommand(Balances::build_subcommand())
     .subcommand(OpReturn::build_subcommand())
@@ -206,6 +208,7 @@ fn parse_args(matches: clap::ArgMatches) -> Result<ParserOptions> {
     let callback: Box<dyn Callback> = match matches.subcommand() {
         Some(("simplestats", matches)) => Box::new(SimpleStats::new(matches)?),
         Some(("csvdump", matches)) => Box::new(CsvDump::new(matches)?),
+        Some(("sigdump", matches)) => Box::new(SigDump::new(matches)?),
         Some(("unspentcsvdump", matches)) => Box::new(UnspentCsvDump::new(matches)?),
         Some(("balances", matches)) => Box::new(Balances::new(matches)?),
         Some(("opreturn", matches)) => Box::new(OpReturn::new(matches)?),
