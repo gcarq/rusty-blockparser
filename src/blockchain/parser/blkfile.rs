@@ -34,7 +34,7 @@ impl BlkFile {
     /// Opens the file handle (does nothing if the file has been opened already)
     fn open(&mut self) -> Result<&mut XorReader<BufReader<File>>> {
         if self.reader.is_none() {
-            debug!(target: "blkfile", "Opening {} ...", &self.path.display());
+            debug!(target: "blkfile", "Opening {} ...", self.path.display());
             let buf_reader = BufReader::with_capacity(READER_BUFSIZE, File::open(&self.path)?);
             self.reader = Some(XorReader::new(buf_reader, self.xor_key.clone()));
         }
@@ -43,7 +43,7 @@ impl BlkFile {
 
     /// Closes the file handle
     pub fn close(&mut self) {
-        debug!(target: "blkfile", "Closing {} ...", &self.path.display());
+        debug!(target: "blkfile", "Closing {} ...", self.path.display());
         if self.reader.is_some() {
             self.reader = None;
         }

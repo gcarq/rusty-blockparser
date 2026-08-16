@@ -146,14 +146,14 @@ impl SimpleStats {
         writeln!(
             buffer,
             "        seen in block #{}, txid: {}\n",
-            height, &txid
+            height, txid
         )?;
         let (value, height, txid) = self.tx_biggest_size;
         writeln!(buffer, "   -> biggest size tx:\t\t{} bytes", value,)?;
         writeln!(
             buffer,
             "        seen in block #{}, txid: {}\n",
-            height, &txid
+            height, txid
         )?;
         Ok(())
     }
@@ -173,7 +173,7 @@ impl SimpleStats {
             writeln!(
                 buffer,
                 "        first seen in block #{}, txid: {}\n",
-                pos.0, &pos.1
+                pos.0, pos.1
             )?;
         }
         Ok(())
@@ -213,9 +213,7 @@ impl Callback for SimpleStats {
             if tx.value.is_coinbase() {
                 self.n_tx_total_fee += tx.value.outputs[0]
                     .out
-                    .value
-                    .checked_sub(block::get_base_reward(block_height))
-                    .unwrap_or_default();
+                    .value.saturating_sub(block::get_base_reward(block_height));
             }
 
             self.n_tx_inputs += tx.value.in_count.value;
@@ -245,9 +243,7 @@ impl Callback for SimpleStats {
             let diff = block
                 .header
                 .value
-                .timestamp
-                .checked_sub(self.last_timestamp)
-                .unwrap_or_default();
+                .timestamp.saturating_sub(self.last_timestamp);
             self.t_between_blocks.push(diff);
         }
         self.last_timestamp = block.header.value.timestamp;

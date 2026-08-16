@@ -40,7 +40,7 @@ impl Callback for OpReturn {
                     }
                     println!(
                         "height: {: <9} txid: {}    data: {}",
-                        block_height, &tx.hash, data
+                        block_height, tx.hash, data
                     );
                 }
             }

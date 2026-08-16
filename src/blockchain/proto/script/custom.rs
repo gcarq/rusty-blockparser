@@ -40,8 +40,8 @@ impl PartialEq for StackElement {
 impl fmt::Debug for StackElement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            StackElement::Op(ref op) => write!(f, "{:?}", &op),
-            StackElement::Data(ref d) => write!(f, "{}", &utils::arr_to_hex(d)),
+            StackElement::Op(ref op) => write!(f, "{:?}", op),
+            StackElement::Data(ref d) => write!(f, "{}", utils::arr_to_hex(d)),
         }
     }
 }
@@ -59,7 +59,7 @@ impl fmt::Debug for Stack {
             "{}",
             self.elements
                 .iter()
-                .map(|e| format!("{:?}", &e))
+                .map(|e| format!("{:?}", e))
                 .collect::<Vec<String>>()
                 .join(" ")
         )

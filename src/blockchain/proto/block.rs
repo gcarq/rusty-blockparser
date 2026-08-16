@@ -59,7 +59,7 @@ impl Block {
         } else {
             let msg = format!(
                 "Invalid merkle_root!\n  -> expected: {}\n  -> got: {}\n",
-                &self.header.value.merkle_root, &merkle_root
+                self.header.value.merkle_root, merkle_root
             );
             Err(msg.into())
         }

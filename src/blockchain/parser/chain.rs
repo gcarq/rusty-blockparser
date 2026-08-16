@@ -65,7 +65,7 @@ impl ChainStorage {
             if block.header.hash != self.coin.genesis_hash {
                 let msg = format!(
                     "Genesis block hash doesn't match!\n  -> expected: {}\n  -> got: {}\n",
-                    &self.coin.genesis_hash, &block.header.hash,
+                    self.coin.genesis_hash, block.header.hash,
                 );
                 return Err(msg.into());
             }
@@ -78,7 +78,7 @@ impl ChainStorage {
             if block.header.value.prev_hash != prev_hash {
                 let msg = format!(
                     "prev_hash for block {} doesn't match!\n  -> expected: {}\n  -> got: {}\n",
-                    &block.header.hash, &block.header.value.prev_hash, &prev_hash
+                    block.header.hash, block.header.value.prev_hash, prev_hash
                 );
                 return Err(msg.into());
             }

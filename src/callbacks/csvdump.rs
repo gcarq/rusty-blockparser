@@ -70,7 +70,7 @@ impl Callback for CsvDump {
 
     fn on_start(&mut self, block_height: u64) -> Result<()> {
         self.start_height = block_height;
-        info!(target: "callback", "Executing csvdump with dump folder: {} ...", &self.dump_folder.display());
+        info!(target: "callback", "Executing csvdump with dump folder: {} ...", self.dump_folder.display());
         Ok(())
     }
 
@@ -80,11 +80,11 @@ impl Callback for CsvDump {
             .write_all(block.as_csv(block_height).as_bytes())?;
 
         // serialize transaction
-        let block_hash = format!("{}", &block.header.hash);
+        let block_hash = format!("{}", block.header.hash);
         for tx in &block.txs {
             self.tx_writer
                 .write_all(tx.as_csv(&block_hash).as_bytes())?;
-            let txid_str = format!("{}", &tx.hash);
+            let txid_str = format!("{}", tx.hash);
 
             // serialize inputs
             for input in &tx.value.inputs {
@@ -130,15 +130,15 @@ impl Block {
         // (@hash, height, version, blocksize, @hashPrev, @hashMerkleRoot, nTime, nBits, nNonce)
         format!(
             "{};{};{};{};{};{};{};{};{}\n",
-            &self.header.hash,
-            &block_height,
-            &self.header.value.version,
-            &self.size,
-            &self.header.value.prev_hash,
-            &self.header.value.merkle_root,
-            &self.header.value.timestamp,
-            &self.header.value.bits,
-            &self.header.value.nonce
+            self.header.hash,
+            block_height,
+            self.header.value.version,
+            self.size,
+            self.header.value.prev_hash,
+            self.header.value.merkle_root,
+            self.header.value.timestamp,
+            self.header.value.bits,
+            self.header.value.nonce
         )
     }
 }
@@ -148,7 +148,7 @@ impl Hashed<EvaluatedTx> {
         // (@txid, @hashBlock, version, lockTime)
         format!(
             "{};{};{};{}\n",
-            &self.hash, &block_hash, &self.value.version, &self.value.locktime
+            self.hash, block_hash, self.value.version, self.value.locktime
         )
     }
 }
@@ -158,11 +158,11 @@ impl TxInput {
         // (@txid, @hashPrevOut, indexPrevOut, scriptSig, sequence)
         format!(
             "{};{};{};{};{}\n",
-            &txid,
-            &self.outpoint.txid,
-            &self.outpoint.index,
-            &utils::arr_to_hex(&self.script_sig),
-            &self.seq_no
+            txid,
+            self.outpoint.txid,
+            self.outpoint.index,
+            utils::arr_to_hex(&self.script_sig),
+            self.seq_no
         )
     }
 }
@@ -180,11 +180,11 @@ impl EvaluatedTxOut {
         // (@txid, indexOut, value, @scriptPubKey, address)
         format!(
             "{};{};{};{};{}\n",
-            &txid,
-            &index,
-            &self.out.value,
-            &utils::arr_to_hex(&self.out.script_pubkey),
-            &address
+            txid,
+            index,
+            self.out.value,
+            utils::arr_to_hex(&self.out.script_pubkey),
+            address
         )
     }
 }

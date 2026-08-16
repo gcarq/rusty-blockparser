@@ -61,7 +61,7 @@ impl Callback for Balances {
 
     fn on_start(&mut self, block_height: u64) -> Result<()> {
         self.start_height = block_height;
-        info!(target: "callback", "Executing balances with dump folder: {} ...", &self.dump_folder.display());
+        info!(target: "callback", "Executing balances with dump folder: {} ...", self.dump_folder.display());
         Ok(())
     }
 

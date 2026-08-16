@@ -40,7 +40,7 @@ pub fn arr_to_hex(data: &[u8]) -> String {
 }
 
 pub fn hex_to_vec(hex_str: &str) -> Vec<u8> {
-    if hex_str.len() % 2 != 0 {
+    if !hex_str.len().is_multiple_of(2) {
         panic!("string length is not even");
     }
 
