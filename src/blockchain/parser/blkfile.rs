@@ -162,12 +162,10 @@ mod tests {
             13412451,
             BlkFile::parse_blk_index("blk13412451.dat", prefix, ext).unwrap()
         );
-        assert_eq!(
-            true,
+        assert!(
             BlkFile::parse_blk_index("blkindex.dat", prefix, ext).is_none()
         );
-        assert_eq!(
-            true,
+        assert!(
             BlkFile::parse_blk_index("invalid.dat", prefix, ext).is_none()
         );
     }

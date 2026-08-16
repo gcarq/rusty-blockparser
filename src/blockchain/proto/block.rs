@@ -7,7 +7,7 @@ use crate::blockchain::proto::header::BlockHeader;
 use crate::blockchain::proto::tx::{EvaluatedTx, RawTx};
 use crate::blockchain::proto::varuint::VarUint;
 use crate::blockchain::proto::{Hashed, MerkleBranch};
-use crate::common::{utils, Result};
+use crate::common::{Result, utils};
 
 /// Basic block structure which holds all information
 pub struct Block {
@@ -103,6 +103,6 @@ mod tests {
         assert_eq!(get_base_reward(419999), 2500000000);
         assert_eq!(get_base_reward(420000), 1250000000);
         assert_eq!(get_base_reward(629999), 1250000000);
-        assert_eq!(get_base_reward(630000), 0625000000);
+        assert_eq!(get_base_reward(630000), 625000000);
     }
 }

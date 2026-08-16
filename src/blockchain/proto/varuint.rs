@@ -129,7 +129,7 @@ mod tests {
 
         let test = VarUint::from(v);
         assert_eq!(9000000000000000000, test.value);
-        assert_eq!(v, test.value as u64);
+        assert_eq!(v, test.value);
         assert_eq!(9, test.to_bytes().len());
         assert_eq!(
             vec![0xff, 0x00, 0x00, 0x84, 0xe2, 0x50, 0x6c, 0xe6, 0x7c],

@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use crate::blockchain::proto::tx::EvaluatedTx;
-use crate::blockchain::proto::tx::TxOutpoint;
 use crate::blockchain::proto::Hashed;
 use crate::blockchain::proto::ToRaw;
+use crate::blockchain::proto::tx::EvaluatedTx;
+use crate::blockchain::proto::tx::TxOutpoint;
 
 pub struct UnspentValue {
     pub block_height: u64,
@@ -65,7 +65,7 @@ mod tests {
     use crate::blockchain::proto::header::BlockHeader;
     use crate::blockchain::proto::varuint::VarUint;
 
-    use bitcoin::hashes::{sha256d, Hash};
+    use bitcoin::hashes::{Hash, sha256d};
     use std::io::{BufReader, Cursor};
 
     #[test]
@@ -108,8 +108,8 @@ mod tests {
         let block1 = Block::new(0, header.clone(), None, VarUint::from(1u8), txs);
 
         for tx in &block1.txs {
-            remove_unspents(&tx, &mut unspents);
-            insert_unspents(&tx, 100000, &mut unspents);
+            remove_unspents(tx, &mut unspents);
+            insert_unspents(tx, 100000, &mut unspents);
         }
         let value = unspents
             .get(&TxOutpoint::new(block1.txs[0].hash, 0).to_bytes())
@@ -246,14 +246,12 @@ mod tests {
         let block2 = Block::new(0, header.clone(), None, VarUint::from(1u8), txs);
 
         for tx in &block2.txs {
-            remove_unspents(&tx, &mut unspents);
-            insert_unspents(&tx, 105001, &mut unspents);
+            remove_unspents(tx, &mut unspents);
+            insert_unspents(tx, 105001, &mut unspents);
         }
 
         // Original unspent should no longer exist in the hashmap
-        assert!(unspents
-            .get(&TxOutpoint::new(block1.txs[0].hash, 0).to_bytes())
-            .is_none());
+        assert!(!unspents.contains_key(&TxOutpoint::new(block1.txs[0].hash, 0).to_bytes()));
 
         let value = unspents
             .get(&TxOutpoint::new(block2.txs[0].hash, 0).to_bytes())

@@ -312,15 +312,15 @@ mod tests {
         assert_eq!(0x00000001, block.header.value.version);
         assert_eq!(
             "0000000000000000000000000000000000000000000000000000000000000000",
-            format!("{}", &block.header.value.prev_hash)
+            format!("{}", block.header.value.prev_hash)
         );
         assert_eq!(
             "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b",
-            format!("{}", &block.header.value.merkle_root)
+            format!("{}", block.header.value.merkle_root)
         );
         assert_eq!(
             "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
-            format!("{}", &block.header.hash)
+            format!("{}", block.header.hash)
         );
 
         // Check against computed merkle root
@@ -340,7 +340,7 @@ mod tests {
         assert_eq!(0x01, block.txs[0].value.in_count.value);
         assert_eq!(
             "0000000000000000000000000000000000000000000000000000000000000000",
-            format!("{}", &block.txs[0].value.inputs[0].outpoint.txid)
+            format!("{}", block.txs[0].value.inputs[0].outpoint.txid)
         );
         assert_eq!(0xffffffff, block.txs[0].value.inputs[0].outpoint.index);
         assert_eq!(0x4d, block.txs[0].value.inputs[0].script_len.value);
@@ -358,7 +358,7 @@ mod tests {
 
         let script_pubkey = &block.txs[0].value.outputs[0].out.script_pubkey;
         assert_eq!("4104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac",
-                                utils::arr_to_hex(&script_pubkey));
+                                utils::arr_to_hex(script_pubkey));
         assert_eq!(0x00000000, block.txs[0].value.locktime);
 
         assert_eq!(
@@ -415,7 +415,7 @@ mod tests {
             .read_txs(1, 0x00)
             .unwrap()
             .into_iter()
-            .map(|raw| EvaluatedTx::from(raw))
+            .map(EvaluatedTx::from)
             .collect();
         assert_eq!(txs.len(), 1);
 
@@ -593,15 +593,15 @@ mod tests {
         assert_eq!(0x00010101, block.header.value.version);
         assert_eq!(
             "000000000000b19f0ad5cd46859fe8c9662e8828d8a75ff6da73167ac09a9036",
-            format!("{}", &block.header.value.prev_hash)
+            format!("{}", block.header.value.prev_hash)
         );
         assert_eq!(
             "88afdfdcc78f778f701835b62e432d3ba7d55b3e59ac4e7cab08d6bc49655c0f",
-            format!("{}", &block.header.value.merkle_root)
+            format!("{}", block.header.value.merkle_root)
         );
         assert_eq!(
             "d8a7c3e01e1e95bcee015e6fcc7583a2ca60b79e5a3aa0a171eddd344ada903d",
-            format!("{}", &block.header.hash)
+            format!("{}", block.header.hash)
         );
 
         // Check against computed merkle root
@@ -617,14 +617,14 @@ mod tests {
         assert_eq!(0x00, aux_pow_block.coinbase_tx.locktime);
         assert_eq!(
             "0000000000003d47277359fb969c43e3c7e7c0306a17f6444b8e91e19def03a9",
-            format!("{}", &aux_pow_block.block_hash)
+            format!("{}", aux_pow_block.block_hash)
         );
 
         // TODO: verify AuxPowBlock merkle branches
 
         assert_eq!(
             "00000000000004a59b7deb5c4e01b9786ea01ee8da000db77ce6035c2913be08",
-            format!("{}", &aux_pow_block.parent_block.prev_hash)
+            format!("{}", aux_pow_block.parent_block.prev_hash)
         );
 
         // Tx
@@ -635,7 +635,7 @@ mod tests {
         assert_eq!(0x01, block.txs[0].value.in_count.value);
         assert_eq!(
             "0000000000000000000000000000000000000000000000000000000000000000",
-            format!("{}", &block.txs[0].value.inputs[0].outpoint.txid)
+            format!("{}", block.txs[0].value.inputs[0].outpoint.txid)
         );
         assert_eq!(0xffffffff, block.txs[0].value.inputs[0].outpoint.index);
         assert_eq!(8, block.txs[0].value.inputs[0].script_len.value);
@@ -655,7 +655,7 @@ mod tests {
 
         let script_pubkey = &block.txs[0].value.outputs[0].out.script_pubkey;
         assert_eq!("410489fe91e62847575c98deeab020f65fdff17a3a870ebb05820b414f3d8097218ec9a65f1e0ae0ac35af7247bd79ed1f2a24675fffb5aa6f9620e1920ad4bf5aa6ac",
-                                utils::arr_to_hex(&script_pubkey));
+                                utils::arr_to_hex(script_pubkey));
         assert_eq!(0x00000000, block.txs[0].value.locktime);
 
         /*
@@ -887,15 +887,15 @@ mod tests {
         assert_eq!(0x620104, block.header.value.version);
         assert_eq!(
             "204fa085d6ac48f0f4776e158d6c88100d8735d5abd47cbb020f8f59045300ee",
-            format!("{}", &block.header.value.prev_hash)
+            format!("{}", block.header.value.prev_hash)
         );
         assert_eq!(
             "5c9331172b9256b6a4f538f3f42022a710ac65316e5a75cd02a9527d86ca5bd9",
-            format!("{}", &block.header.value.merkle_root)
+            format!("{}", block.header.value.merkle_root)
         );
         assert_eq!(
             "038ca8bfebd5d35e9c676b459f2c6ba4c03975ba653414b303d7bc4ac6fa787f",
-            format!("{}", &block.header.hash)
+            format!("{}", block.header.hash)
         );
 
         // Check against computed merkle root
@@ -914,20 +914,20 @@ mod tests {
         assert_eq!(0x00, aux_pow_block.coinbase_tx.locktime);
         assert_eq!(
             "c5c290df0f691794805e9ccfdc932e5dfee4e440510f0e3cb5e171303239491c",
-            format!("{}", &aux_pow_block.block_hash)
+            format!("{}", aux_pow_block.block_hash)
         );
 
         // TODO: verify AuxPowBlock merkle branches
 
         assert_eq!(
             "bcf46567b86d599288fe672a913762d7292b461a04b891dee88e52196adefd9e",
-            format!("{}", &aux_pow_block.parent_block.prev_hash)
+            format!("{}", aux_pow_block.parent_block.prev_hash)
         );
 
         // Tx
         assert_eq!(
             "dc8dbed0461ec54a9524fc12fbed7466e6acb0f0637fcb2a0111174c84753fec",
-            format!("{}", &block.txs[0].hash)
+            format!("{}", block.txs[0].hash)
         );
         assert_eq!(8, block.tx_count.value);
         assert_eq!(0x00000001, block.txs[0].value.version);
@@ -936,7 +936,7 @@ mod tests {
         assert_eq!(0x01, block.txs[0].value.in_count.value);
         assert_eq!(
             "0000000000000000000000000000000000000000000000000000000000000000",
-            format!("{}", &block.txs[0].value.inputs[0].outpoint.txid)
+            format!("{}", block.txs[0].value.inputs[0].outpoint.txid)
         );
         assert_eq!(0xffffffff, block.txs[0].value.inputs[0].outpoint.index);
         assert_eq!(6, block.txs[0].value.inputs[0].script_len.value);
@@ -954,7 +954,7 @@ mod tests {
         let script_pubkey = &block.txs[0].value.outputs[0].out.script_pubkey;
         assert_eq!(
             "2103829125d35fad23dcc6526e73bce0b18aa7c0897e0fc5d39e75e43af96b950748ac",
-            utils::arr_to_hex(&script_pubkey)
+            utils::arr_to_hex(script_pubkey)
         );
         assert_eq!(0x00000000, block.txs[0].value.locktime);
 
