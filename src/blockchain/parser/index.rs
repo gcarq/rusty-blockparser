@@ -6,10 +6,10 @@ use std::io::Cursor;
 use std::path::Path;
 
 use byteorder::ReadBytesExt;
-use rusty_leveldb::{LdbIterator, Options, DB};
+use rusty_leveldb::{DB, LdbIterator, Options};
 
-use crate::common::Result;
 use crate::ParserOptions;
+use crate::common::Result;
 
 const BLOCK_VALID_CHAIN: u64 = 4;
 const BLOCK_HAVE_DATA: u64 = 8;
@@ -135,10 +135,11 @@ pub fn get_block_index(path: &Path) -> Result<HashMap<u64, BlockIndexRecord>> {
 
     let mut block_index = HashMap::with_capacity(900000);
     let mut db_iter = DB::open(path, Options::default())?.new_iter()?;
-    let (mut key, mut value) = (vec![], vec![]);
 
     while db_iter.advance() {
-        db_iter.current(&mut key, &mut value);
+        let Some((key, value)) = db_iter.current() else {
+            continue;
+        };
         if is_block_index_record(&key) {
             let record = BlockIndexRecord::from(&key[1..], &value)?;
             if record.status & (BLOCK_VALID_CHAIN | BLOCK_HAVE_DATA) > 0 {
