@@ -3,6 +3,9 @@
 **rusty-blockparser** is a Bitcoin Blockchain Parser that enables data extraction of various types (e.g.:
 blocks, transactions, scripts, public keys / hashes, balances) and full UTXO dumps.
 
+⚠️ I removed this project from [crates.io](https://crates.io), as there is no point having this niche CLI hosted there.
+From now on GitHub is the only official source. The releases can be found [here](https://github.com/gcarq/rusty-blockparser/releases).
+
 ### Supported Blockchains
 
 `Bitcoin`, `Namecoin`, `Litecoin`, `Dogecoin`, `Myriadcoin`, `Unobtanium` and `NoteBlockchain`.
